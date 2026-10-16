@@ -53,7 +53,7 @@ async def test_get_document_cache_hit() -> None:
 
     result = await repo.get_document("doc-123")
     assert result == {"title": "Test Doc"}
-    client.get.assert_awaited_once_with("doc:doc-123")
+    client.get.assert_awaited_once_with("lingseeker:doc:doc-123")
 
 
 @pytest.mark.asyncio
@@ -78,7 +78,7 @@ async def test_set_document_cache() -> None:
     repo = CacheRepository(client)
 
     await repo.set_document("doc-789", {"title": "Stored"}, ttl=300)
-    client.set.assert_awaited_once_with("doc:doc-789", '{"title": "Stored"}', ex=300)
+    client.set.assert_awaited_once_with("lingseeker:doc:doc-789", '{"title": "Stored"}', ex=300)
 
 
 @pytest.mark.asyncio
@@ -92,7 +92,7 @@ async def test_get_canonical_evidence_cache() -> None:
 
     result = await repo.get_canonical_evidence("ce-abc")
     assert result == {"field_id": "gene_symbol"}
-    client.get.assert_awaited_once_with("canonical:ce-abc")
+    client.get.assert_awaited_once_with("lingseeker:canonical:ce-abc")
 
 
 @pytest.mark.asyncio
@@ -106,7 +106,7 @@ async def test_get_entity_cache() -> None:
 
     result = await repo.get_entity("ent-xyz")
     assert result == {"entity_type": "gene", "display_name": "BRCA1"}
-    client.get.assert_awaited_once_with("entity:ent-xyz")
+    client.get.assert_awaited_once_with("lingseeker:entity:ent-xyz")
 
 
 # ── Cache invalidation tests ───────────────────────────────────────────────
@@ -123,7 +123,7 @@ async def test_invalidate_document_uses_direct_delete() -> None:
     await repo.invalidate_document("doc-1")
 
     # Single-key invalidation is a direct DELETE.
-    client.delete.assert_awaited_once_with("doc:doc-1")
+    client.delete.assert_awaited_once_with("lingseeker:doc:doc-1")
     client.pipeline.assert_not_called()
 
 
@@ -137,7 +137,7 @@ async def test_invalidate_canonical_uses_direct_delete() -> None:
 
     await repo.invalidate_canonical_evidence("ce-42")
 
-    client.delete.assert_awaited_once_with("canonical:ce-42")
+    client.delete.assert_awaited_once_with("lingseeker:canonical:ce-42")
     client.pipeline.assert_not_called()
 
 
@@ -151,7 +151,7 @@ async def test_invalidate_entity_uses_direct_delete() -> None:
 
     await repo.invalidate_entity("ent-77")
 
-    client.delete.assert_awaited_once_with("entity:ent-77")
+    client.delete.assert_awaited_once_with("lingseeker:entity:ent-77")
     client.pipeline.assert_not_called()
 
 
@@ -171,9 +171,9 @@ async def test_bulk_invalidate_uses_single_pipeline() -> None:
 
     # Pipeline must contain all deletes.
     delete_calls = [c.args[0] for c in pipeline.delete.call_args_list]
-    assert "doc:doc-a" in delete_calls
-    assert "doc:doc-b" in delete_calls
-    assert "entity:ent-x" in delete_calls
+    assert "lingseeker:doc:doc-a" in delete_calls
+    assert "lingseeker:doc:doc-b" in delete_calls
+    assert "lingseeker:entity:ent-x" in delete_calls
 
     # Only one pipeline.execute() call.
     pipeline.execute.assert_awaited_once()
@@ -213,13 +213,13 @@ async def test_cache_repo_has_no_token_or_session_helpers() -> None:
 
 @pytest.mark.asyncio
 async def test_cache_key_prefixes_are_expected() -> None:
-    """Cache key prefixes match the expected MVP namespaces."""
+    """Cache key prefixes are service-namespaced for shared Redis."""
     from src.dao.redis.cache_repo import CACHE_PREFIX
 
-    assert CACHE_PREFIX["document"] == "doc"
-    assert CACHE_PREFIX["canonical"] == "canonical"
-    assert CACHE_PREFIX["entity"] == "entity"
-    assert CACHE_PREFIX["search"] == "search"
+    assert CACHE_PREFIX["document"] == "lingseeker:doc"
+    assert CACHE_PREFIX["canonical"] == "lingseeker:canonical"
+    assert CACHE_PREFIX["entity"] == "lingseeker:entity"
+    assert CACHE_PREFIX["search"] == "lingseeker:search"
 
 
 # ── Integration test (skip when Redis is unavailable) ───────────────────────

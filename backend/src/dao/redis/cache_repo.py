@@ -23,10 +23,10 @@ class CachePrefixes(TypedDict):
 
 
 CACHE_PREFIX: CachePrefixes = {
-    "document": "doc",
-    "canonical": "canonical",
-    "entity": "entity",
-    "search": "search",
+    "document": "lingseeker:doc",
+    "canonical": "lingseeker:canonical",
+    "entity": "lingseeker:entity",
+    "search": "lingseeker:search",
 }
 
 

@@ -20,7 +20,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    # pgvector extension is provisioned out-of-band (bundled image ships it;
+    # shared clusters need the DBA to install it per-database). Never create
+    # it here: app/migration roles on a shared cluster must not require
+    # superuser. Fail fast with an actionable message instead.
+    op.execute(
+        "DO $$ BEGIN "
+        "IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') THEN "
+        "RAISE EXCEPTION 'pgvector extension \"vector\" is missing in database % "
+        "(ask the DBA to run: CREATE EXTENSION vector)', current_database(); "
+        "END IF; END $$"
+    )
     op.create_table(
         "terminology_embeddings",
         sa.Column("embedding_id", postgresql.UUID(as_uuid=True), nullable=False),
