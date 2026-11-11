@@ -32,30 +32,38 @@ deploy/compose/backend-host/
 
 ## Step-by-Step Deployment
 
-### 1. Build the Docker image (on dev machine)
+### 1. Build and push the Docker image (on local machine)
+
+Images are built locally and pushed to Docker Hub. Do not use GitHub Actions for image builds.
 
 ```bash
-# From repo root — generates docker-artifacts/ tarballs, then builds
-./scripts/build-backend-image.sh    # or manually:
-
+# From repo root — prepare docker-artifacts/, build, smoke-test, push
 cd backend
 uv sync --no-dev --frozen
-tar czf ../docker-artifacts/site-packages.tar.gz -C .venv/lib/python3.12/site-packages .
-tar czf ../docker-artifacts/venv-bin.tar.gz     -C .venv/bin .
+mkdir -p ../docker-artifacts
+tar czf ../docker-artifacts/site-packages.tar.gz \
+  --exclude='__pycache__' --exclude='*.pyc' --dereference \
+  -C .venv/lib/python3.12/site-packages .
+tmp=$(mktemp -d)
+cp -P .venv/bin/* "$tmp"/ 2>/dev/null || true
+rm -f "$tmp"/python* 2>/dev/null || true
+sed -i "s|$(pwd)/.venv/bin/python3|/opt/venv/bin/python3|g" "$tmp"/* 2>/dev/null || true
+tar czf ../docker-artifacts/venv-bin.tar.gz -C "$tmp" .
+rm -rf "$tmp"
 cd ..
 
-docker build -f backend/Dockerfile -t lingua-seeker-backend:latest .
+./scripts/deploy/build_push_backend_image.sh --tag latest
+# optional: ./scripts/deploy/build_push_backend_image.sh --tag 20261111
 ```
 
-### 2. Transfer image to server
+Default remote image: `docker.io/lanshi47/lingua-seeker-backend:<tag>`.
+
+### 2. Pull image on the server
 
 ```bash
-# Save & transfer
-docker save lingua-seeker-backend:latest | gzip > /tmp/lingua-backend.tar.gz
-scp /tmp/lingua-backend.tar.gz root@<server>:/tmp/
-
-# On server
-docker load < /tmp/lingua-backend.tar.gz
+# On server (public Docker Hub repo needs no login)
+cd /path/to/project/deploy/compose/backend-host
+IMAGE_TAG=latest docker compose --env-file .env pull
 ```
 
 ### 3. Prepare config files (on server)

@@ -1,19 +1,21 @@
 # Cross-host deploy via SSH.
 #
-# Pulls the freshly-built GHCR image on the target server and brings up
+# Pulls a prebuilt Docker Hub image on the target server and brings up
 # the backend compose stack under deploy/compose/.
+#
+# Image build is local-only:
+#   ./scripts/deploy/build_push_backend_image.sh [--tag <tag>]
 #
 # Requires the following GitHub Environments + secrets (per-env):
 #
-#   production:
+#   production / staging:
 #     BACKEND_HOST          public DNS / IP of backend host
 #     BACKEND_USER          SSH user (sudoer)
 #     BACKEND_SSH_KEY       private key (PEM, no passphrase)
-#     GHCR_PULL_TOKEN       PAT (read:packages) — only needed if GHCR images are private
 #
 # The deploy script assumes the repo is already checked out on the host
 # under DEPLOY_ROOT (default: /opt/lingua-seeker). It does NOT rsync code
-# — it just `docker compose pull && up -d` after re-tagging the image.
+# — it just `docker compose pull && up -d`.
 
 name: deploy
 
@@ -27,53 +29,21 @@ on:
         options: [production, staging]
         default: production
       image_tag:
-        description: "Image tag to deploy (e.g. sha-abc1234 or latest)"
+        description: "Docker Hub image tag to deploy (e.g. latest or 20261111)"
         required: true
         type: string
         default: latest
-  workflow_run:
-    workflows: [build-backend]
-    types: [completed]
-    branches: [master, dev]
 
 concurrency:
   # One deploy per environment at a time. Newer manual runs supersede.
-  group: deploy-${{ inputs.environment || 'production' }}
+  group: deploy-${{ inputs.environment }}
   cancel-in-progress: false
 
 jobs:
-  resolve:
-    name: resolve tag
-    runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
-    outputs:
-      environment: ${{ steps.pick.outputs.environment }}
-      image_tag:   ${{ steps.pick.outputs.image_tag }}
-    steps:
-      - id: pick
-        run: |
-          set -eux
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "environment=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
-            echo "image_tag=${{ inputs.image_tag }}"     >> "$GITHUB_OUTPUT"
-          else
-            # workflow_run trigger: master → production, dev → staging.
-            BRANCH="${{ github.event.workflow_run.head_branch }}"
-            if [[ "$BRANCH" == "master" ]]; then
-              echo "environment=production" >> "$GITHUB_OUTPUT"
-            else
-              echo "environment=staging"    >> "$GITHUB_OUTPUT"
-            fi
-            echo "image_tag=latest"       >> "$GITHUB_OUTPUT"
-          fi
-
   deploy-backend:
     name: backend host
-    needs: resolve
     runs-on: ubuntu-latest
-    environment: ${{ needs.resolve.outputs.environment }}
+    environment: ${{ inputs.environment }}
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
@@ -81,22 +51,17 @@ jobs:
           host:     ${{ secrets.BACKEND_HOST }}
           username: ${{ secrets.BACKEND_USER }}
           key:      ${{ secrets.BACKEND_SSH_KEY }}
-          envs: IMAGE_TAG,GHCR_USER,GHCR_TOKEN,REPO_OWNER
+          envs: IMAGE_TAG
           script_stop: true
           script: |
             set -euo pipefail
             DEPLOY_ROOT="${DEPLOY_ROOT:-/opt/lingua-seeker}"
-            ENV="${{ needs.resolve.outputs.environment }}"
+            ENV="${{ inputs.environment }}"
             BRANCH="master"
             [[ "$ENV" == "staging" ]] && BRANCH="dev"
             cd "$DEPLOY_ROOT"
             git fetch --depth=1 origin "$BRANCH"
             git checkout -f "origin/$BRANCH"
-
-            # GHCR auth only needed for private images. Token is short-lived.
-            if [[ -n "${GHCR_TOKEN:-}" ]]; then
-              echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-            fi
 
             cd deploy/compose/backend-host
             # The .env file lives on the host (not in the repo) — it has
@@ -111,7 +76,4 @@ jobs:
 
             docker image prune -f
         env:
-          IMAGE_TAG:  ${{ needs.resolve.outputs.image_tag }}
-          GHCR_USER:  ${{ github.actor }}
-          GHCR_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
-          REPO_OWNER: ${{ github.repository_owner }}
+          IMAGE_TAG: ${{ inputs.image_tag }}

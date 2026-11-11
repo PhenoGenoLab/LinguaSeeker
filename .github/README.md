@@ -1,17 +1,21 @@
 # GitHub Actions
 
-> CI pipeline for lint/test plus a build-and-deploy pipeline for the backend image to GHCR.
+> CI pipeline for lint/test. Container images are built on a local machine and
+> pushed to Docker Hub — not built in GitHub Actions.
 
 ```
 push to dev / master / release/**
         │
-        ├──► ci.yml            ──► backend ruff lint, frontend lint + type-check + test, rust test
+        ├──► ci.yml                 ──► backend ruff lint, frontend lint + type-check + test, rust test
         │
-        ├──► build-backend.yml ──► ghcr.io/<owner>/lingua-seeker-backend:<tag>
-        │                                      │
-        ├──► config-validation.yml ──► cross-service config consistency check
+        └──► config-validation.yml ──► cross-service config consistency check
+
+local machine (not CI)
         │
-        └──► (master only) workflow_run ──► deploy.yml ──► SSH to backend host pull + up -d
+        └──► scripts/deploy/build_push_*.sh ──► docker.io/lanshi47/lingua-seeker-{backend,frontend}:<tag>
+
+manual (optional)
+        └──► deploy.yml ──► SSH to backend host: docker compose pull && up -d
 ```
 
 ## Workflows
@@ -19,30 +23,33 @@ push to dev / master / release/**
 | File | Trigger | Purpose |
 |------|---------|---------|
 | `.github/workflows/ci.yml` | push / PR | Backend lint (ruff), frontend lint + type-check + test (vitest), rust test |
-| `.github/workflows/build-backend.yml` | push / PR / manual | uv + maturin + Python runtime image to GHCR |
 | `.github/workflows/config-validation.yml` | push / PR touching config files | Cross-service configuration consistency validation across environments |
-| `.github/workflows/deploy.yml` | manual / build-backend completion | SSH to backend host, `docker compose pull && up -d` |
+| `.github/workflows/deploy.yml` | manual only | SSH to backend host, `docker compose pull && up -d` from Docker Hub |
 
-## Image Tag Strategy
+## Image Build And Push (local)
 
-`docker/metadata-action` computes the following tags; filtering rules control which are actually pushed:
+Build on a developer machine, then push to Docker Hub:
 
-| Source | Example Tag |
-|--------|-------------|
-| Any branch push | `dev`, `master`, `release-1.2.0` |
-| PR event | `pr-42` (build only, not pushed) |
-| Commit SHA | `sha-abc1234` |
-| Master branch | additionally pushes `latest` |
-| Manual dispatch input | custom tag |
+```bash
+# Backend (requires docker-artifacts/*.tar.gz first; see scripts/README.md)
+./scripts/deploy/build_push_backend_image.sh
+./scripts/deploy/build_push_backend_image.sh --tag 20261111
 
-Rollback: switch `IMAGE_TAG` back to a previous SHA.
+# Frontend
+./scripts/deploy/build_push_frontend_image.sh
+./scripts/deploy/build_push_frontend_image.sh --tag 20261111
+```
+
+Default repositories:
+
+| Image | Docker Hub |
+|-------|------------|
+| Backend | `docker.io/lanshi47/lingua-seeker-backend` |
+| Frontend | `docker.io/lanshi47/lingua-seeker-frontend` |
+
+Compose stacks pull these images. There is no cloud image-build workflow.
 
 ## Required Secrets / Environments
-
-### Repo-level (auto-available)
-
-- `GITHUB_TOKEN`: logs into GHCR to push images. Provided automatically by the workflow.
-  - Repo Settings > Actions > General > Workflow permissions > select **Read and write permissions**.
 
 ### Environment-level (`production` / `staging`)
 
@@ -53,9 +60,10 @@ Rollback: switch `IMAGE_TAG` back to a previous SHA.
 | `BACKEND_HOST` | Public / VPN address of the backend host |
 | `BACKEND_USER` | SSH user on the backend host (needs `docker compose` permission) |
 | `BACKEND_SSH_KEY` | Private key (PEM, no passphrase). Issue a dedicated deploy key; lock `authorized_keys` with `command=`. |
-| `GHCR_PULL_TOKEN` | Only needed when GHCR images are private: a PAT with `read:packages` scope for the deploy host to log into GHCR. |
 
 > Default SSH port is 22. For non-standard ports, add `port: ${{ secrets.BACKEND_PORT }}` to the `appleboy/ssh-action` step.
+
+Public Docker Hub images do not need a pull token on the deploy host. If a repository is private, run `docker login` once on the host.
 
 ## Deploy Host Preparation
 
@@ -64,7 +72,7 @@ Rollback: switch `IMAGE_TAG` back to a previous SHA.
 
 # 2. Clone repo to a fixed path (deploy.yml defaults to /opt/lingua-seeker; change via DEPLOY_ROOT)
 sudo install -d -o "$USER" -g "$USER" /opt/lingua-seeker
-git clone [redacted-email]:[redacted-user]/CrossEvidence.git /opt/lingua-seeker
+git clone <repo-url> /opt/lingua-seeker
 
 # 3. Fill in the .env for this host (not version-controlled)
 cd /opt/lingua-seeker/deploy/compose/backend-host
@@ -80,7 +88,7 @@ chmod 600 config/vault/production.yaml
 sudo usermod -aG docker $USER
 ```
 
-> The automated deploy pipeline only does `git fetch && checkout origin/master && docker compose pull && up -d`. It does **not** modify `.env` or mounted secrets.
+> The automated deploy pipeline only does `git fetch && checkout origin/<branch> && docker compose pull && up -d`. It does **not** modify `.env` or mounted secrets.
 
 ## Trigger Modes
 
@@ -88,15 +96,10 @@ sudo usermod -aG docker $USER
 
 - `ci.yml` runs ruff lint on the backend, ESLint + TypeScript type-check + vitest on the frontend, and `cargo test` on all three Rust crates.
 
-### Automatic Build
+### Image publish (local only)
 
-- Push to `dev` / `master` / `release/**` that touches backend paths automatically builds and pushes the image to GHCR.
-- PRs build but do not push (serves as Dockerfile syntax regression check).
-
-### Automatic Deploy (master only)
-
-- After a successful `build-backend` on `master`, `workflow_run` triggers `deploy.yml` to roll the backend containers.
-- To require manual review, enable *Required reviewers* on the Environment (production).
+- Build and push with `scripts/deploy/build_push_backend_image.sh` / `build_push_frontend_image.sh`.
+- Do not add a GitHub Actions job that builds or pushes container images.
 
 ### Manual Deploy / Rollback
 
@@ -105,7 +108,7 @@ GitHub > Actions > **deploy** > Run workflow:
 | Input | Values |
 |-------|--------|
 | environment | `production` / `staging` |
-| image_tag | e.g. `sha-abc1234`, `latest`, `v1.2.0` |
+| image_tag | e.g. `latest`, `20261111`, `v1.2.0` |
 
 The deploy script includes migration and health checks:
 - `docker compose exec backend uv run alembic upgrade head`, then `docker image prune -f`.

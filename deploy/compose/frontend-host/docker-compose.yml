@@ -22,7 +22,7 @@ services:
         # The built index.html references /<base>/assets/... and API/health
         # URLs derive from import.meta.env.BASE_URL. Must match runtime BASE_PATH.
         VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
-    image: ${FRONTEND_IMAGE:-ghcr.io/[redacted-user]/lingua-seeker-frontend}:${IMAGE_TAG:-latest}
+    image: ${FRONTEND_IMAGE:-docker.io/lanshi47/lingua-seeker-frontend}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-80}:80"
