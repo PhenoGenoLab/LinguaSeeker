@@ -6,7 +6,7 @@
 > 日期：2026-11-17
 > 目标仓库：`/data/yangzs/Projects/01_Platform/01_ACMG_Lingua`
 > 适用对象：pipeline 服务（`backend/src/agents/` + 其调用的 `backend/src/core/*` 领域切片 + `backend/src/api/v1/pipeline.py`）
-> 结论摘要：**总体可行，但需调整 3 处定位**；工作量 **中大型（约 9–11 人周，不含可选的 KB 整体切换；含 KB 切换 12–16 人周；含 20% 缓冲分别为 11–13 / 14–18 人周）**；有 8 个架构决策点需拍板（见 §8）。
+> 结论摘要：**总体可行，但需调整 3 处定位**；需求方已确认 **ReMe 按外部知识库服务处理**；工作量 **中大型（约 9–11 人周，不含可选的 KB 整体切换；含 KB 切换 12–16 人周；含 20% 缓冲分别为 11–13 / 14–18 人周）**；有 8 个架构决策点需拍板（见 §8）。
 
 ---
 
@@ -49,12 +49,12 @@ LangGraph 状态图整体编排          →      保留并显式化：4 个 pha
 | 可选的知识库整体切换（Neo4j GraphRAG → ReMe，含数据迁移与 Phase 5 QA 改造） | 额外 **3–5 人周**，且不建议在本轮做 |
 | 风险缓冲 | 上述基础上 +20%（影子运行、对照评测、回滚演练） |
 
-### 0.5 需要拍板的 8 件事（详见 §8）
+### 0.5 决策点（D4 已确认，其余 7 项待拍板，详见 §8）
 
 1. **D1 ReMe 的定位**：记忆层（推荐）还是术语/图谱知识库的整体替代（成本高、风险大）。
 2. **D2 节点粒度**：4 个 phase 各一个 agent（推荐，改动可控），还是把每个 stage 都做成图节点 + agent。
 3. **D3 智能体自主度**：有界工具调用 + 结构化输出（推荐），还是自由 ReAct 自主决策。
-4. **D4 ReMe 部署形态**：独立服务（推荐，避免后端依赖升级）/ 进程内嵌（改动小但强耦合）。
+4. **D4 ReMe 部署形态**：✅ **已确认（需求方，2026-11-17）——ReMe 作为外部服务，用于知识库调用**，不计入“外层服务不动”的冻结范围。
 5. **D5 版本钉法**：backend 用 AgentScope 2.0.12、ReMe 服务内用 2.0.11（推荐），还是同环境 2.0.11 + `reme-ai[core]`。
 6. **D6 Phase 4 是否 agent 化**：薄封装、LLM 默认关闭（推荐），还是完全保留纯确定性服务。
 7. **D7 遗留代码处置**：`evidence_extraction`（12k 行）与 `cross_lingual_translation` 保持休眠、不迁移（推荐），还是单独立项 agent 化/删除。
@@ -76,6 +76,7 @@ LangGraph 状态图整体编排          →      保留并显式化：4 个 pha
 | 外层调度/持久化 | `backend/src/agents/{runner,dispatcher,state_persistence,processing_cache}.py`、`dao/postgresql/*`、`database/migrations/*` | **不可改**（属于外层服务） |
 | **领域层（本次替换对象）** | `backend/src/agents/{orchestrator,contracts,adapters}.py` + `backend/src/core/{ingest_and_digitize_data,source_fact_chain,standardize_entities_and_align_knowledge,graph_rag}` | **可改** |
 | 外部依赖 | LLM（OpenAI 兼容）、Embedding/Rerank、MinerU、lit-acquisition、Neo4j、PostgreSQL、Redis、Rust `net_io/files_io` | 接口保持不变 |
+| 新增外部服务 | ReMe（知识库调用，HTTP/MCP） | 允许新增；不改动现有外层服务 |
 
 > 说明：`src/agents/runner.py`、`dispatcher.py`、`state_persistence.py` 虽然物理上位于 `agents/`，但它们是**外层契约的实现**（队列、租约、心跳、JSONB 快照）。迁移中把它们视为“不可改”，只允许在其内部实现细节上做兼容性调整。
 
@@ -410,11 +411,13 @@ class AgentNode:
 2. **输出守门**：所有模型输出必须经过现有校验器（`validate_reply_schema`、`candidate_to_fact`、`reconcile`、`locate_quote`、`db_ready_gate`）；校验失败时 agent 可收到结构化错误并重试一次，仍失败则该窗口/阶段按现有语义失败。
 3. **写权限**：agent 不直接写 PG/Neo4j/文件；写操作只通过工具函数，由工具在领域事务内完成。ReMe 写入是例外，但它是“记忆”，不参与临床事实。
 
-### 3.4 ReMe 记忆/知识层设计
+### 3.4 ReMe 外部知识服务设计（已确认作为外部服务）
 
 #### 3.4.1 部署形态
 
-**推荐：ReMe 作为独立服务进程**（单独 venv 或容器），后端通过 HTTP（或 MCP）调用。
+**已确认（需求方，2026-11-17）：ReMe 作为外部服务，用于知识库的调用**，不装进 backend 进程，也不计入“外层服务不动”的冻结范围。落地形态为独立进程/容器（单独 venv 或镜像），后端通过 HTTP（或 MCP）调用。
+
+> 该确认解决的是“ReMe 能不能作为新外部服务引入”；**不改变**术语库（PG/pgvector）与证据图（Neo4j）作为权威存储的定位（见 D1）。
 
 理由（依赖实测，见 §4.4）：`reme-ai` 要求 `fastapi>=0.162.0`、`numpy>=2.5.4`（Py≥3.12），装进 backend 会把 FastAPI 0.136.3→0.163.1、numpy 2.3.5→2.5.5、openai 2.41→3.52、langchain-core 1.4.3→1.8.1 一并升级，直接冲击“外层不动”。独立服务让 ReMe 在自己的环境里用 `reme-ai[core]`（含 agentscope 2.0.11），与 backend 的 AgentScope 2.0.12 解耦。
 
@@ -528,7 +531,7 @@ reme service (独立 env/容器, reme-ai[core] 0.4.2.3, workspace 卷)
 
 #### 4.3.2 两种落地范围
 
-**范围 A（推荐）：ReMe 作为“记忆/文献知识层”，不替换权威 KB**
+**范围 A（推荐，与已确认的“外部知识库服务”一致）：ReMe 作为“记忆/文献知识层”，不替换权威 KB**
 - 新增：ReMe 服务 + Phase 3 召回 + Phase 5 QA 的补充上下文。
 - 保留：PG 术语库、Neo4j 证据图、JSONL 审计产物。
 - 成本：**2–3 人周**（服务部署、卡片模板、召回评测、降级）。
@@ -614,7 +617,7 @@ mcp==2.3.0            ➕ 新增
 |---|---|---|
 | LangGraph 状态图 | **可行（已具备）** | 3 处 StateGraph；语义覆盖完整；建议只做拓扑显式化 |
 | AgentScope 子智能体 | **可行，需适配** | 2.0.12 API 稳定；需写 LangGraph 节点适配器、消息转换、key 轮换；**建议有界智能体** |
-| ReMe 知识库 | **需调整** | 作为记忆/文献知识层可行；作为术语/图谱权威 KB 不可行；独立部署 |
+| ReMe 知识库 | **需调整** | 已确认作为外部知识库服务；可承担记忆/文献知识层；作为术语/图谱权威 KB 不可行 |
 | 依赖/Python/uv | **可行，需分层** | AgentScope 进 backend 代价小；ReMe 必须独立环境 |
 | 外层服务 | **可保持不变** | 所有冻结项见附录 B；前提是不引入第二套恢复/HITL 语义 |
 
@@ -673,7 +676,7 @@ mcp==2.3.0            ➕ 新增
 | 项 | 内容 |
 |---|---|
 | 目标 | 验证“记忆/知识层”价值，同时不改变临床证据路径 |
-| 产出 | ① ReMe 独立服务（镜像/venv、workspace 卷、HTTP/MCP、健康检查、备份脚本）；② 卡片模板与 `auto_resource` 接入（Phase 2 的 `output.md`/`metadata.json`）；③ Phase 3 agent 的召回（search → 注入参考上下文，标注非证据）；④ `StandardizeAgent` 薄封装（LLM 默认关闭，仅保留工具编排）；⑤ 降级策略（超时/不可用→空记忆，主路径继续）；⑥ 运维文档（workspace 备份、版本升级、容量） |
+| 产出 | ① ReMe 外部服务（已确认；镜像/venv、workspace 卷、HTTP/MCP、健康检查、备份脚本）；② 卡片模板与 `auto_resource` 接入（Phase 2 的 `output.md`/`metadata.json`）；③ Phase 3 agent 的召回（search → 注入参考上下文，标注非证据）；④ `StandardizeAgent` 薄封装（LLM 默认关闭，仅保留工具编排）；⑤ 降级策略（超时/不可用→空记忆，主路径继续）；⑥ 运维文档（workspace 备份、版本升级、容量） |
 | 验证 | ① ReMe 故障注入：主路径成功率 100%，仅记忆为空；② 召回评测：50–100 条查询的 top-5 命中率/相关性相对基线提升（预先定义指标）；③ 证据输出与阶段 3 完全一致（记忆不得改变 facts/supported）；④ Phase 4 计数与旧路径一致；⑤ 敏感数据检查（workspace 不含用户私有内容） |
 | 回滚 | `memory.enabled=false`；ReMe 服务可整体下线，不影响 pipeline |
 | 退出条件 | 记忆收益可量化且无临床路径影响；运维可接管 |
@@ -773,12 +776,19 @@ mcp==2.3.0            ➕ 新增
 | A | **有界**：固定工具白名单、结构化输出、确定性校验器守门、迭代上限 | 低；可审计 | ✅ |
 | B | 自由 ReAct：agent 自行决定工具/步骤 | 高（不可预测、成本、临床风险） | ❌ |
 
-### D4 — ReMe 部署形态：独立服务还是进程内嵌？
+### D4 — ReMe 部署形态：独立服务还是进程内嵌？✅ 已确认
 
-| 选项 | 内容 | 优点 | 缺点 | 推荐 |
+**决定（需求方，2026-11-17）：ReMe 作为外部服务，用于知识库的调用。**
+
+| 选项 | 内容 | 优点 | 缺点 | 结论 |
 |---|---|---|---|---|
-| A | **独立服务**（HTTP/MCP，独立 env） | 不动 backend 依赖；可独立扩缩/重启；符合单写者 | 多一个部署单元、网络跳 | ✅ |
-| B | 进程内 `ReMeMiddleware` | 调用简单、低延迟 | 强制 FastAPI/numpy/openai 升级；多 worker 抢 workspace | ❌（除非接受升级） |
+| A | **独立服务**（HTTP/MCP，独立 env） | 不动 backend 依赖；可独立扩缩/重启；符合单写者 | 多一个部署单元、网络跳 | ✅ **采纳** |
+| B | 进程内 `ReMeMiddleware` | 调用简单、低延迟 | 强制 FastAPI/numpy/openai 升级；多 worker 抢 workspace | ❌ 不采纳 |
+
+该决定关闭“部署形态”问题，但落地前仍需确定三项实现细节（不阻塞阶段 0/1）：
+1. 调用协议：优先 MCP（AgentScope 原生工具协议），备选普通 HTTP（`search`/`write`/`auto_resource`）。
+2. 鉴权与网络边界：内网 mTLS 或服务令牌；workspace 卷权限。
+3. 高可用：单写者约束下如何重启/备份（建议单实例 + 健康检查 + 卷快照）。
 
 ### D5 — 版本钉法
 
