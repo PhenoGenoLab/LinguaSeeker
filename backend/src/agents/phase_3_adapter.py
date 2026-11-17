@@ -1,8 +1,16 @@
-"""Phase 3 adapter: translation and dual-track evidence extraction.
+"""Phase 3 adapter: source windows -> extraction -> verification -> fact English.
 
-Uses TranslationService.run() + .save() for translation.
-Uses EvidenceExtractionService.build_dual_documents_from_output_dir() + .run_dual()
-for dual-track evidence extraction.
+The approved route is a single source-fact chain. Full-document translation is
+no longer part of Phase 3: only presentation fields of verified source facts
+are translated, and English text never becomes extraction input.
+
+Outputs per document:
+- ``original.json`` / ``translated.json`` for the existing render layer
+  (the translated document text is intentionally empty in this route)
+- ``chain_run.json`` and JSONL artifacts (facts, verifications, English views,
+  bilingual rows)
+- ``extraction_result.json`` as a dual-track projection for Phase 4
+  standardization: original track = source value, translated track = fact English
 """
 
 from __future__ import annotations
@@ -11,235 +19,222 @@ import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import aiofiles
 from loguru import logger
 
 from src.agents.contracts import (
-    TranslationExtractionOutput,
+    PermanentPhaseError,
     PhaseStatus,
     PhaseStatusDetail,
     PipelineGraphState,
-    PermanentPhaseError,
     SkipPhase4Reason,
+    TranslationExtractionOutput,
     build_retryable_errors,
     classify_phase_error,
 )
-from src.agents.state_persistence import load_document_text_from_paths
-from src.core.cross_lingual_translation.contracts import CrossLingualOutput
-from src.core.evidence_extraction.api import (
-    EvidenceExtractionService,
-)
-from src.core.evidence_extraction.contracts import (
-    EvidenceExtractionStatus,
-)
-from src.core.evidence_extraction.stages.catalog_extraction import (
-    CatalogExtractionError,
-)
+from src.core.cross_lingual_translation.translate.language_detector import detect_language
+from src.core.source_fact_chain.api import SourceFactChainService
+from src.core.source_fact_chain.contracts import ChainRun, sha256_text
+from src.core.source_fact_chain.projection import project_dual_result
+from src.core.source_fact_chain.providers import ProviderError
 
-if TYPE_CHECKING:
-    from src.core.cross_lingual_translation.api import (
-        TranslationService,
-    )
-
-_RETRYABLE_ERRORS = build_retryable_errors() + (CatalogExtractionError,)
+_RETRYABLE_ERRORS = build_retryable_errors() + (ProviderError,)
 
 
-def _load_blocks_from_json(json_path: str) -> list[dict] | None:
-    """Load block dicts from a persisted Phase 3 JSON file."""
+def _join_pages(pages: list[dict]) -> tuple[str, list[tuple[int, int, int]]]:
+    """Join page markdown exactly as ``ParseResult.full_markdown`` does.
+
+    Returns the source text and ``(start, end, page_number)`` ranges so source
+    spans can be attributed to a page without re-reading blocks.
+    """
+    parts: list[str] = []
+    ranges: list[tuple[int, int, int]] = []
+    cursor = 0
+    for index, page in enumerate(pages, start=1):
+        markdown = str(page.get("markdown", "") or "")
+        page_number = int(page.get("page_number", index) or index)
+        if parts:
+            cursor += 2  # "\n\n" separator
+        ranges.append((cursor, cursor + len(markdown), page_number))
+        parts.append(markdown)
+        cursor += len(markdown)
+    return "\n\n".join(parts), ranges
+
+
+def _blocks_for_render(content_blocks: list[dict], text: str, ranges: list[tuple[int, int, int]]) -> list[dict]:
+    """Return MinerU blocks when present, otherwise a page-level fallback."""
+    if content_blocks:
+        return content_blocks
+    blocks: list[dict] = []
+    for start, end, page in ranges:
+        page_text = text[start:end]
+        if page_text.strip():
+            blocks.append({"type": "text", "page_idx": page - 1, "text": page_text})
+    return blocks
+
+
+def _load_chain_run(path: Path) -> ChainRun | None:
     try:
-        with open(json_path, encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, json.JSONDecodeError):
+        return ChainRun.model_validate_json(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
         return None
-    if not isinstance(data, dict):
-        return None
-    blocks = data.get("blocks")
-    return blocks if isinstance(blocks, list) and blocks else None
 
 
 class Phase3Adapter:
-    """Thin adapter wrapping TranslationService + EvidenceExtractionService.
+    """Run the source fact chain over the Phase 2 parsed document."""
 
-    Flow:
-    1. Read parsed content from Phase 2 output_dir
-    2. Call TranslationService.run() -> TranslationResult
-    3. Call TranslationService.save() -> CrossLingualOutput
-    4. Call build_dual_documents_from_output_dir() -> DualTrackDocuments
-    5. Call EvidenceExtractionService.run_dual() -> DualEvidenceExtractionResult
-    """
+    def __init__(self, chain_service: SourceFactChainService, output_root: Path | None = None):
+        self._chain = chain_service
+        self._output_root = output_root
 
-    def __init__(
-        self,
-        translation_service: TranslationService,
-        extraction_service: EvidenceExtractionService,
-    ):
-        self._translation = translation_service
-        self._extraction = extraction_service
+    async def run(self, state: PipelineGraphState, *, force_rebuild: bool = False) -> PipelineGraphState:
+        """Execute Phase 3 and persist the chain artifacts for Phase 4 and display.
 
-    async def run(self, state: PipelineGraphState) -> PipelineGraphState:
-        """Execute Phase 3: translate and extract dual-track evidence.
-
-        Returns updated state with phase_3_output set on success.
-        Sets skip_phase_4_reason if both tracks are NOT_RELEVANT.
-        Raises RetryablePhaseError or PermanentPhaseError on failure.
+        A persisted run is reused only when its source hash, chain config and
+        prompt versions all match. Pass ``force_rebuild=True`` to ignore any
+        persisted run and call the provider again.
         """
         logger.info("Phase 3 started: run={}", state.processing_run_id)
-
         state.phase_3_status = PhaseStatusDetail(
             status=PhaseStatus.RUNNING,
             started_at=datetime.now().isoformat(),
         )
 
         try:
-            # Load parsed document from Phase 2 output
             if state.phase_2_output is None:
-                raise PermanentPhaseError(
-                    "Phase 2 output not found in state",
-                    phase=3,
-                )
+                raise PermanentPhaseError("Phase 2 output not found in state", phase=3)
 
-            # Read from Phase 2 metadata (contains pages and content_blocks)
-            metadata_path = state.phase_2_output.metadata_path
-            async with aiofiles.open(metadata_path, "r") as f:
-                content = await f.read()
-                parse_data = json.loads(content)
+            async with aiofiles.open(state.phase_2_output.metadata_path, encoding="utf-8") as handle:
+                parse_data = json.loads(await handle.read())
+            pages = parse_data.get("pages", []) or []
+            content_blocks = parse_data.get("content_blocks", []) or []
 
-            pages = parse_data.get("pages", [])
-            content_blocks = parse_data.get("content_blocks", [])
+            source_text, page_ranges = _join_pages(pages)
+            if not source_text.strip():
+                source_text = await asyncio.to_thread(Path(state.phase_2_output.md_path).read_text, encoding="utf-8")
+                page_ranges = [(0, len(source_text), 1)]
+            if not source_text.strip():
+                raise PermanentPhaseError("Phase 2 produced no document text", phase=3)
 
-            # Use absolute path to survive CWD changes
-            from pathlib import Path as _Path
+            language = detect_language(source_text)
+            if language == "unknown":
+                language = str(parse_data.get("source_language") or "unknown")
 
-            _backend_root = _Path(__file__).resolve().parent.parent.parent.parent
-            output_dir = str(_backend_root / "data" / "pipeline" / state.processing_run_id / "phase_3")
-            Path(output_dir).mkdir(parents=True, exist_ok=True)
+            base = self._output_root
+            if base is None:
+                base = Path(__file__).resolve().parent.parent.parent.parent / "data" / "pipeline"
+            doc_dir = Path(base) / state.processing_run_id / "phase_3" / state.source_document_id
+            doc_dir.mkdir(parents=True, exist_ok=True)
 
-            # On retry, check if translation output already exists on disk
-            doc_output_dir = Path(output_dir) / state.source_document_id
-            existing_original = doc_output_dir / "original.json"
-            existing_metadata = doc_output_dir / "metadata.json"
-            cross_lingual_output = None
-            translation_result = None
-
-            if existing_original.exists() and existing_metadata.exists():
-                logger.info("Phase 3 retry: translation output already exists, skipping translation")
-                # Read source_language from persisted metadata
-                async with aiofiles.open(existing_metadata, "r") as mf:
-                    meta_content = await mf.read()
-                    meta_data = json.loads(meta_content)
-                source_lang = meta_data.get("source_language", "unknown")
-                cross_lingual_output = CrossLingualOutput(
-                    formatted_original="",
-                    translated_english="",
-                    source_language=source_lang,
-                    terminology_map=meta_data.get("terminology_map", {}),
-                    translation_warnings=meta_data.get("translation_warnings", []),
-                    output_dir=str(doc_output_dir),
-                    original_json_path=str(existing_original),
-                    translated_json_path=str(doc_output_dir / "translated.json"),
-                    image_paths=[],
-                )
-
-            if cross_lingual_output is None:
-                # Run translation
-                translation_result = await self._translation.run(
-                    pages=pages,
-                    content_blocks=content_blocks,
-                )
-
-                # Save translation output (creates original.json and translated.json)
-                cross_lingual_output = await asyncio.to_thread(
-                    self._translation.save,
-                    result=translation_result,
-                    output_dir=output_dir,
-                    doc_id=state.source_document_id,
-                )
-
-            # Build dual documents using the service's static method
-            # This reads from cross_lingual_output.output_dir (sync Path.read_text)
-            dual_documents = await asyncio.to_thread(
-                EvidenceExtractionService.build_dual_documents_from_output_dir,
-                cross_lingual_output.output_dir,
-                state.extraction_target,
-            )
-
-            # Run dual-track extraction via the service facade
-            dual_result = await self._extraction.run_dual(
-                dual_documents,
-                extraction_profile=state.extraction_profile,
-                extraction_mode=state.extraction_mode,
-                original_only=state.ablation_original_only,
-                enable_review_validation=not state.ablation_disable_review,
-                enable_target_guard=not state.ablation_disable_target_guard,
-                enable_source_grounding=not state.ablation_disable_grounding,
-                review_reject_policy=state.review_reject_policy,
-                extraction_track_mode=state.extraction_track_mode,
-            )
-
-            # Check if document is relevant
-            both_not_relevant = (
-                dual_result.original_result.status == EvidenceExtractionStatus.NOT_RELEVANT
-                and dual_result.translated_result.status == EvidenceExtractionStatus.NOT_RELEVANT
-            )
-
-            if both_not_relevant:
-                logger.info("Document not relevant, setting skip_phase_4_reason")
-                state.skip_phase_4_reason = SkipPhase4Reason.NOT_RELEVANT
-
-            # Save extraction result for Phase 4 (N7 fix)
-            extraction_result_path = f"{output_dir}/extraction_result.json"
-            async with aiofiles.open(extraction_result_path, "w") as f:
-                await f.write(json.dumps(dual_result.model_dump(mode="json")))
-
-            # Persist document text and structured blocks while files are
-            # guaranteed to exist on disk. Blocks enable structured rendering
-            # (headings, tables, lists) in the evidence detail viewer.
-            original_text, translated_doc_text = await load_document_text_from_paths(
-                cross_lingual_output.original_json_path,
-                cross_lingual_output.translated_json_path,
-            )
-
-            # Capture structured blocks from translation result or disk
-            original_blocks_dicts: list[dict] | None = None
-            translated_blocks_dicts: list[dict] | None = None
-            if translation_result is not None:
-                if translation_result.original_blocks:
-                    original_blocks_dicts = [b.to_dict() for b in translation_result.original_blocks]
-                if translation_result.translated_blocks:
-                    translated_blocks_dicts = [b.to_dict() for b in translation_result.translated_blocks]
+            chain_run_path = doc_dir / "chain_run.json"
+            source_hash = sha256_text(source_text)
+            run = None if force_rebuild else _load_chain_run(chain_run_path)
+            blocker = "force_rebuild" if force_rebuild else self._chain.reuse_blocker(run, source_hash=source_hash)
+            if run is not None and blocker is not None:
+                logger.info("Phase 3 retry: rebuilding chain run ({})", blocker)
+                run = None
+            if run is not None:
+                logger.info("Phase 3 retry: reusing persisted chain run (facts={})", len(run.facts))
             else:
-                # Retry path: load blocks from persisted JSON files
-                original_blocks_dicts = _load_blocks_from_json(cross_lingual_output.original_json_path)
-                translated_blocks_dicts = _load_blocks_from_json(cross_lingual_output.translated_json_path)
+                document = self._chain.build_document(
+                    document_id=state.source_document_id,
+                    text=source_text,
+                    language=language,
+                )
+                run = await self._chain.run_async(document)
+            # Always rewrite the full artifact set: a crash between
+            # chain_run.json and the JSONL files must be recoverable on retry.
+            self._chain.write_outputs(run, doc_dir)
+
+            target = state.extraction_target
+            dual_result = project_dual_result(
+                run,
+                extraction_target=target,
+                page_ranges=page_ranges,
+                target_gene=target.gene_symbol if target else "",
+                target_disease=target.disease_name if target else "",
+                target_variant=target.primary_variant if target else "",
+            )
+            extraction_path = doc_dir / "extraction_result.json"
+            extraction_path.write_text(dual_result.model_dump_json(indent=2), encoding="utf-8")
+
+            blocks = _blocks_for_render(content_blocks, source_text, page_ranges)
+            original_path = doc_dir / "original.json"
+            translated_path = doc_dir / "translated.json"
+            original_path.write_text(
+                json.dumps(
+                    {
+                        "metadata": {
+                            "doc_id": state.source_document_id,
+                            "source_language": language,
+                            "extraction_route": "source_fact_chain",
+                        },
+                        "formatted_text": source_text,
+                        "blocks": blocks,
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            translated_path.write_text(
+                json.dumps(
+                    {
+                        "metadata": {
+                            "doc_id": state.source_document_id,
+                            "source_language": language,
+                            "translation_skipped": "fact_level_presentation_only",
+                        },
+                        "formatted_text": "",
+                        "blocks": [],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            supported = self._chain.supported_fact_count(run)
+            if supported == 0:
+                state.skip_phase_4_reason = SkipPhase4Reason.NOT_RELEVANT
+            else:
+                # A retry may have produced supported facts after an earlier
+                # empty run; a stale NOT_RELEVANT must not skip Phase 4.
+                state.skip_phase_4_reason = None
 
             state.phase_3_output = TranslationExtractionOutput(
-                output_dir=cross_lingual_output.output_dir,
-                original_json_path=cross_lingual_output.original_json_path,
-                translated_json_path=cross_lingual_output.translated_json_path,
-                source_language=cross_lingual_output.source_language,
-                extraction_result_path=extraction_result_path,
-                original_text=original_text,
-                translated_text=translated_doc_text,
-                original_blocks=original_blocks_dicts,
-                translated_blocks=translated_blocks_dicts,
+                output_dir=str(doc_dir),
+                original_json_path=str(original_path),
+                translated_json_path=str(translated_path),
+                source_language=language,
+                extraction_result_path=str(extraction_path),
+                original_text=source_text,
+                translated_text=None,
+                original_blocks=blocks,
+                translated_blocks=None,
+                bilingual_rows_path=str(doc_dir / "bilingual.jsonl"),
+                source_facts_path=str(doc_dir / "facts.jsonl"),
+                chain_run_path=str(chain_run_path),
             )
-
             state.phase_3_status = PhaseStatusDetail.complete(
                 started_at=state.phase_3_status.started_at,
                 summary={
-                    "relevant": not both_not_relevant,
-                    "source_language": cross_lingual_output.source_language,
-                    "target_gene": state.extraction_target.gene_symbol if state.extraction_target else None,
+                    "route": "source_fact_chain",
+                    "windows": len(run.windows),
+                    "facts": len(run.facts),
+                    "supported_facts": supported,
+                    "provider_calls": run.provider_calls,
+                    "source_language": language,
                 },
             )
             logger.info(
-                "Phase 2 completed: run={}, skip_phase_4_reason={}",
+                "Phase 3 completed: run={}, windows={}, facts={}, supported={}, calls={}",
                 state.processing_run_id,
-                state.skip_phase_4_reason,
+                len(run.windows),
+                len(run.facts),
+                supported,
+                run.provider_calls,
             )
             return state
 
-        except Exception as e:
-            classify_phase_error(3, e, _RETRYABLE_ERRORS)
+        except Exception as error:
+            classify_phase_error(3, error, _RETRYABLE_ERRORS)

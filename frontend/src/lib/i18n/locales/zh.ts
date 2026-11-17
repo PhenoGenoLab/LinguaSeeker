@@ -404,6 +404,7 @@ const zh: Record<EnKeys, string> = {
   "evidenceDb.bilingual.breadcrumb": "证据库",
   "evidenceDb.bilingual.litFallback": "文献",
   "evidenceDb.bilingual.originalText": "原文",
+  "evidenceDb.bilingual.factComparison": "事实级双语对照",
   "evidenceDb.bilingual.translatedText": "译文（英文）",
   "evidenceDb.bilingual.syncScroll": "同步滚动",
   "evidenceDb.bilingual.sourceSpan": "源文本段",

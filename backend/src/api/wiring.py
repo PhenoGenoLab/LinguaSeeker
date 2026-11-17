@@ -145,15 +145,7 @@ def wire_dependencies() -> None:
     from src.agents.state_persistence import SessionBoundStatePersistence
     from src.api.deps import set_neo4j_repository, set_phase5_factory
     from src.api.v1.pipeline import set_pipeline_runner
-    from src.core.evidence_extraction.api import (
-        EvidenceExtractionService,
-    )
-    from src.core.evidence_extraction.domain.field_profile import (
-        ExtractionProfile,
-    )
-    from src.core.cross_lingual_translation.api import (
-        TranslationService,
-    )
+    from src.core.source_fact_chain.api import SourceFactChainService
     from src.core.ingest_and_digitize_data.document_acquisition.service import (
         DocumentAcquisitionService,
     )
@@ -226,13 +218,8 @@ def wire_dependencies() -> None:
     )
     parse_orchestrator = DocumentParseOrchestrator(remote=remote_parser, local=_local_parser)
     parse_service = ParseDocumentService(parse_orchestrator)
-    translation_service = TranslationService(cfg=cfg)
     graph_rag_service = GraphRagService(_neo4j_repository) if _neo4j_repository is not None else None
-    extraction_service = EvidenceExtractionService(
-        cfg=cfg,
-        extraction_profile=ExtractionProfile.NONE,
-        graph_rag_service=graph_rag_service,
-    )
+    source_fact_chain = SourceFactChainService(cfg=cfg)
     standardization_service = EntityStandardizationService(
         cfg=cfg,
         graph_rag_service=graph_rag_service,
@@ -243,7 +230,7 @@ def wire_dependencies() -> None:
     phase_adapters = {
         "phase_1": Phase1Adapter(acquisition_service),
         "phase_2": Phase2Adapter(parse_service),
-        "phase_3": Phase3Adapter(translation_service, extraction_service),
+        "phase_3": Phase3Adapter(source_fact_chain),
         "phase_4": Phase4Adapter(standardization_service, session_factory),
     }
 

@@ -95,6 +95,24 @@ _BODY_END_PATTERNS = (
 _BLOCK_TEXT_COVERAGE_RATIO = 0.7
 
 
+def _row_fact_key(row: object) -> str:
+    """Stable fact identity across tracks for bilingual trace pairing.
+
+    Fact-chain rows carry ``source.span_id`` = ``"<track>-<fact_id>"``. Legacy
+    rows without a fact id fall back to one trace per field, preserving the
+    historical behavior.
+    """
+    payload = getattr(row, "active_payload", None) or {}
+    source = payload.get("source") if isinstance(payload, dict) else None
+    span_id = source.get("span_id") if isinstance(source, dict) else None
+    if isinstance(span_id, str) and span_id:
+        for prefix in ("original-", "translated-", "reconciled-"):
+            if span_id.startswith(prefix):
+                return span_id[len(prefix) :]
+        return span_id
+    return f"field:{getattr(row, 'field_id', '')}"
+
+
 def _coerce_str(value: Any) -> str | None:
     """Convert a payload value to a display string."""
     if value is None:
@@ -1287,11 +1305,11 @@ class SearchService:
 
         # Deduplicate by (field_id, track): keep the most recently updated row
         # to avoid "Duplicate track" warnings from the trace-building loop.
-        seen: dict[tuple[str, str], int] = {}
+        seen: dict[tuple[str, str, str], int] = {}
         deduped_rows = []
         for row in sorted(rows, key=lambda r: r.updated_at or "", reverse=True):
             track = (row.active_payload or {}).get("track", "original")
-            key = (row.field_id, track)
+            key = (row.field_id, track, _row_fact_key(row))
             if key not in seen:
                 seen[key] = 1
                 deduped_rows.append(row)
@@ -1404,13 +1422,16 @@ class SearchService:
             gene = parse_gene_from_group_id(group_id)
         if not variant and group_id:
             variant = parse_variant_from_group_id(group_id)
-        # Build traces by matching original/translated pairs per field_id
-        items_by_field: dict[str, list] = {}
+        # Build traces by matching original/translated pairs per fact identity.
+        # Fact-chain rows share one fact_id across tracks via source.span_id
+        # ("original-F-..." / "translated-F-..."); legacy rows without a fact
+        # id keep the historical one-trace-per-field behavior.
+        items_by_field: dict[tuple[str, str], list] = {}
         for row in rows:
-            items_by_field.setdefault(row.field_id, []).append(row)
+            items_by_field.setdefault((row.field_id, _row_fact_key(row)), []).append(row)
 
         traces: list[EvidenceTrackTrace] = []
-        for field_id, field_rows in items_by_field.items():
+        for (field_id, _), field_rows in items_by_field.items():
             original_row = None
             translated_row = None
             reconciled_row = None
