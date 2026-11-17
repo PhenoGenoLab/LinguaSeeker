@@ -88,6 +88,7 @@ docs/
 
 | 日期 | 标题 | 状态 |
 |------|------|------|
+| 2026-11-17 | [Pipeline 技术栈替换：LangGraph + AgentScope + ReMe](planned/2026-11-17-pipeline-agentscope-reme-migration.md) | planned |
 
 ## 归档计划
 
