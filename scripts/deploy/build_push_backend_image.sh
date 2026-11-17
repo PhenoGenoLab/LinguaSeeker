@@ -36,6 +36,7 @@ Required build artifacts:
   docker-artifacts/venv-bin.tar.gz
 
 Notes:
+  Build and push from a local machine. There is no cloud image-build workflow.
   Docker Hub repository visibility is controlled in Docker Hub settings.
   This script pushes the image; it cannot guarantee or change private visibility.
 USAGE

@@ -356,7 +356,7 @@ class TestCacheServiceLookup:
         assert result is not None
         assert result.source == "l1_redis"
         assert result.state.processing_run_id == sample_state.processing_run_id
-        mock_redis.get.assert_awaited_once_with("docproc:abc123")
+        mock_redis.get.assert_awaited_once_with("lingseeker:docproc:abc123")
 
     @pytest.mark.asyncio
     async def test_l1_miss_l2_hit_backfills_l1(self, cache_service, mock_redis, mock_session_factory, sample_state):
@@ -437,7 +437,7 @@ class TestCacheServiceWrite:
         # L1 write
         mock_redis.set.assert_awaited_once()
         args, kwargs = mock_redis.set.call_args
-        assert args[0] == "docproc:abc123"
+        assert args[0] == "lingseeker:docproc:abc123"
         assert kwargs.get("ex") is not None  # TTL set
 
     @pytest.mark.asyncio

@@ -59,13 +59,17 @@ git tag -a v1.0.0 -m "release: v1.0.0"
 git push origin v1.0.0
 ```
 
-Build both images from GitHub Actions:
+Build both images on a local machine and push to Docker Hub (no cloud image build):
 
-1. Run `build-backend` with `tag=v1.0.0`.
-2. Run `build-frontend` with `tag=v1.0.0`.
-3. Confirm both images exist in GHCR:
-   - `ghcr.io/[redacted-user]/lingua-seeker-backend:v1.0.0`
-   - `ghcr.io/[redacted-user]/lingua-seeker-frontend:v1.0.0`
+```bash
+./scripts/deploy/build_push_backend_image.sh --tag v1.0.0
+./scripts/deploy/build_push_frontend_image.sh --tag v1.0.0
+```
+
+Confirm both images exist on Docker Hub:
+
+- `docker.io/lanshi47/lingua-seeker-backend:v1.0.0`
+- `docker.io/lanshi47/lingua-seeker-frontend:v1.0.0`
 
 ## Staging Rollout
 

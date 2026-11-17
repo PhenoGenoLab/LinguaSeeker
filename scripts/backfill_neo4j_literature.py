@@ -199,7 +199,7 @@ async def main() -> None:
     session_factory = async_session_factory(engine)
 
     driver = build_neo4j_driver(cfg)
-    repository = Neo4jRepository(driver)
+    repository = Neo4jRepository(driver, database=cfg.neo4j.database)
     provider = Neo4jGraphProvider(repository)
 
     async with session_factory() as session:

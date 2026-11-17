@@ -238,8 +238,10 @@ class Neo4jConfig(BaseModel):
     uri: str = "bolt://localhost:7687"
     user: str = "neo4j"
     password: str = ""
+    # NOTE: community edition (5.26-community) supports a single user DB
+    # (`neo4j`). Cross-service isolation is instance-level via NEO4J_URI,
+    # not a separate database name (multi-DB is enterprise-only).
     database: str = "neo4j"
-    max_connection_pool_size: int = 10
 
 
 class WebSearchConfig(BaseModel):
@@ -462,6 +464,8 @@ class Settings(BaseSettings):
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"
     neo4j_password: str = ""
+    # Community edition supports a single user DB; cross-service isolation
+    # is instance-level via NEO4J_URI (multi-DB is enterprise-only).
     neo4j_database: str = "neo4j"
     neo4j_max_connection_pool_size: int = 10
 

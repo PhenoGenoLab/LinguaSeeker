@@ -45,7 +45,14 @@ def _create_index_if_missing(index_name: str, table_name: str, columns, **kwargs
 
 def _create_terminology_embeddings() -> None:
     if not _table_exists("terminology_embeddings"):
-        op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        # Same rule as add_term_embed_20260525: extension is DBA-provisioned.
+        op.execute(
+            "DO $$ BEGIN "
+            "IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') THEN "
+            "RAISE EXCEPTION 'pgvector extension \"vector\" is missing in database % "
+            "(ask the DBA to run: CREATE EXTENSION vector)', current_database(); "
+            "END IF; END $$"
+        )
         op.create_table(
             "terminology_embeddings",
             sa.Column("embedding_id", postgresql.UUID(as_uuid=True), nullable=False),

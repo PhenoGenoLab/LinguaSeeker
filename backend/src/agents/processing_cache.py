@@ -32,7 +32,7 @@ from src.dao.postgresql.models import DocumentProcessingCache
 
 # ── Constants ───────────────────────────────────────────────────────────────
 
-_CACHE_PREFIX = "docproc"
+_CACHE_PREFIX = "lingseeker:docproc"
 _L1_TTL_SECONDS = 3600  # 1 hour
 
 
