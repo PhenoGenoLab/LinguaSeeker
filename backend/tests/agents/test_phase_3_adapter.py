@@ -17,7 +17,7 @@ from src.agents.contracts import (
     SkipPhase4Reason,
     SourceType,
 )
-from src.agents.phase_3_adapter import Phase3Adapter
+from src.pipeline.graph.phases.phase_3 import Phase3Adapter
 from src.core.evidence_extraction.contracts import (
     DualEvidenceExtractionResult,
     ExtractionTarget,

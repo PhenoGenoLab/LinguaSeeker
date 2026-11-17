@@ -15,8 +15,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from src.agents.contracts import PhaseStatus, PipelineGraphState, PipelineMode, SourceType
-from src.agents.phase_1_adapter import Phase1Adapter
-from src.agents.phase_2_adapter import Phase2Adapter
+from src.pipeline.graph.phases.phase_1 import Phase1Adapter
+from src.pipeline.graph.phases.phase_2 import Phase2Adapter
 
 MARKDOWN = "# Title\n\nMECP2 c.473C>T pathogenic variant in proband."
 

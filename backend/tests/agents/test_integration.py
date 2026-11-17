@@ -13,7 +13,7 @@ from src.agents.contracts import (
     ParseOutput,
     SkipPhase4Reason,
 )
-from src.agents.orchestrator import PipelineOrchestrator
+from src.pipeline.graph.topology import PipelineOrchestrator
 from src.agents.concurrency import RetryablePhaseExecutor
 
 
