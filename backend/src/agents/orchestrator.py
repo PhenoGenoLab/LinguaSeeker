@@ -1,7 +1,7 @@
 """Main pipeline orchestrator using LangGraph.
 
 Architecture:
-- 4 phase adapter nodes (Phase 1 acquisition, 2 parsing, 3 translation+extraction, 4 standardization)
+- 4 phase adapter nodes (Phase 1 acquisition, 2 parsing, 3 source-fact chain, 4 standardization)
 - The interactive review layer (evidence review, chat, audit) is NOT a graph node —
   it operates via its own services (phase_5_factory.py)
 - After Phase 4 completes, pipeline_status is set to COMPLETED
@@ -47,7 +47,7 @@ REQUIRED_UPSTREAM: dict[int, list[int]] = {
 class PipelineOrchestrator:
     """LangGraph-based orchestrator coordinating 4 phases of evidence processing.
 
-    Flow: Phase 1 (acquire) -> Phase 2 (parse) -> Phase 3 (translate+extract)
+    Flow: Phase 1 (acquire) -> Phase 2 (parse) -> Phase 3 (source-fact chain)
     -> (skip Phase 4 if not relevant) -> COMPLETED
     The interactive review layer operates independently via its own services.
     """
@@ -213,7 +213,7 @@ class PipelineOrchestrator:
         return await self._execute_phase(self._adapters["phase_2"], state, "phase_2")
 
     async def _node_phase_3(self, state: PipelineGraphState) -> PipelineGraphState:
-        """Execute Phase 3: translation + evidence extraction."""
+        """Execute Phase 3: window -> source extraction -> verification -> fact English."""
         return await self._execute_phase(self._adapters["phase_3"], state, "phase_3")
 
     async def _node_phase_4(self, state: PipelineGraphState) -> PipelineGraphState:

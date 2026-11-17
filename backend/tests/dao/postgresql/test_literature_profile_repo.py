@@ -460,22 +460,6 @@ async def test_search_returns_items_and_total() -> None:
     assert len(items) == 1
 
     item = items[0]
-    expected_keys = {
-        "literature_profile_id",
-        "source_document_id",
-        "pmid",
-        "doi",
-        "title",
-        "review_status",
-        "overall_confidence",
-        "total_evidence_fields",
-        "found_count",
-        "evidence_group_count",
-        "gene",
-        "variant",
-        "disease",
-        "classification",
-    }
     assert item.literature_profile_id == str(profile_id)
     assert item.gene == "BRCA1"
     assert item.variant == "c.5266dupC"

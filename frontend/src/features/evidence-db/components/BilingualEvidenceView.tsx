@@ -492,6 +492,16 @@ export function BilingualEvidenceView({
   const hasTranslation = groupDetail
     ? hasTranslatedDocumentText(groupDetail)
     : false;
+  // The source-fact route translates facts, not whole documents. When no
+  // translated document exists, render the fact-level bilingual pairs that
+  // Phase 4 persisted as original/translated traces.
+  const factPairs = useMemo(
+    () =>
+      (groupDetail?.traces ?? []).filter(
+        (trace) => Boolean(trace.original_value?.trim()) || Boolean(trace.translated_value?.trim()),
+      ),
+    [groupDetail],
+  );
   // Build block-level highlights by searching evidence values in the
   // concatenated block text. Falls back from trace-based spans (often
   // empty) to value-based full-text search — same algorithm as
@@ -816,6 +826,52 @@ export function BilingualEvidenceView({
               />
             )}
           </div>
+
+          {!hasTranslation && factPairs.length > 0 && (
+            <div
+              style={{
+                borderRadius: 12,
+                border: "1px solid var(--color-border)",
+                backgroundColor: "var(--color-surface)",
+                padding: 16,
+              }}
+            >
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)", margin: "0 0 12px" }}>
+                {t("evidenceDb.bilingual.factComparison")}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {factPairs.map((pair) => (
+                  <div
+                    key={`${pair.canonical_evidence_id}:${pair.field_id}`}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12,
+                      borderTop: "1px solid var(--color-border)",
+                      paddingTop: 10,
+                    }}
+                  >
+                    <div>
+                      <p style={{ fontSize: 11, color: "var(--color-text-secondary)", margin: "0 0 4px" }}>
+                        {pair.field_name ?? pair.field_id} · {t("evidenceDb.bilingual.originalText")}
+                      </p>
+                      <p style={{ fontSize: 13, color: "var(--color-text-strong)", margin: 0, lineHeight: 1.6 }}>
+                        {pair.original_value ?? "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 11, color: "var(--color-text-secondary)", margin: "0 0 4px" }}>
+                        {pair.field_name ?? pair.field_id} · {t("evidenceDb.bilingual.translatedText")}
+                      </p>
+                      <p style={{ fontSize: 13, color: "var(--color-text-strong)", margin: 0, lineHeight: 1.6 }}>
+                        {pair.translated_value ?? "—"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

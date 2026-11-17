@@ -8,7 +8,7 @@ from datetime import datetime
 from enum import Enum
 
 from loguru import logger
-from typing import Any
+from typing import Any, NoReturn
 
 from pydantic import BaseModel, Field
 
@@ -309,7 +309,7 @@ def classify_phase_error(
     phase_num: int,
     error: Exception,
     retryable_errors: tuple[type, ...],
-) -> None:
+) -> NoReturn:
     """Classify and re-raise an error as RetryablePhaseError or PermanentPhaseError.
 
     Call this in a phase adapter's ``except Exception`` block to convert
@@ -358,7 +358,11 @@ class ParseOutput(BaseModel):
 
 
 class TranslationExtractionOutput(BaseModel):
-    """Typed output from Phase 3: translation + evidence extraction."""
+    """Typed output from Phase 3: source fact chain + evidence projection.
+
+    ``translated_text``/``translated_blocks`` stay optional because the
+    source-fact route translates facts, not full documents.
+    """
 
     output_dir: str
     original_json_path: str
@@ -369,6 +373,9 @@ class TranslationExtractionOutput(BaseModel):
     translated_text: str | None = None  # Persisted translated text
     original_blocks: list[dict] | None = None  # Structured ContentBlock dicts for rendering
     translated_blocks: list[dict] | None = None
+    bilingual_rows_path: str | None = None  # Fact-level bilingual rows
+    source_facts_path: str | None = None  # Source facts (JSONL)
+    chain_run_path: str | None = None  # Full typed chain run
 
 
 class StandardizationOutput(BaseModel):

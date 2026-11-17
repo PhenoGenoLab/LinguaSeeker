@@ -364,6 +364,55 @@ async def test_get_group_detail_pivots_distribution_and_traces():
 
 
 @pytest.mark.asyncio
+async def test_get_group_detail_pairs_repeated_fields_by_fact_id():
+    """Two facts sharing one field_id must produce two bilingual traces."""
+    source_document_id = uuid4()
+    group_id = "gene=BRCA1|variant=__missing__"
+    rows = []
+    for fact_suffix, original, english in (("a", "hypotonia", "hypotonia"), ("b", "seizures", "seizures")):
+        for track, value in (("original", original), ("translated", english)):
+            rows.append(
+                _cei(
+                    canonical_evidence_id=uuid4(),
+                    source_document_id=source_document_id,
+                    field_id="B.clinical_phenotypes",
+                    review_status="provisional",
+                    current_best_confidence=Decimal("0.9000"),
+                    active_payload={
+                        "group_id": group_id,
+                        "field_name": "Clinical phenotypes",
+                        "category": "B",
+                        "value": value,
+                        "track": track,
+                        "source": {
+                            "span_id": f"{track}-F-{fact_suffix}",
+                            "text_snippet": original,
+                            "start_offset": 0,
+                            "end_offset": len(original),
+                            "page": 1,
+                        },
+                    },
+                )
+            )
+    service = SearchService(
+        _FakeSession(
+            [
+                _FakeResult(rows=rows),
+                _FakeResult(scalars=[]),
+                _FakeResult(rows=[({}, None, None, None, None)]),
+                _FakeResult(scalar=None),
+            ]
+        )
+    )
+
+    detail = await service.get_group_detail(group_id=group_id)
+
+    assert len(detail.traces) == 2
+    pairs = sorted((trace.original_value, trace.translated_value) for trace in detail.traces)
+    assert pairs == [("hypotonia", "hypotonia"), ("seizures", "seizures")]
+
+
+@pytest.mark.asyncio
 async def test_get_group_detail_ignores_stale_untranslated_db_render_payload(tmp_path):
     """Detail view should not display source-language DB cache as translated English."""
     source_document_id = uuid4()

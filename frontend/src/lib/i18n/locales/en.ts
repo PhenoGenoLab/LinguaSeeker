@@ -423,6 +423,7 @@ const en = {
   "evidenceDb.bilingual.breadcrumb": "Evidence DB",
   "evidenceDb.bilingual.litFallback": "Literature",
   "evidenceDb.bilingual.originalText": "Original Text",
+  "evidenceDb.bilingual.factComparison": "Fact-level bilingual view",
   "evidenceDb.bilingual.translatedText": "Translated Text (English)",
   "evidenceDb.bilingual.syncScroll": "Sync scrolling",
   "evidenceDb.bilingual.sourceSpan": "Source span",

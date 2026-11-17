@@ -18,8 +18,7 @@ def _patch_wire_deps(stack: ExitStack):
         "src.core.ingest_and_digitize_data.document_acquisition.service.DocumentAcquisitionService",
         "src.core.ingest_and_digitize_data.parse_document.orchestrator.DocumentParseOrchestrator",
         "src.core.ingest_and_digitize_data.parse_document.service.ParseDocumentService",
-        "src.core.cross_lingual_translation.api.TranslationService",
-        "src.core.evidence_extraction.api.EvidenceExtractionService",
+        "src.core.source_fact_chain.api.SourceFactChainService",
         "src.core.standardize_entities_and_align_knowledge.api.EntityStandardizationService",
         "src.agents.orchestrator.PipelineOrchestrator",
         "src.agents.concurrency.PipelineSemaphore",
@@ -36,6 +35,7 @@ def _patch_wire_deps(stack: ExitStack):
         "src.api.wiring.get_session_factory",
         "src.api.wiring.build_async_engine",
         "src.api.wiring.async_session_factory",
+        "src.api.wiring._configure_lit_acquisition",
         "src.api.wiring.build_redis_client",
         "src.api.wiring.build_neo4j_driver",
         "src.api.wiring.Neo4jRepository",
@@ -162,7 +162,10 @@ def test_wire_dependencies_initializes_session_factory_before_use():
             "src.api.v1.pipeline.set_pipeline_runner",
             "src.api.v1.pipeline.set_job_queue",
             "src.api.deps.set_phase5_factory",
+            "src.api.wiring._configure_lit_acquisition",
             "src.api.wiring.build_redis_client",
+            "src.api.wiring.build_neo4j_driver",
+            "src.api.wiring.Neo4jRepository",
         ]:
             stack.enter_context(patch(mod_path))
         stack.enter_context(patch(_REMOTE_PARSER_MOD))

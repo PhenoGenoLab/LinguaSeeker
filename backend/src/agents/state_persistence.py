@@ -170,6 +170,13 @@ async def _persist_phase3_document_text(
         original_blocks=sd.original_blocks or (p3.original_blocks if p3 is not None else None),
         translated_blocks=sd.translated_blocks,
     )
+    # The source-fact route retires whole-document translation: clearing a previous
+    # full translation on a Phase 3 rerun prevents stale bilingual display payloads.
+    if replace_existing and p3.chain_run_path and not p3.translated_text:
+        sd.translated_text = None
+        sd.translated_blocks = []
+        existing_translated_is_stale = False
+        existing_translated_blocks_are_stale = False
     needs_original = replace_existing or not sd.original_text
     needs_translated = replace_existing or not sd.translated_text or existing_translated_is_stale
     if needs_original or needs_translated:
