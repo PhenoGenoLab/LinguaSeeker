@@ -69,6 +69,11 @@ class StageRouterProvider:
     def stats(self) -> ShadowStats:
         return self._stats
 
+    @property
+    def stages(self) -> tuple[str, ...]:
+        """Stage names handled by AgentScope skills."""
+        return tuple(self._skills)
+
     def invoke(self, *, stage: str, model_id: str, prompt: str, payload: str) -> str:
         skill = self._skills.get(stage)
         if skill is None:
