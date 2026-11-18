@@ -201,6 +201,18 @@ def test_terminology_shared_does_not_import_pipeline() -> None:
     )
 
 
+def test_dormant_and_shared_core_do_not_import_pipeline() -> None:
+    """graph_rag/evidence_extraction/translation must never depend on the pipeline layer."""
+    for name in ("graph_rag", "evidence_extraction", "cross_lingual_translation"):
+        root = SRC_ROOT / "core" / name
+        assert _iter_python_files(root), f"no files to scan under {root}"
+        _assert_no_imports(
+            root,
+            ("src.pipeline",),
+            f"src/core/{name} must not import src.pipeline (reverse dependency)",
+        )
+
+
 def test_pipeline_tree_does_not_import_legacy_modules() -> None:
     _assert_no_imports(
         PIPELINE_ROOT,
