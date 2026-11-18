@@ -98,6 +98,28 @@ async def test_successful_phase_records_completed_node() -> None:
 
 
 @pytest.mark.asyncio
+async def test_full_run_records_one_node_per_phase() -> None:
+    state = _state()
+    for phase in range(1, 5):
+        setattr(
+            state,
+            f"phase_{phase}_status",
+            PhaseStatusDetail.complete(started_at="2026-11-18T10:00:00", summary={"phase": phase}),
+        )
+    retry = MagicMock(execute_with_retry=AsyncMock(return_value=state))
+    orchestrator = _orchestrator(retry)
+
+    updated = await orchestrator.run(state)
+
+    assert updated.pipeline_status.value == "completed"
+    for phase in range(1, 5):
+        summary = getattr(updated, f"phase_{phase}_status").summary
+        assert summary["phase"] == phase
+        assert [node["node"] for node in summary["nodes"]] == [f"phase_{phase}"]
+        assert summary["nodes"][0]["status"] == "completed"
+
+
+@pytest.mark.asyncio
 async def test_failed_phase_records_failed_node() -> None:
     retry = MagicMock(execute_with_retry=AsyncMock(side_effect=PermanentPhaseError("boom", phase=1)))
     orchestrator = _orchestrator(retry)
