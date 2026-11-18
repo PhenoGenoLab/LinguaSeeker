@@ -960,7 +960,7 @@ mcp==2.3.0            ➕ 新增
 | 阶段 | 状态 | 交付 | 验证（CI 等价环境） |
 |---|---|---|---|
 | 0 | 完成 | 骨架、import 基线、边界测试、inventory 脚本 | 边界测试通过 |
-| 1 | **部分完成** | `graph/` 目录迁移、orchestrator + 4 adapter 迁入；窗口子图、`graph/nodes.py`、`graph/progress.py` **未实现** | 250→310 相关测试通过 |
+| 1 | **部分完成** | `graph/` 目录迁移、orchestrator + 4 adapter 迁入、节点级进度写入 `summary.nodes`（`graph/progress.py`）；窗口 `Send` fan-out 与 `graph/nodes.py` **未实现** | 202→380 相关测试通过 |
 | 2 | 完成（代码） | fact_chain 迁移、AgentScope extract、`legacy/shadow/agentscope` 开关、多 key 轮换 | 288 passed / 88.15% |
 | 3 | 完成（代码） | acquisition/parsing 迁移、verify/translate skill、`SkillError→ProviderError` | 294 passed / 88.55%；ingest 154 |
 | 4a | 完成（代码） | ReMe HTTP 客户端/registry、记忆注入、counts-only 摘要、默认关闭 | 308 passed / 88.84% |
@@ -976,13 +976,13 @@ mcp==2.3.0            ➕ 新增
 3. ReMe 配置使用 `pipeline.memory.*`（env `PIPELINE_MEMORY_*`），而非 `pipeline.mcp.reme.*`：沿用仓库扁平配置约定。
 4. 单一 `pipeline.agent_runtime` 覆盖 Phase 3 三个阶段，不引入按节点开关（回滚粒度已足够）。
 5. Acquisition/Parse/Standardize 的“薄 agent 封装”未做：无 LLM 决策，按 `AGENTS.md` §20.2 不引入无行为转发层。
-6. 阶段 1 的拓扑增强（窗口 `Send` fan-out、`graph/nodes.py`、`graph/progress.py`、`summary.nodes`）未实现：缺少黄金文档基线，无法验证“并发与串行语义一致”，不在无验证条件下改 runner。
+6. 阶段 1 的窗口 `Send` fan-out 与 `graph/nodes.py` 未实现：skill 已通过 `Provider` 协议挂载，独立节点适配器无额外价值；窗口并行缺少黄金文档基线，无法验证“并发与串行语义一致”。节点级进度（`summary.nodes`）已实现。
 
 **仍未执行的验收项**
 
 - 真实模型影子对照：阶段 2/3 的成本（≤+15%）、P95 延迟（≤+20%）与逐条差异归因，需要真实 API 凭证与黄金文档。
 - ReMe 服务联调与 50–100 条查询的召回评测；`auto_resource` 接入 Phase 2 产物。
-- 阶段 1 拓扑增强的等价性验收（同黄金文档）。
+- 阶段 1 窗口并行的等价性验收（同黄金文档）；节点级进度已交付。
 
 ---
 
