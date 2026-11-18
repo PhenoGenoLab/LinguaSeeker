@@ -5,17 +5,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.core.cross_lingual_translation.contracts import (
+from src.core.phases.cross_lingual_translation.contracts import (
     TranslationResult,
 )
-from src.core.cross_lingual_translation.api import TranslationService
+from src.core.phases.cross_lingual_translation.api import TranslationService
 # The pipeline obtains LLM clients through ``create_llm_client``
 # (src/utils/llm_adapter.py).  The translator's clients (create_llm /
 # create_json_llm in providers.py) call the factory name bound in the
 # providers module, while the formatter's client is built via a
 # function-local import inside TranslationService.__init__ that resolves
 # the factory on the llm_adapter module itself.
-_PROVIDERS_FACTORY = "src.core.cross_lingual_translation.translate.providers.create_llm_client"
+_PROVIDERS_FACTORY = "src.core.phases.cross_lingual_translation.translate.providers.create_llm_client"
 _ADAPTER_FACTORY = "src.utils.llm_adapter.create_llm_client"
 
 

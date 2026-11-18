@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     DocumentEvidenceMap,
     EvidenceItem,
@@ -16,7 +16,7 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.domain.field_profile import (
+from src.core.phases.evidence_extraction.domain.field_profile import (
     DATASET_D_FIELDS,
     ExtractionProfile,
     build_profiled_catalog,
@@ -24,15 +24,15 @@ from src.core.evidence_extraction.domain.field_profile import (
     resolve_channel_profile_fields,
     resolve_profile_fields,
 )
-from src.core.evidence_extraction.domain.channel_contracts import (
+from src.core.phases.evidence_extraction.domain.channel_contracts import (
     DocumentChannelClassification,
     DocumentEvidenceChannel,
 )
-from src.core.evidence_extraction.domain.catalog import (
+from src.core.phases.evidence_extraction.domain.catalog import (
     CATALOG_GROUPS,
     EVIDENCE_FIELD_SPECS,
 )
-from src.core.evidence_extraction.stages.clinical_context import (
+from src.core.phases.evidence_extraction.stages.clinical_context import (
     ClinicalContextStage,
 )
 
@@ -249,7 +249,7 @@ def test_resolve_profile_unknown_raises():
 def test_default_service_does_not_use_dataset_d_fields():
     """EvidenceExtractionService default must extract all non-curation fields,
     NOT silently restrict to DATASET_D_FIELDS."""
-    from src.core.evidence_extraction.api import (
+    from src.core.phases.evidence_extraction.api import (
         EvidenceExtractionService,
     )
     from unittest.mock import patch, MagicMock
@@ -257,10 +257,10 @@ def test_default_service_does_not_use_dataset_d_fields():
     # Patch at the module level to avoid real LLM initialization
     with (
         patch(
-            "src.core.evidence_extraction.api.LangChainEvidenceProvider",
+            "src.core.phases.evidence_extraction.api.LangChainEvidenceProvider",
         ),
         patch(
-            "src.core.evidence_extraction.api.EvidenceExtractionConfigContext",
+            "src.core.phases.evidence_extraction.api.EvidenceExtractionConfigContext",
         ),
     ):
         # Default (NONE) should pass None to the workflow (no field restriction)
@@ -277,17 +277,17 @@ def test_default_service_does_not_use_dataset_d_fields():
 def test_service_with_dataset_d_profile_restricts_fields():
     """When explicitly selecting DATASET_D_PUBLATION, the workflow should
     use the restricted field set."""
-    from src.core.evidence_extraction.api import (
+    from src.core.phases.evidence_extraction.api import (
         EvidenceExtractionService,
     )
     from unittest.mock import patch, MagicMock
 
     with (
         patch(
-            "src.core.evidence_extraction.api.LangChainEvidenceProvider",
+            "src.core.phases.evidence_extraction.api.LangChainEvidenceProvider",
         ),
         patch(
-            "src.core.evidence_extraction.api.EvidenceExtractionConfigContext",
+            "src.core.phases.evidence_extraction.api.EvidenceExtractionConfigContext",
         ),
     ):
         service = EvidenceExtractionService(

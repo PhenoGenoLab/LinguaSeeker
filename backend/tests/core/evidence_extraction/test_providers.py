@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 from langchain_core.exceptions import OutputParserException
 from pydantic import BaseModel
 
-from src.core.evidence_extraction.config_context import (
+from src.core.phases.evidence_extraction.config_context import (
     EvidenceExtractionConfigContext,
 )
-from src.core.evidence_extraction.providers import (
+from src.core.phases.evidence_extraction.providers import (
     EvidenceModelTier,
     LangChainEvidenceProvider,
 )
@@ -34,7 +34,7 @@ def test_provider_uses_strong_model_for_strong_tier():
     structured.invoke.return_value = DemoSchema(answer="ok")
     client.with_structured_output.return_value = structured
     with patch(
-        "src.core.evidence_extraction.providers.create_llm_client",
+        "src.core.phases.evidence_extraction.providers.create_llm_client",
         return_value=client,
     ) as create_client:
         provider = LangChainEvidenceProvider(ctx)
@@ -74,7 +74,7 @@ def test_provider_uses_json_mode_when_requested():
     structured.invoke.return_value = DemoSchema(answer="ok")
     client.with_structured_output.return_value = structured
     with patch(
-        "src.core.evidence_extraction.providers.create_llm_client",
+        "src.core.phases.evidence_extraction.providers.create_llm_client",
         return_value=client,
     ):
         provider = LangChainEvidenceProvider(ctx)
@@ -110,7 +110,7 @@ def test_provider_falls_back_to_plain_json_when_response_format_is_unsupported()
     client.invoke.return_value = fallback_message
     client.with_structured_output.return_value = structured
     with patch(
-        "src.core.evidence_extraction.providers.create_llm_client",
+        "src.core.phases.evidence_extraction.providers.create_llm_client",
         return_value=client,
     ):
         provider = LangChainEvidenceProvider(ctx)
@@ -146,7 +146,7 @@ def test_provider_falls_back_to_plain_json_when_structured_parser_fails():
     client.invoke.return_value = fallback_message
     client.with_structured_output.return_value = structured
     with patch(
-        "src.core.evidence_extraction.providers.create_llm_client",
+        "src.core.phases.evidence_extraction.providers.create_llm_client",
         return_value=client,
     ):
         provider = LangChainEvidenceProvider(ctx)
@@ -179,7 +179,7 @@ def test_provider_fallback_validates_list_schema():
     fallback_message.content = '[{"answer": "ok"}]'
     client.invoke.return_value = fallback_message
     with patch(
-        "src.core.evidence_extraction.providers.create_llm_client",
+        "src.core.phases.evidence_extraction.providers.create_llm_client",
         return_value=client,
     ):
         provider = LangChainEvidenceProvider(ctx)
@@ -215,7 +215,7 @@ def test_provider_fallback_repairs_invalid_json_backslash_escapes():
     client.invoke.return_value = fallback_message
     client.with_structured_output.return_value = structured
     with patch(
-        "src.core.evidence_extraction.providers.create_llm_client",
+        "src.core.phases.evidence_extraction.providers.create_llm_client",
         return_value=client,
     ):
         provider = LangChainEvidenceProvider(ctx)
@@ -248,7 +248,7 @@ def test_provider_fallback_reasks_llm_to_repair_invalid_json():
     repaired_message.content = '[{"answer": "ok"}]'
     client.invoke.side_effect = [invalid_message, repaired_message]
     with patch(
-        "src.core.evidence_extraction.providers.create_llm_client",
+        "src.core.phases.evidence_extraction.providers.create_llm_client",
         return_value=client,
     ):
         provider = LangChainEvidenceProvider(ctx)

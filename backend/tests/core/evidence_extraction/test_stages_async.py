@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.core.evidence_extraction.domain.catalog import CATALOG_GROUPS
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.domain.catalog import CATALOG_GROUPS
+from src.core.phases.evidence_extraction.contracts import (
     DocumentEvidenceMap,
     EvidenceItem,
     EvidenceStatus,
@@ -18,14 +18,14 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.stages.catalog_extraction import (
+from src.core.phases.evidence_extraction.stages.catalog_extraction import (
     CatalogExtractionError,
     CatalogExtractionStage,
 )
-from src.core.evidence_extraction.stages.evidence_map import (
+from src.core.phases.evidence_extraction.stages.evidence_map import (
     RelevanceScanStage,
 )
-from src.core.evidence_extraction.stages.special_evidence import (
+from src.core.phases.evidence_extraction.stages.special_evidence import (
     SpecialEvidenceStage,
 )
 
@@ -63,7 +63,7 @@ async def test_relevance_scan_async_runs_chunks_concurrently() -> None:
     stage = RelevanceScanStage(provider=mock_provider)
 
     with patch(
-        "src.core.evidence_extraction.stages.evidence_map.build_text_prompt_chunks",
+        "src.core.phases.evidence_extraction.stages.evidence_map.build_text_prompt_chunks",
         return_value=[
             MagicMock(index=1, total=2, text="chunk1"),
             MagicMock(index=2, total=2, text="chunk2"),
@@ -101,7 +101,7 @@ async def test_catalog_extraction_async_runs_chunks_concurrently() -> None:
     stage = CatalogExtractionStage(provider=mock_provider)
 
     with patch(
-        "src.core.evidence_extraction.stages.catalog_extraction.build_block_prompt_chunks",
+        "src.core.phases.evidence_extraction.stages.catalog_extraction.build_block_prompt_chunks",
         return_value=[
             MagicMock(index=1, total=2, text="c1", total_tokens=100),
             MagicMock(index=2, total=2, text="c2", total_tokens=100),
@@ -134,7 +134,7 @@ async def test_catalog_extraction_async_scopes_target_catalog_to_eligible_fields
     stage = CatalogExtractionStage(provider=mock_provider)
 
     with patch(
-        "src.core.evidence_extraction.stages.catalog_extraction.build_block_prompt_chunks",
+        "src.core.phases.evidence_extraction.stages.catalog_extraction.build_block_prompt_chunks",
         return_value=[
             MagicMock(
                 index=1,
@@ -171,7 +171,7 @@ async def test_special_evidence_async_runs_chunks_concurrently() -> None:
     stage = SpecialEvidenceStage(provider=mock_provider)
 
     with patch(
-        "src.core.evidence_extraction.stages.special_evidence.build_block_prompt_chunks",
+        "src.core.phases.evidence_extraction.stages.special_evidence.build_block_prompt_chunks",
         return_value=[
             MagicMock(index=1, total=2, text="c1", total_tokens=100),
             MagicMock(index=2, total=2, text="c2", total_tokens=100),
@@ -204,7 +204,7 @@ async def test_stage_async_survives_chunk_failure() -> None:
     stage = RelevanceScanStage(provider=mock_provider)
 
     with patch(
-        "src.core.evidence_extraction.stages.evidence_map.build_text_prompt_chunks",
+        "src.core.phases.evidence_extraction.stages.evidence_map.build_text_prompt_chunks",
         return_value=[
             MagicMock(index=1, total=2, text="chunk1"),
             MagicMock(index=2, total=2, text="chunk2"),
@@ -226,7 +226,7 @@ async def test_relevance_scan_raises_when_all_chunks_fail() -> None:
     stage = RelevanceScanStage(provider=mock_provider)
 
     with patch(
-        "src.core.evidence_extraction.stages.evidence_map.build_text_prompt_chunks",
+        "src.core.phases.evidence_extraction.stages.evidence_map.build_text_prompt_chunks",
         return_value=[
             MagicMock(index=1, total=2, text="chunk1"),
             MagicMock(index=2, total=2, text="chunk2"),
@@ -245,7 +245,7 @@ async def test_catalog_extraction_raises_when_all_chunks_fail() -> None:
     stage = CatalogExtractionStage(provider=mock_provider)
 
     with patch(
-        "src.core.evidence_extraction.stages.catalog_extraction.build_block_prompt_chunks",
+        "src.core.phases.evidence_extraction.stages.catalog_extraction.build_block_prompt_chunks",
         return_value=[
             MagicMock(index=1, total=2, text="c1", total_tokens=100),
             MagicMock(index=2, total=2, text="c2", total_tokens=100),
@@ -284,7 +284,7 @@ async def test_catalog_extraction_returns_partial_when_majority_fail() -> None:
     stage = CatalogExtractionStage(provider=mock_provider)
 
     with patch(
-        "src.core.evidence_extraction.stages.catalog_extraction.build_block_prompt_chunks",
+        "src.core.phases.evidence_extraction.stages.catalog_extraction.build_block_prompt_chunks",
         return_value=[
             MagicMock(index=1, total=3, text="c1", total_tokens=100),
             MagicMock(index=2, total=3, text="c2", total_tokens=100),
@@ -326,7 +326,7 @@ async def test_catalog_extraction_minority_failure_still_returns() -> None:
     stage = CatalogExtractionStage(provider=mock_provider)
 
     with patch(
-        "src.core.evidence_extraction.stages.catalog_extraction.build_block_prompt_chunks",
+        "src.core.phases.evidence_extraction.stages.catalog_extraction.build_block_prompt_chunks",
         return_value=[
             MagicMock(index=1, total=3, text="c1", total_tokens=100),
             MagicMock(index=2, total=3, text="c2", total_tokens=100),

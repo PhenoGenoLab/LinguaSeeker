@@ -1,10 +1,10 @@
 """Tests for LanguageRouter."""
 
-from src.core.cross_lingual_translation.contracts import (
+from src.core.phases.cross_lingual_translation.contracts import (
     FormattedDocument,
     PipelineState,
 )
-from src.core.cross_lingual_translation.router import LanguageRouter
+from src.core.phases.cross_lingual_translation.router import LanguageRouter
 
 
 def test_route_english_document():

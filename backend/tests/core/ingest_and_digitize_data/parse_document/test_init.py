@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from src.core.ingest_and_digitize_data.parse_document import (
+from src.core.phases.ingest_and_digitize_data.parse_document import (
     create_parse_service,
     ParseDocumentService,
 )
@@ -40,7 +40,7 @@ def test_create_parse_service_with_config():
 
 def test_exports():
     """Test that all expected names are exported."""
-    from src.core.ingest_and_digitize_data.parse_document import __all__
+    from src.core.phases.ingest_and_digitize_data.parse_document import __all__
 
     assert "ParseDocumentService" in __all__
     assert "create_parse_service" in __all__
@@ -55,7 +55,7 @@ def test_exports():
 
 
 def test_batch_contracts_exported():
-    from src.core.ingest_and_digitize_data.parse_document import (
+    from src.core.phases.ingest_and_digitize_data.parse_document import (
         MinerUBatchStatus,
         MinerULocalBatchOptions,
         MinerULocalBatchParseResult,

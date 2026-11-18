@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceExtractionState,
     EvidenceItem,
     EvidenceStatus,
@@ -20,7 +20,7 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.workflow import (
+from src.core.phases.evidence_extraction.workflow import (
     _resolve_article_language,
     _stamp_language,
     EvidenceExtractionWorkflow,

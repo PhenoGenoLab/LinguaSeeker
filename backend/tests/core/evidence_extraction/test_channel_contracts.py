@@ -7,10 +7,10 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from src.core.evidence_extraction.domain.catalog import (
+from src.core.phases.evidence_extraction.domain.catalog import (
     EVIDENCE_FIELD_SPECS,
 )
-from src.core.evidence_extraction.domain.channel_contracts import (
+from src.core.phases.evidence_extraction.domain.channel_contracts import (
     ChannelFieldEligibility,
     DocumentChannelClassification,
     DocumentEvidenceChannel,

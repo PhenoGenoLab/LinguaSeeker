@@ -1,18 +1,18 @@
 import pytest
 
-from src.core.evidence_extraction.domain.catalog import (
+from src.core.phases.evidence_extraction.domain.catalog import (
     CATALOG_GROUPS,
     EVIDENCE_FIELD_SPECS,
 )
-from src.core.evidence_extraction.domain.channel_contracts import (
+from src.core.phases.evidence_extraction.domain.channel_contracts import (
     DocumentChannelClassification,
     DocumentEvidenceChannel,
 )
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     DocumentEvidenceMap,
     ExtractionTarget,
 )
-from src.core.evidence_extraction.domain.field_eligibility import (
+from src.core.phases.evidence_extraction.domain.field_eligibility import (
     FieldEligibilityDecision,
     FieldEligibilityPolicy,
 )

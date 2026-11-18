@@ -1,5 +1,5 @@
 import pytest
-from src.core.cross_lingual_translation.translate.validator import (
+from src.core.phases.cross_lingual_translation.translate.validator import (
     validate_translation_output,
     validate_segment,
     summarize_validation_error,

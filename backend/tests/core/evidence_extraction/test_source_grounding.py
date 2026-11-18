@@ -1,4 +1,4 @@
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     EvidenceItem,
     EvidenceStatus,
@@ -9,7 +9,7 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.core import SourceGrounder
+from src.core.phases.evidence_extraction.core import SourceGrounder
 
 
 def _doc() -> TrackDocument:

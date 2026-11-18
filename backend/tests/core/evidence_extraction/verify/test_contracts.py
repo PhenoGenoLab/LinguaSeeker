@@ -6,7 +6,7 @@ import dataclasses
 
 import pytest
 
-from src.core.evidence_extraction.verify.contracts import (
+from src.core.phases.evidence_extraction.verify.contracts import (
     EvidenceVerificationInput,
     EvidenceVerificationResult,
     RelationshipLabel,

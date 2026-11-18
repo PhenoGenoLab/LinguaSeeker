@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     DocumentEvidenceMap,
     EvidenceItem,
@@ -17,7 +17,7 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.stages.catalog_extraction import (
+from src.core.phases.evidence_extraction.stages.catalog_extraction import (
     CatalogExtractionStage,
 )
 

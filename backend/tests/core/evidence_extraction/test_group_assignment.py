@@ -1,4 +1,4 @@
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     EvidenceItem,
     EvidenceStatus,
@@ -7,7 +7,7 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.core import GroupAssigner
+from src.core.phases.evidence_extraction.core import GroupAssigner
 
 
 def _item(field_id: str, value: str, block_index: int = 0) -> EvidenceItem:

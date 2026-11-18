@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.core.standardize_entities_and_align_knowledge.variant_id import (
+from src.core.phases.standardize_entities_and_align_knowledge.variant_id import (
     make_internal_variant_id,
 )
 

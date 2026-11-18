@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceItem,
     EvidenceStatus,
     SourceLocation,
     SourcePrecision,
     Track,
 )
-from src.core.evidence_extraction.reconcile.contracts import (
+from src.core.phases.evidence_extraction.reconcile.contracts import (
     CandidateScore,
 )
-from src.core.evidence_extraction.reconcile.features import (
+from src.core.phases.evidence_extraction.reconcile.features import (
     CandidateFeatureVector,
     extract_features,
 )

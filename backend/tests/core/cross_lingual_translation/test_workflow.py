@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
 
-from src.core.cross_lingual_translation.config_context import TranslationConfigContext
-from src.core.cross_lingual_translation.api import TranslationService
+from src.core.phases.cross_lingual_translation.config_context import TranslationConfigContext
+from src.core.phases.cross_lingual_translation.api import TranslationService
 
 
 @pytest.fixture
@@ -116,7 +116,7 @@ def test_config_context_from_config_default_temperature():
 
 def test_translation_service_save(tmp_path):
     """TranslationService.save() persists result and returns output."""
-    from src.core.cross_lingual_translation.contracts import TranslationResult
+    from src.core.phases.cross_lingual_translation.contracts import TranslationResult
 
     cfg = MagicMock()
     cfg.llm.model = "test-model"
@@ -152,7 +152,7 @@ def test_translation_service_save(tmp_path):
 
 def test_translation_service_save_with_images(tmp_path):
     """TranslationService.save() forwards image_paths to persistence."""
-    from src.core.cross_lingual_translation.contracts import TranslationResult
+    from src.core.phases.cross_lingual_translation.contracts import TranslationResult
 
     # Create fake source images
     src_dir = tmp_path / "src"

@@ -15,16 +15,16 @@ from typing import Any
 
 from loguru import logger
 
-from src.core.evidence_extraction.contracts import DualEvidenceExtractionResult
+from src.core.phases.evidence_extraction.contracts import DualEvidenceExtractionResult
 
-from src.core.tools.fact_chain.contracts import (
+from src.core.shared.tools.fact_chain.contracts import (
     ChainConfig,
     ChainRun,
     PromptVersions,
     SourceDocument,
     sha256_text,
 )
-from src.core.tools.fact_chain.projection import project_dual_result, supported_facts
+from src.core.shared.tools.fact_chain.projection import project_dual_result, supported_facts
 from src.pipeline.skills.fact_chain.prompts import PRESENTATION_VERSION, current_prompt_versions
 from src.pipeline.skills.fact_chain.runner import ChainRunner
 from src.pipeline.skills.runtime.llm import LangChainChainProvider, Provider

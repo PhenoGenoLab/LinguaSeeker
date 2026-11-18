@@ -2,5 +2,5 @@
 
 Import boundary: skills must not import database drivers or ORM/session
 modules (SQLAlchemy, Neo4j, asyncpg, psycopg, sqlite3, ``src.dao``).  All reads
-and writes go through ``src.core.tools`` or the outer service layer.
+and writes go through ``src.core.shared.tools`` or the outer service layer.
 """

@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.auth import get_current_account
 from src.api.deps import get_db_session
-from src.core.auth.contracts import AuthContext
+from src.core.foundation.auth.contracts import AuthContext
 from src.dao.postgresql import document_annotation_repo as repo
 
 # Candidate image root directories (project-relative). MinerU extracts

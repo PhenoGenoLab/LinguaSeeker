@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.auth import get_current_account
 from src.api.deps import get_db_session, get_phase5_factory
-from src.core.auth.contracts import AuthContext
-from src.core.visualize_evidence_with_expert_in_loop.contracts import (
+from src.core.foundation.auth.contracts import AuthContext
+from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import (
     BilingualSpan,
     TrackSpan,
 )

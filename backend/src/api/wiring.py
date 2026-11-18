@@ -18,7 +18,7 @@ from src.dao.redis.connection import build_redis_client
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
     from src.agents.dispatcher import SingleJobDispatcher
-    from src.core.ingest_and_digitize_data.parse_document.local.parser import (
+    from src.core.phases.ingest_and_digitize_data.parse_document.local.parser import (
         MinerULocalParser,
     )
 
@@ -140,23 +140,23 @@ def wire_dependencies() -> None:
     from src.agents.state_persistence import SessionBoundStatePersistence
     from src.api.deps import set_neo4j_repository, set_phase5_factory
     from src.api.v1.pipeline import set_pipeline_runner
-    from src.core.graph_rag.api import GraphRagService
-    from src.core.ingest_and_digitize_data.document_acquisition.service import (
+    from src.core.phases.graph_rag.api import GraphRagService
+    from src.core.phases.ingest_and_digitize_data.document_acquisition.service import (
         DocumentAcquisitionService,
     )
-    from src.core.ingest_and_digitize_data.parse_document.local.parser import (
+    from src.core.phases.ingest_and_digitize_data.parse_document.local.parser import (
         MinerULocalParser,
     )
-    from src.core.ingest_and_digitize_data.parse_document.orchestrator import (
+    from src.core.phases.ingest_and_digitize_data.parse_document.orchestrator import (
         DocumentParseOrchestrator,
     )
-    from src.core.ingest_and_digitize_data.parse_document.remote.parser import (
+    from src.core.phases.ingest_and_digitize_data.parse_document.remote.parser import (
         MinerURemoteParser,
     )
-    from src.core.ingest_and_digitize_data.parse_document.service import (
+    from src.core.phases.ingest_and_digitize_data.parse_document.service import (
         ParseDocumentService,
     )
-    from src.core.standardize_entities_and_align_knowledge.api import (
+    from src.core.phases.standardize_entities_and_align_knowledge.api import (
         EntityStandardizationService,
     )
     from src.pipeline.graph.phases.phase_1 import Phase1Adapter

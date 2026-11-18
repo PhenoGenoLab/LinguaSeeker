@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from src.core.evidence_extraction.contracts import Track
-from src.core.evidence_extraction.prompts import (
+from src.core.phases.evidence_extraction.contracts import Track
+from src.core.phases.evidence_extraction.prompts import (
     get_special_evidence_prompt,
 )
 

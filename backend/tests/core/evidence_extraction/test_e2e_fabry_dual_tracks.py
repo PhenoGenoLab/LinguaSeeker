@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.core.evidence_extraction.api import EvidenceExtractionService
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.api import EvidenceExtractionService
+from src.core.phases.evidence_extraction.contracts import (
     DocumentEvidenceMap,
     EvidenceItem,
     EvidenceStatus,
@@ -15,7 +15,7 @@ from src.core.evidence_extraction.contracts import (
     SourceLocation,
     Track,
 )
-from src.core.evidence_extraction.workflow import EvidenceExtractionWorkflow
+from src.core.phases.evidence_extraction.workflow import EvidenceExtractionWorkflow
 
 
 _BACKEND_DIR = Path(__file__).resolve().parents[4]

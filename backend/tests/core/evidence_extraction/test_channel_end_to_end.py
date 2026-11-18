@@ -12,13 +12,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.core.evidence_extraction.domain.catalog import (
+from src.core.phases.evidence_extraction.domain.catalog import (
     EVIDENCE_FIELD_SPECS,
 )
-from src.core.evidence_extraction.domain.channel_contracts import (
+from src.core.phases.evidence_extraction.domain.channel_contracts import (
     DocumentEvidenceChannel,
 )
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     EvidenceExtractionResult,
     EvidenceExtractionStatus,
@@ -29,10 +29,10 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.stages.catalog_extraction import (
+from src.core.phases.evidence_extraction.stages.catalog_extraction import (
     CatalogExtractionStage,
 )
-from src.core.evidence_extraction.stages.evidence_map import (
+from src.core.phases.evidence_extraction.stages.evidence_map import (
     RelevanceScanStage,
 )
 
@@ -306,7 +306,7 @@ def test_status_semantics(
     assert decision is not None
 
     # Simulate backfill with eligibility info
-    from src.core.evidence_extraction.core import (
+    from src.core.phases.evidence_extraction.core import (
         EvidenceItemNormalizer,
     )
 
@@ -365,7 +365,7 @@ def test_json_round_trip(
     scan_result = scan_stage.run(document)
 
     # Create a result with channel metadata
-    from src.core.evidence_extraction.contracts import (
+    from src.core.phases.evidence_extraction.contracts import (
         FieldEligibilitySummary,
     )
 

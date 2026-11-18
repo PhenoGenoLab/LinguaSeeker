@@ -11,14 +11,14 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from src.core.evidence_extraction.domain.catalog import (
+from src.core.phases.evidence_extraction.domain.catalog import (
     EVIDENCE_FIELD_SPECS,
 )
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceItem,
     EvidenceStatus,
 )
-from src.core.evidence_extraction.core import (
+from src.core.phases.evidence_extraction.core import (
     EvidenceChainBuilder,
     EvidenceItemNormalizer,
 )

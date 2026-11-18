@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.core.graph_rag.core.qa_engine import GraphRagQaEngine, QaEngineConfig
+from src.core.phases.graph_rag.core.qa_engine import GraphRagQaEngine, QaEngineConfig
 from src.dao.neo4j.contracts import GraphEdge, GraphNode, SubgraphContext
 
 

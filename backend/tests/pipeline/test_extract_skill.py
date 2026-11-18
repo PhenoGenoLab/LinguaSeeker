@@ -15,7 +15,7 @@ from agentscope.message import Msg, TextBlock, ToolCallBlock
 from agentscope.model import ChatModelBase, ChatResponse
 
 from src.core.config import PipelineConfig
-from src.core.contracts.skill_io import SkillError, SkillRequest
+from src.core.shared.contracts.skill_io import SkillError, SkillRequest
 from src.pipeline.skills.fact_chain.extract import (
     ExtractSkill,
     StageRouterProvider,
@@ -24,7 +24,7 @@ from src.pipeline.skills.fact_chain.extract import (
 )
 from src.pipeline.skills.fact_chain.prompts import EXTRACT_PROMPT
 from src.pipeline.skills.runtime.llm import ProviderError
-from src.core.tools.fact_chain.contracts import canonical_json
+from src.core.shared.tools.fact_chain.contracts import canonical_json
 
 FACT = {
     "field_id": "B.clinical_phenotypes",

@@ -17,26 +17,26 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.core.cross_lingual_translation.contracts import (
+from src.core.phases.cross_lingual_translation.contracts import (
     ContentBlock,
     FormattedDocument,
 )
-from src.core.cross_lingual_translation.config_context import (
+from src.core.phases.cross_lingual_translation.config_context import (
     TranslationConfigContext,
 )
-from src.core.cross_lingual_translation.translate.blocks import (
+from src.core.phases.cross_lingual_translation.translate.blocks import (
     _BLOCK_SEP,
     join_blocks_with_markers,
     split_by_markers,
 )
-from src.core.cross_lingual_translation.translate.postprocess import (
+from src.core.phases.cross_lingual_translation.translate.postprocess import (
     build_translated_blocks,
     trim_repetitive_content,
 )
-from src.core.cross_lingual_translation.translate.translator import (
+from src.core.phases.cross_lingual_translation.translate.translator import (
     MultiStageTranslator,
 )
-from src.core.cross_lingual_translation.translate.validator import (
+from src.core.phases.cross_lingual_translation.translate.validator import (
     fix_word_boundary_redacted,
     normalize_placeholders,
     normalize_cjk_punctuation,
@@ -356,7 +356,7 @@ class TestDocumentBoundary:
 
     def test_segment_context_does_not_bleed(self):
         """Segments with prev/next context must not mix document content."""
-        from src.core.cross_lingual_translation.format.segmenter import (
+        from src.core.phases.cross_lingual_translation.format.segmenter import (
             segment_text,
         )
 
@@ -402,7 +402,7 @@ class TestProductNamePreservation:
 
     def test_product_names_in_prompt_rules(self):
         """Verify product name preservation rules exist in translation prompts."""
-        from src.core.cross_lingual_translation.translate.prompts import (
+        from src.core.phases.cross_lingual_translation.translate.prompts import (
             get_translate_prompt,
             get_full_document_translate_prompt,
             get_self_review_prompt,
@@ -444,7 +444,7 @@ class TestProductNamePreservation:
 
     def test_full_document_translate_prompt_product_rules(self):
         """The full-document prompt must explicitly preserve identifiers."""
-        from src.core.cross_lingual_translation.translate.prompts import (
+        from src.core.phases.cross_lingual_translation.translate.prompts import (
             get_full_document_translate_prompt,
         )
 
@@ -455,7 +455,7 @@ class TestProductNamePreservation:
 
     def test_self_review_prompt_reverts_corrections(self):
         """Self-review must check for and revert product name changes."""
-        from src.core.cross_lingual_translation.translate.prompts import (
+        from src.core.phases.cross_lingual_translation.translate.prompts import (
             get_self_review_prompt,
         )
 
@@ -562,7 +562,7 @@ class TestPipelineRegression:
 
     def test_product_name_silent_correction_detected(self):
         """If LLM silently corrects names, self-review prompt must catch it."""
-        from src.core.cross_lingual_translation.translate.prompts import (
+        from src.core.phases.cross_lingual_translation.translate.prompts import (
             get_self_review_prompt,
         )
 

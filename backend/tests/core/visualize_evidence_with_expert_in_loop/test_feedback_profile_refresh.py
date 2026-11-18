@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.core.visualize_evidence_with_expert_in_loop.feedback_service import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.feedback_service import (
     FeedbackService,
 )
 
@@ -23,7 +23,7 @@ class TestFeedbackProfileRefresh:
 
     async def test_patch_calls_refresh_literature_profile(self) -> None:
         """patch_evidence calls _refresh_literature_profile with source_document_id."""
-        from src.core.visualize_evidence_with_expert_in_loop.contracts import (
+        from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import (
             EvidencePatchRequest,
         )
 
@@ -74,7 +74,7 @@ class TestFeedbackProfileRefresh:
 
     async def test_patch_calls_refresh_search_index(self) -> None:
         """patch_evidence calls _refresh_search_index after an evidence change."""
-        from src.core.visualize_evidence_with_expert_in_loop.contracts import (
+        from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import (
             EvidencePatchRequest,
         )
 
@@ -125,7 +125,7 @@ class TestFeedbackProfileRefresh:
     async def test_refresh_delegates_to_literature_profile_repo(self) -> None:
         """_refresh_literature_profile creates a LiteratureProfileRepository and
         calls refresh_for_document."""
-        from src.core.visualize_evidence_with_expert_in_loop.feedback_service import (
+        from src.core.phases.visualize_evidence_with_expert_in_loop.feedback_service import (
             FeedbackService,
         )
 
@@ -148,7 +148,7 @@ class TestFeedbackProfileRefresh:
 
     async def test_refresh_search_index_delegates_to_search_index_repo(self) -> None:
         """_refresh_search_index creates a SearchIndexRepository and calls refresh."""
-        from src.core.visualize_evidence_with_expert_in_loop.feedback_service import (
+        from src.core.phases.visualize_evidence_with_expert_in_loop.feedback_service import (
             FeedbackService,
         )
 
@@ -168,7 +168,7 @@ class TestFeedbackProfileRefresh:
     async def test_refresh_skipped_when_no_deltas_and_no_status_change(self) -> None:
         """_refresh_literature_profile is NOT called when patch produces no
         changes (no deltas and same status)."""
-        from src.core.visualize_evidence_with_expert_in_loop.contracts import (
+        from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import (
             EvidencePatchRequest,
         )
 
@@ -219,7 +219,7 @@ class TestFeedbackProfileRefresh:
     async def test_refresh_called_after_audit_event(self) -> None:
         """_refresh_literature_profile is called after the audit event is
         recorded (verifying call ordering)."""
-        from src.core.visualize_evidence_with_expert_in_loop.contracts import (
+        from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import (
             EvidencePatchRequest,
         )
 

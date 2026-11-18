@@ -1,4 +1,4 @@
-from src.core.cross_lingual_translation.format.segmenter import (
+from src.core.phases.cross_lingual_translation.format.segmenter import (
     estimate_tokens,
     segment_text,
 )

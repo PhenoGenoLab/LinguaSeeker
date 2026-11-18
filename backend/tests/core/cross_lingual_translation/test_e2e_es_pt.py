@@ -18,18 +18,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.core.cross_lingual_translation.contracts import (
+from src.core.phases.cross_lingual_translation.contracts import (
     ContentBlock,
     FormattedDocument,
 )
-from src.core.cross_lingual_translation.config_context import (
+from src.core.phases.cross_lingual_translation.config_context import (
     TranslationConfigContext,
 )
-from src.core.cross_lingual_translation.translate.translator import (
+from src.core.phases.cross_lingual_translation.translate.translator import (
     MultiStageTranslator,
     TranslationError,
 )
-from src.core.cross_lingual_translation.translate.validator import (
+from src.core.phases.cross_lingual_translation.translate.validator import (
     fix_word_boundary_redacted,
     validate_translation_output,
 )
@@ -390,12 +390,12 @@ class TestPipelineIntegration:
         # _invoke_with_retry returns str directly; simulate LLM returning unchanged text
         with (
             patch(
-                "src.core.cross_lingual_translation.translate.translator.invoke_with_retry",
+                "src.core.phases.cross_lingual_translation.translate.translator.invoke_with_retry",
                 new_callable=AsyncMock,
                 return_value=source,
             ),
             patch(
-                "src.core.cross_lingual_translation.translate.translator.invoke_json_with_retry",
+                "src.core.phases.cross_lingual_translation.translate.translator.invoke_json_with_retry",
                 new_callable=AsyncMock,
                 return_value='{"terms": []}',
             ),
@@ -411,12 +411,12 @@ class TestPipelineIntegration:
         source = "Câncer de Mama X Diagnóstico"
         with (
             patch(
-                "src.core.cross_lingual_translation.translate.translator.invoke_with_retry",
+                "src.core.phases.cross_lingual_translation.translate.translator.invoke_with_retry",
                 new_callable=AsyncMock,
                 return_value=source,
             ),
             patch(
-                "src.core.cross_lingual_translation.translate.translator.invoke_json_with_retry",
+                "src.core.phases.cross_lingual_translation.translate.translator.invoke_json_with_retry",
                 new_callable=AsyncMock,
                 return_value='{"terms": []}',
             ),
@@ -446,12 +446,12 @@ class TestPipelineIntegration:
 
         with (
             patch(
-                "src.core.cross_lingual_translation.translate.translator.invoke_with_retry",
+                "src.core.phases.cross_lingual_translation.translate.translator.invoke_with_retry",
                 new_callable=AsyncMock,
                 side_effect=mock_invoke,
             ),
             patch(
-                "src.core.cross_lingual_translation.translate.translator.invoke_json_with_retry",
+                "src.core.phases.cross_lingual_translation.translate.translator.invoke_json_with_retry",
                 new_callable=AsyncMock,
                 return_value=f'{{"translation": "{translated}"}}',
             ),

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.standardize_entities_and_align_knowledge.cross_lingual_disease import (
+from src.core.phases.standardize_entities_and_align_knowledge.cross_lingual_disease import (
     CrossLingualDiseaseResolver,
 )
 

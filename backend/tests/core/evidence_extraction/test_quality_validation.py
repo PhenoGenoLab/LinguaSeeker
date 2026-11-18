@@ -1,4 +1,4 @@
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceChain,
     EvidenceItem,
     EvidenceStatus,
@@ -6,7 +6,7 @@ from src.core.evidence_extraction.contracts import (
     SourceLocation,
     SourcePrecision,
 )
-from src.core.evidence_extraction.core import (
+from src.core.phases.evidence_extraction.core import (
     EvidenceItemNormalizer,
     QualityValidator,
 )

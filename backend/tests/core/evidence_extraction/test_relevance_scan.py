@@ -6,14 +6,14 @@ import json
 from unittest.mock import MagicMock
 
 
-from src.core.evidence_extraction.domain.channel_contracts import (
+from src.core.phases.evidence_extraction.domain.channel_contracts import (
     DocumentChannelClassification,
     DocumentEvidenceChannel,
     RelevanceScanResult,
     merge_channel_classifications,
     parse_channel_classification,
 )
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     DocumentEvidenceMap,
     EvidenceExtractionState,
@@ -23,10 +23,10 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.providers import (
+from src.core.phases.evidence_extraction.providers import (
     EvidenceModelTier,
 )
-from src.core.evidence_extraction.stages.evidence_map import (
+from src.core.phases.evidence_extraction.stages.evidence_map import (
     RelevanceScanStage,
 )
 

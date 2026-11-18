@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from src.core.evidence_extraction.contracts import EvidenceChain
-from src.core.graph_rag.contracts import GraphRelationType
-from src.core.graph_rag.core.builder import EvidenceGraphBuilder
+from src.core.phases.evidence_extraction.contracts import EvidenceChain
+from src.core.phases.graph_rag.contracts import GraphRelationType
+from src.core.phases.graph_rag.core.builder import EvidenceGraphBuilder
 
 
 def test_build_from_evidence_chains_creates_gene_disease_edge() -> None:

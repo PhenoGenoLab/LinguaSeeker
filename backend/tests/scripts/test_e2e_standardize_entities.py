@@ -9,7 +9,7 @@ from scripts.e2e_standardize_entities import (
     DEFAULT_EXTRACT_EVIDENCE_DIR,
     run_standardize_entities,
 )
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.core.phases.standardize_entities_and_align_knowledge.contracts import (
     BindingRole,
     EntityMatch,
     EntityType,

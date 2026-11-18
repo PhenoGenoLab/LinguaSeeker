@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     DocumentEvidenceMap,
     DualEvidenceExtractionResult,

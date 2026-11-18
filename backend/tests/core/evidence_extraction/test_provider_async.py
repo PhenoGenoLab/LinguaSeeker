@@ -10,10 +10,10 @@ from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage
 from pydantic import BaseModel
 
-from src.core.evidence_extraction.config_context import (
+from src.core.phases.evidence_extraction.config_context import (
     EvidenceExtractionConfigContext,
 )
-from src.core.evidence_extraction.providers import (
+from src.core.phases.evidence_extraction.providers import (
     EvidenceModelTier,
     LangChainEvidenceProvider,
 )
@@ -227,7 +227,7 @@ async def test_ainvoke_structured_retries_genuine_rate_limit_without_response_fo
     """A plain rate-limit 429 (no response_format incompatibility) still retries."""
     import openai
 
-    from src.core.evidence_extraction.config_context import (
+    from src.core.phases.evidence_extraction.config_context import (
         EvidenceExtractionConfigContext,
     )
 

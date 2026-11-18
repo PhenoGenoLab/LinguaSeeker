@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from src.core.evidence_extraction.verify.contracts import (
+from src.core.phases.evidence_extraction.verify.contracts import (
     EvidenceVerificationInput,
 )
-from src.core.evidence_extraction.verify.core import (
+from src.core.phases.evidence_extraction.verify.core import (
     score_candidate_support,
 )
 

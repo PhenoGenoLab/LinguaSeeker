@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.evidence_extraction.api import EvidenceExtractionService
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.api import EvidenceExtractionService
+from src.core.phases.evidence_extraction.contracts import (
     DualTrackDocuments,
     EvidenceAlignmentLabel,
     EvidenceExtractionResult,
@@ -20,10 +20,10 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.cross_lingual_translation.contracts import (
+from src.core.phases.cross_lingual_translation.contracts import (
     TranslationAlignmentChunk,
 )
-from src.core.evidence_extraction.reconcile.api import (
+from src.core.phases.evidence_extraction.reconcile.api import (
     CrossTrackReconcileService,
 )
 

@@ -17,7 +17,7 @@ from src.api.auth import (
 )
 from src.api.v1.contracts import AuthMeResponse, AuthResponse, LoginRequest, LogoutResponse
 from src.api.wiring import get_session_factory
-from src.core.auth.passwords import hash_password, verify_password
+from src.core.foundation.auth.passwords import hash_password, verify_password
 from src.core.config import get_config
 from src.dao.postgresql.models import User
 

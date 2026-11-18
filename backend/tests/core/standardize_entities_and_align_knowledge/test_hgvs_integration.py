@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.core.phases.standardize_entities_and_align_knowledge.contracts import (
     BindingRole,
     EntityType,
     MatchMethod,
@@ -26,13 +26,13 @@ from src.core.standardize_entities_and_align_knowledge.contracts import (
     StandardizationCandidate,
     TerminologyCandidate,
 )
-from src.core.standardize_entities_and_align_knowledge.hgvs_normalizer import (
+from src.core.phases.standardize_entities_and_align_knowledge.hgvs_normalizer import (
     expand_hgvs_aliases,
 )
-from src.core.standardize_entities_and_align_knowledge.normalizers import (
+from src.core.phases.standardize_entities_and_align_knowledge.normalizers import (
     normalize_variant_text,
 )
-from src.core.standardize_entities_and_align_knowledge.precise_match.core import (
+from src.core.phases.standardize_entities_and_align_knowledge.precise_match.core import (
     PreciseTerminologyMatcher,
 )
 

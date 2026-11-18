@@ -1,0 +1,92 @@
+"""Layer-boundary checks for ``src.core``.
+
+``src.core`` is split into four strata:
+
+    foundation  ← shared ← phases
+                    ↑
+                 adapters
+
+``core.root`` (``config.py``, ``config_loader.py``) is importable by everyone and
+imports nothing from the strata.  The tests are AST-based so they stay cheap and
+independent of optional runtime dependencies.
+"""
+
+from __future__ import annotations
+
+import ast
+from pathlib import Path
+
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+SRC_ROOT = BACKEND_ROOT / "src"
+CORE_ROOT = SRC_ROOT / "core"
+
+FOUNDATION = CORE_ROOT / "foundation"
+SHARED = CORE_ROOT / "shared"
+ADAPTERS = CORE_ROOT / "adapters"
+PHASES = CORE_ROOT / "phases"
+
+
+def _iter_python_files(root: Path) -> list[Path]:
+    if not root.exists():
+        return []
+    return sorted(path for path in root.rglob("*.py") if "__pycache__" not in path.parts)
+
+
+def _imported_modules(path: Path) -> set[str]:
+    """Return absolute ``src.*`` modules imported by ``path``, relative ones resolved."""
+    parts = path.relative_to(SRC_ROOT).with_suffix("").parts
+    package = list(parts[:-1]) if parts[-1] != "__init__" else list(parts[:-1])
+    modules: set[str] = set()
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Import):
+            modules.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            if node.level:
+                base = package[: len(package) - node.level + 1]
+                modules.add(".".join(base + ([node.module] if node.module else [])))
+            elif node.module:
+                modules.add(node.module)
+    return modules
+
+
+def _violations(root: Path, prefixes: tuple[str, ...]) -> list[str]:
+    found: list[str] = []
+    for path in _iter_python_files(root):
+        for module in sorted(_imported_modules(path)):
+            if any(module == p or module.startswith(p + ".") for p in prefixes):
+                found.append(f"{path.relative_to(BACKEND_ROOT)} imports {module}")
+    return found
+
+
+def test_foundation_depends_on_nothing_but_config() -> None:
+    violations = _violations(FOUNDATION, ("src.core.shared", "src.core.adapters", "src.core.phases", "src.pipeline"))
+    assert not violations, "foundation/ must stay at the bottom of the core layering:\n" + "\n".join(violations)
+
+
+def test_shared_does_not_reach_downstream_layers() -> None:
+    violations = _violations(SHARED, ("src.core.adapters", "src.pipeline"))
+    assert not violations, "shared/ may use foundation and read-only phase contracts:\n" + "\n".join(violations)
+
+
+def test_adapters_stay_isolated() -> None:
+    violations = _violations(ADAPTERS, ("src.core.shared.tools", "src.core.phases", "src.pipeline"))
+    assert not violations, "adapters/ must not depend on tools, phases or the pipeline:\n" + "\n".join(violations)
+
+
+def test_phases_do_not_import_pipeline_or_shared_tools() -> None:
+    violations = _violations(PHASES, ("src.pipeline", "src.core.shared"))
+    assert not violations, "phases/ own their business logic; they must not call the pipeline:\n" + "\n".join(
+        violations
+    )
+
+
+def test_core_root_modules_stay_dependency_free() -> None:
+    """``config.py`` / ``config_loader.py`` must not depend on a stratum."""
+    root_modules = {path for path in _iter_python_files(CORE_ROOT) if path.parent == CORE_ROOT}
+    found = [
+        f"{path.name} imports {module}"
+        for path in root_modules
+        for module in sorted(_imported_modules(path))
+        if module.startswith(("src.core.shared", "src.core.adapters", "src.core.phases", "src.pipeline"))
+    ]
+    assert not found, "core root modules must not depend on a stratum:\n" + "\n".join(found)

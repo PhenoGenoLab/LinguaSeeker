@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceStatus,
     ExtractionTarget,
     PrimaryBroadEvidenceCandidate,
@@ -12,8 +12,8 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.providers import EvidenceModelTier
-from src.core.evidence_extraction.stages.primary_broad_extraction import (
+from src.core.phases.evidence_extraction.providers import EvidenceModelTier
+from src.core.phases.evidence_extraction.stages.primary_broad_extraction import (
     PrimaryBroadExtractionStage,
     _normalize_candidates,
     _resolve_field_alias,

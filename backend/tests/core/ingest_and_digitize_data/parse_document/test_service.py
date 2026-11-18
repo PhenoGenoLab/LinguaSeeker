@@ -7,12 +7,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.core.ingest_and_digitize_data.parse_document.contracts import (
+from src.core.phases.ingest_and_digitize_data.parse_document.contracts import (
     DocumentMetadata,
     PageContent,
     ParseResult,
 )
-from src.core.ingest_and_digitize_data.parse_document.service import ParseDocumentService
+from src.core.phases.ingest_and_digitize_data.parse_document.service import ParseDocumentService
 
 
 class TestParseDocumentService:
@@ -50,7 +50,7 @@ class TestParseDocumentService:
         )
         mock_orchestrator.parse.return_value = mock_result
 
-        with patch("src.core.ingest_and_digitize_data.parse_document.service.files_io"):
+        with patch("src.core.phases.ingest_and_digitize_data.parse_document.service.files_io"):
             result = await service.parse_and_save("https://example.com/test.pdf", output_dir)
 
         assert result.parser_used == "mineru-remote"
@@ -69,7 +69,7 @@ class TestParseDocumentService:
         )
         mock_orchestrator.parse.return_value = mock_result
 
-        with patch("src.core.ingest_and_digitize_data.parse_document.service.files_io"):
+        with patch("src.core.phases.ingest_and_digitize_data.parse_document.service.files_io"):
             result = await service.parse_and_save("https://example.com/test.pdf", output_dir)
 
         assert result.images == {"images/fig1.jpg": b"\xff\xd8\xff\xe0"}
@@ -92,7 +92,7 @@ class TestParseDocumentService:
         )
         mock_orchestrator.parse.return_value = mock_result
 
-        with patch("src.core.ingest_and_digitize_data.parse_document.service.files_io"):
+        with patch("src.core.phases.ingest_and_digitize_data.parse_document.service.files_io"):
             result = await service.parse_and_save("https://example.com/test.pdf", output_dir)
 
         assert len(result.content_blocks) == 3
@@ -108,7 +108,7 @@ class TestParseDocumentService:
             images={"images/fig1.jpg": b"\xff\xd8\xff\xe0"},
         )
 
-        with patch("src.core.ingest_and_digitize_data.parse_document.service.files_io"):
+        with patch("src.core.phases.ingest_and_digitize_data.parse_document.service.files_io"):
             saved = await service.save(result, str(tmp_path))
 
         assert saved.images_dir is not None
@@ -122,7 +122,7 @@ class TestParseDocumentService:
             pages=[PageContent(page_number=1, markdown="Content")],
         )
 
-        with patch("src.core.ingest_and_digitize_data.parse_document.service.files_io"):
+        with patch("src.core.phases.ingest_and_digitize_data.parse_document.service.files_io"):
             saved = await service.save(result, str(tmp_path))
 
         assert saved.images_dir is None
@@ -170,7 +170,7 @@ class TestParseDocumentService:
 
     @pytest.mark.asyncio
     async def test_dedup(self, service):
-        with patch("src.core.ingest_and_digitize_data.parse_document.service.files_io") as mock_files:
+        with patch("src.core.phases.ingest_and_digitize_data.parse_document.service.files_io") as mock_files:
             mock_files.check_duplicate.return_value = {"hash": "abc123", "is_duplicate": True}
 
             results = await service.dedup(["/tmp/test.pdf"], ["abc123"])
@@ -202,7 +202,7 @@ class TestParseDocumentService:
 
     @pytest.mark.asyncio
     async def test_parse_local_files_and_save_writes_each_completed_file(self, service, mock_orchestrator, tmp_path):
-        from src.core.ingest_and_digitize_data.parse_document.contracts import (
+        from src.core.phases.ingest_and_digitize_data.parse_document.contracts import (
             MinerUBatchFileResult,
             MinerUBatchStatus,
             MinerULocalBatchParseResult,

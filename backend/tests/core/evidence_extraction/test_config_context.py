@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from src.core.evidence_extraction.config_context import (
+from src.core.phases.evidence_extraction.config_context import (
     EvidenceExtractionConfigContext,
 )
 

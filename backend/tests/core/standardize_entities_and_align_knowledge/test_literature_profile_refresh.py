@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.core.phases.standardize_entities_and_align_knowledge.contracts import (
     EntityType,
     BindingRole,
     MatchStatus,
@@ -15,7 +15,7 @@ from src.core.standardize_entities_and_align_knowledge.contracts import (
     StandardizationCandidate,
     EntityMatch,
 )
-from src.core.standardize_entities_and_align_knowledge.core import StandardizationService
+from src.core.phases.standardize_entities_and_align_knowledge.core import StandardizationService
 
 
 def _make_service() -> tuple[StandardizationService, AsyncMock, AsyncMock]:

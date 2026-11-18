@@ -1,10 +1,10 @@
-from src.core.cross_lingual_translation.format.formatter import (
+from src.core.phases.cross_lingual_translation.format.formatter import (
     MarkdownFormatter,
     extract_sentences,
     build_page_offset_map,
     _format_markdown,
 )
-from src.core.cross_lingual_translation.contracts import ContentBlock, FormattedDocument
+from src.core.phases.cross_lingual_translation.contracts import ContentBlock, FormattedDocument
 
 
 def test_extract_sentences_basic():

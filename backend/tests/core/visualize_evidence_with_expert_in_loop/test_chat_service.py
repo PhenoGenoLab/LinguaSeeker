@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.visualize_evidence_with_expert_in_loop.chat_service import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.chat_service import (
     ChatService,
 )
 from src.utils.exceptions import NotFoundException
@@ -16,7 +16,7 @@ from src.utils.exceptions import NotFoundException
 
 def test_detect_intent_uses_module_level_compiled_patterns():
     """Regex patterns should be compiled at module level, not per call."""
-    import src.core.visualize_evidence_with_expert_in_loop.chat_service as mod
+    import src.core.phases.visualize_evidence_with_expert_in_loop.chat_service as mod
 
     assert hasattr(mod, "_QUESTION_PATTERNS")
     assert hasattr(mod, "_CORRECTION_PATTERNS")
@@ -25,7 +25,7 @@ def test_detect_intent_uses_module_level_compiled_patterns():
 
 def test_graph_qa_capability_is_read_only_in_prompt():
     """The router prompt must expose graph-qa and mark it as no-confirmation."""
-    from src.core.visualize_evidence_with_expert_in_loop.chat_service import (
+    from src.core.phases.visualize_evidence_with_expert_in_loop.chat_service import (
         CHAT_AGENT_CAPABILITIES_PROMPT,
     )
 
@@ -36,7 +36,7 @@ def test_graph_qa_capability_is_read_only_in_prompt():
 
 def test_chat_action_accepts_graph_qa_intent():
     """ChatAction should validate the graph-qa intent with a question slot."""
-    from src.core.visualize_evidence_with_expert_in_loop.contracts import ChatAction
+    from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import ChatAction
 
     action = ChatAction.model_validate(
         {"intent": "graph-qa", "slots": {"question": "What diseases relate to COL2A1?"}}

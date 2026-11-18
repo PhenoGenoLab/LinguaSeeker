@@ -1,6 +1,6 @@
 import pytest
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     DocumentEvidenceMap,
     EvidenceStatus,
@@ -14,7 +14,7 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.workflow import EvidenceExtractionWorkflow
+from src.core.phases.evidence_extraction.workflow import EvidenceExtractionWorkflow
 
 
 class FakeProvider:

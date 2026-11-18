@@ -63,8 +63,8 @@ async def test_write_route_defaults_to_public_account_without_api_key(_mock_conf
             )
         )
 
-        from src.core.visualize_evidence_with_expert_in_loop.contracts import ReviewStatus
-        from src.core.visualize_evidence_with_expert_in_loop.feedback_service import PatchResult
+        from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import ReviewStatus
+        from src.core.phases.visualize_evidence_with_expert_in_loop.feedback_service import PatchResult
 
         mock_service = MagicMock()
         mock_service.patch_evidence = AsyncMock(
@@ -119,8 +119,8 @@ async def test_write_route_accepted_with_valid_api_key(_mock_config_with_api_key
             )
         )
 
-        from src.core.visualize_evidence_with_expert_in_loop.feedback_service import PatchResult
-        from src.core.visualize_evidence_with_expert_in_loop.contracts import ReviewStatus
+        from src.core.phases.visualize_evidence_with_expert_in_loop.feedback_service import PatchResult
+        from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import ReviewStatus
 
         mock_service = MagicMock()
         mock_service.patch_evidence = AsyncMock(
@@ -369,7 +369,7 @@ async def test_login_creates_user_for_new_username(_mock_config_with_api_key):
     ):
         from app.main import create_app
         from src.api.auth import _decode_session
-        from src.core.auth.passwords import verify_password
+        from src.core.foundation.auth.passwords import verify_password
 
         app = create_app()
         transport = ASGITransport(app=app)

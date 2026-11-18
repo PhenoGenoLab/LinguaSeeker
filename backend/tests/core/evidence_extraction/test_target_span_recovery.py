@@ -1,4 +1,4 @@
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceItem,
     EvidenceStatus,
     ExtractionTarget,
@@ -6,7 +6,7 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.postprocess.target_span_recovery import (
+from src.core.phases.evidence_extraction.postprocess.target_span_recovery import (
     TargetSpanFieldRecovery,
 )
 

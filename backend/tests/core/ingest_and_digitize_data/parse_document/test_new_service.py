@@ -7,13 +7,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.core.ingest_and_digitize_data.parse_document.contracts import (
+from src.core.phases.ingest_and_digitize_data.parse_document.contracts import (
     DocumentMetadata,
     PageContent,
     ParseResult,
     ParseAndSaveResult,
 )
-from src.core.ingest_and_digitize_data.parse_document.service import ParseDocumentService
+from src.core.phases.ingest_and_digitize_data.parse_document.service import ParseDocumentService
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ async def test_service_save(sample_result, tmp_path):
     """Test service save method."""
     service = ParseDocumentService(orchestrator=AsyncMock())
 
-    with patch("src.core.ingest_and_digitize_data.parse_document.service.files_io"):
+    with patch("src.core.phases.ingest_and_digitize_data.parse_document.service.files_io"):
         saved = await service.save(sample_result, str(tmp_path))
 
         assert saved.md_path == tmp_path / "output.md"
@@ -67,7 +67,7 @@ async def test_service_dedup():
     """Test service dedup method."""
     service = ParseDocumentService(orchestrator=AsyncMock())
 
-    with patch("src.core.ingest_and_digitize_data.parse_document.service.files_io") as mock_files:
+    with patch("src.core.phases.ingest_and_digitize_data.parse_document.service.files_io") as mock_files:
         mock_files.check_duplicate.return_value = {"hash": "abc123", "is_duplicate": False}
 
         results = await service.dedup(["test.pdf"], ["known_hash"])
@@ -85,7 +85,7 @@ async def test_service_parse_and_save(mock_orchestrator, sample_result, tmp_path
 
     service = ParseDocumentService(orchestrator=mock_orchestrator)
 
-    with patch("src.core.ingest_and_digitize_data.parse_document.service.files_io"):
+    with patch("src.core.phases.ingest_and_digitize_data.parse_document.service.files_io"):
         result = await service.parse_and_save("test.pdf", str(tmp_path))
 
         assert isinstance(result, ParseAndSaveResult)

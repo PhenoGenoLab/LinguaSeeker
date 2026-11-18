@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceExtractionResult,
     EvidenceExtractionStatus,
     EvidenceItem,
@@ -11,7 +11,7 @@ from src.core.evidence_extraction.contracts import (
     SourcePrecision,
     Track,
 )
-from src.core.evidence_extraction.reconcile.core import reconcile_results
+from src.core.phases.evidence_extraction.reconcile.core import reconcile_results
 
 
 def _source(precision: SourcePrecision) -> SourceLocation:

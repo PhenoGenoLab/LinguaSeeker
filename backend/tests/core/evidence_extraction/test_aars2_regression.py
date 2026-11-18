@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceItem,
     EvidenceStatus,
 )
-from src.core.evidence_extraction.domain.normalization import (
+from src.core.phases.evidence_extraction.domain.normalization import (
     AcmgEvidenceValueNormalizer,
 )
 

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from src.core.standardize_entities_and_align_knowledge.context_pack.core import (
+from src.core.phases.standardize_entities_and_align_knowledge.context_pack.core import (
     build_context_pack_from_expected_json,
     build_context_pack_from_runtime_target,
 )
@@ -180,14 +180,14 @@ def test_build_context_pack_harvests_source_observed_mondo_disease_aliases(
 
     # The MONDO cache file may not exist on disk; mock the index so the
     # source-observed alias path is exercised regardless.
-    from src.core.standardize_entities_and_align_knowledge.context_pack.core import (
+    from src.core.phases.standardize_entities_and_align_knowledge.context_pack.core import (
         _MondoAliasIndex,
         _load_mondo_alias_index,
     )
 
     _load_mondo_alias_index.cache_clear()
     monkeypatch.setattr(
-        "src.core.standardize_entities_and_align_knowledge.context_pack.core._load_mondo_alias_index",
+        "src.core.phases.standardize_entities_and_align_knowledge.context_pack.core._load_mondo_alias_index",
         lambda: _MondoAliasIndex(
             labels=(
                 "Usmani-Riazuddin syndrome",

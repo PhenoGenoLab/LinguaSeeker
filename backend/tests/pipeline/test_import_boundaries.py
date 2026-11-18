@@ -30,6 +30,18 @@ REMOVED_LEGACY_MODULES = (
     "src.pipeline.tools",
     "src.pipeline.mcp",
     "src.pipeline.contracts",
+    # Second move: core was split into foundation/shared/adapters/phases, so the
+    # pre-layering core paths must stay dead.
+    "src.core.auth",
+    "src.core.tools",
+    "src.core.contracts",
+    "src.core.mcp",
+    "src.core.ingest_and_digitize_data",
+    "src.core.cross_lingual_translation",
+    "src.core.evidence_extraction",
+    "src.core.standardize_entities_and_align_knowledge",
+    "src.core.visualize_evidence_with_expert_in_loop",
+    "src.core.graph_rag",
 )
 
 
@@ -110,7 +122,7 @@ def test_pipeline_skeleton_packages_exist() -> None:
 
 
 def test_core_packages_hold_the_concrete_layers() -> None:
-    for layer in ("tools", "mcp", "contracts"):
+    for layer in ("shared/tools", "shared/contracts", "adapters/mcp", "foundation/auth"):
         package = CORE_ROOT / layer
         assert (package / "__init__.py").is_file(), f"missing core package: {package}"
 
@@ -149,25 +161,25 @@ def test_skills_do_not_import_graph() -> None:
 
 def test_tools_do_not_import_agentscope() -> None:
     _assert_no_imports(
-        CORE_ROOT / "tools",
+        CORE_ROOT / "shared" / "tools",
         ("agentscope",),
-        "core/tools must not import agentscope (tools carry no agent decisions)",
+        "core/shared/tools must not import agentscope (tools carry no agent decisions)",
     )
 
 
 def test_tools_do_not_import_pipeline() -> None:
     _assert_no_imports(
-        CORE_ROOT / "tools",
+        CORE_ROOT / "shared" / "tools",
         ("src.pipeline",),
-        "core/tools must not import src.pipeline (tools stay deterministic leaves)",
+        "core/shared/tools must not import src.pipeline (tools stay deterministic leaves)",
     )
 
 
 def test_mcp_does_not_import_pipeline_or_tools() -> None:
     _assert_no_imports(
-        CORE_ROOT / "mcp",
-        ("src.pipeline", "src.core.tools"),
-        "core/mcp must not import pipeline or tools (external adapters stay isolated)",
+        CORE_ROOT / "adapters" / "mcp",
+        ("src.pipeline", "src.core.shared.tools"),
+        "core/adapters/mcp must not import pipeline or tools (external adapters stay isolated)",
     )
 
 
