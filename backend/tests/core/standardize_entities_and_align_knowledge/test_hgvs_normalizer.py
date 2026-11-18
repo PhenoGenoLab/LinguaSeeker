@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.core.standardize_entities_and_align_knowledge.hgvs_normalizer import (
+from src.core.terminology_shared.hgvs_normalizer import (
     expand_hgvs_aliases,
     normalize_hgvs_for_lookup,
 )

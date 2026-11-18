@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 
-from src.core.standardize_entities_and_align_knowledge.context_pack.contracts import (
+from src.core.terminology_shared.context_pack.contracts import (
     DiseaseContext,
     GeneContext,
     TargetContextPack,

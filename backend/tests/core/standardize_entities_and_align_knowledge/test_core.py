@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.core.terminology_shared.contracts import (
     BindingRole,
     EntityMatch,
     EntityType,
@@ -13,7 +13,7 @@ from src.core.standardize_entities_and_align_knowledge.contracts import (
     StandardizationCandidate,
     StandardizationInput,
 )
-from src.core.standardize_entities_and_align_knowledge.core import StandardizationService
+from src.pipeline.tools.terminology.core import StandardizationService
 
 
 class FakeMatcher:

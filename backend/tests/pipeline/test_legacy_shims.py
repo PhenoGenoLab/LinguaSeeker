@@ -1,4 +1,4 @@
-"""Compatibility checks for the legacy re-export shims (stages 1 and 2)."""
+"""Compatibility checks for the legacy re-export shims (stages 1–4b)."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ from src.agents import (
     phase_4_adapter as legacy_phase_4,
 )
 from src.core import source_fact_chain as legacy_fact_chain
+from src.core.terminology_shared import contracts as shared_contracts
+from src.core.terminology_shared.context_pack import core as shared_context_pack
 from src.pipeline.graph import topology as new_topology
 from src.pipeline.graph.phases import (
     phase_1 as new_phase_1,
@@ -21,6 +23,7 @@ from src.pipeline.skills.fact_chain import runner as new_runner
 from src.pipeline.skills.fact_chain import service as new_service
 from src.pipeline.tools.fact_chain import contracts as new_contracts
 from src.pipeline.tools.fact_chain import projection as new_projection
+from src.pipeline.tools.terminology import api as new_terminology_api
 
 
 def test_legacy_orchestrator_shim_reexports_topology() -> None:
@@ -40,3 +43,16 @@ def test_legacy_fact_chain_shims_reexport_new_implementation() -> None:
     assert legacy_fact_chain.ChainRunner is new_runner.ChainRunner
     assert legacy_fact_chain.ChainRun is new_contracts.ChainRun
     assert legacy_fact_chain.project_dual_result is new_projection.project_dual_result
+
+
+def test_legacy_terminology_shims_reexport_new_implementation() -> None:
+    from src.core.standardize_entities_and_align_knowledge import api as legacy_api
+    from src.core.standardize_entities_and_align_knowledge import contracts as legacy_contracts
+    from src.core.standardize_entities_and_align_knowledge.context_pack import core as legacy_context_pack
+
+    assert legacy_api.EntityStandardizationService is new_terminology_api.EntityStandardizationService
+    assert legacy_contracts.EntityType is shared_contracts.EntityType
+    assert (
+        legacy_context_pack.build_context_pack_from_runtime_target
+        is shared_context_pack.build_context_pack_from_runtime_target
+    )

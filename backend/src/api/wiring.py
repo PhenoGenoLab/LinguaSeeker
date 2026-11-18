@@ -162,7 +162,7 @@ def wire_dependencies() -> None:
     from src.pipeline.tools.parsing.service import (
         ParseDocumentService,
     )
-    from src.core.standardize_entities_and_align_knowledge.api import (
+    from src.pipeline.tools.terminology.api import (
         EntityStandardizationService,
     )
 

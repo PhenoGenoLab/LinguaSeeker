@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.core.terminology_shared.contracts import (
     BindingRole,
     EntityMatch,
     EntityType,
@@ -13,11 +13,11 @@ from src.core.standardize_entities_and_align_knowledge.contracts import (
     StandardizationCandidate,
     TerminologyCandidate,
 )
-from src.core.standardize_entities_and_align_knowledge.matchers import (
+from src.pipeline.tools.terminology.matchers import (
     HybridTerminologyMatcher,
     PreciseTerminologyMatcher,
 )
-from src.core.standardize_entities_and_align_knowledge.similarity_match.core import (
+from src.pipeline.tools.terminology.similarity_match.core import (
     SemanticMatchServiceError,
 )
 

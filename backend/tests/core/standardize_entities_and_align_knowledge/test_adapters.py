@@ -11,8 +11,8 @@ from src.core.evidence_extraction.contracts import (
     EvidenceStatus,
     Track,
 )
-from src.core.standardize_entities_and_align_knowledge.adapters import DualResultAdapter
-from src.core.standardize_entities_and_align_knowledge.contracts import EntityType
+from src.pipeline.tools.terminology.adapters import DualResultAdapter
+from src.core.terminology_shared.contracts import EntityType
 
 
 def test_dual_result_adapter_extracts_chain_candidates() -> None:

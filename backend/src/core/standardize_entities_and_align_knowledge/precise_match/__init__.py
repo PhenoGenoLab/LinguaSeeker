@@ -1,5 +1,3 @@
-"""Precise deterministic terminology matching."""
+"""Transitional re-export shim for :mod:`src.pipeline.tools.terminology.precise_match`."""
 
-from src.core.standardize_entities_and_align_knowledge.precise_match.core import PreciseTerminologyMatcher
-
-__all__ = ["PreciseTerminologyMatcher"]
+from src.pipeline.tools.terminology.precise_match import *  # noqa: F403

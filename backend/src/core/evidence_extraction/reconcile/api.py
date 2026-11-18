@@ -15,7 +15,7 @@ from src.core.evidence_extraction.reconcile.contextual import (
 from src.core.evidence_extraction.reconcile.core import (
     reconcile_results,
 )
-from src.core.standardize_entities_and_align_knowledge.context_pack.contracts import (
+from src.core.terminology_shared.context_pack.contracts import (
     TargetContextPack,
 )
 
