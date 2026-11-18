@@ -223,3 +223,6 @@ data/*
 
 # ── Generated API schema snapshot ────────────────────────────────────────
 backend/openapi.json
+
+# ── CodeGraph workspace index (per-machine, keep its nested .gitignore) ──
+.codegraph/
