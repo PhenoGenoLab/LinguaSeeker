@@ -75,5 +75,13 @@ class ExtractSkill(StageAgentSkill):
             raise SkillError("extract: payload has no window_text", kind=SkillFailureKind.PERMANENT)
         return window_tools(window_text)
 
+    def _system_prompt(self, payload: dict[str, Any]) -> str:
+        """Append reference-only ReMe recall; failures already degrade to empty."""
+        if self._memory is None:
+            return self.prompt
+        query = str(payload.get("window_text") or "")[:400]
+        block = self._memory.search(query, top_k=self._top_k).as_prompt_block()
+        return f"{self.prompt}\n\n{block}" if block else self.prompt
+
 
 __all__ = ["ExtractReply", "ExtractSkill", "ExtractedFact", "window_tools"]

@@ -17,11 +17,14 @@ from loguru import logger
 
 from src.core.evidence_extraction.contracts import DualEvidenceExtractionResult
 
+from src.pipeline.mcp.registry import build_memory_client
+from src.pipeline.mcp.reme.client import MemoryClient
 from src.pipeline.tools.fact_chain.contracts import (
     ChainConfig,
     ChainRun,
     PromptVersions,
     SourceDocument,
+    canonical_json,
     sha256_text,
 )
 from src.pipeline.tools.fact_chain.projection import project_dual_result, supported_facts
@@ -44,7 +47,7 @@ class ChainArtifacts:
     bilingual_jsonl: str
 
 
-def _build_provider(cfg: Any) -> Provider:
+def _build_provider(cfg: Any, memory: MemoryClient) -> Provider:
     """Build the stage provider; AgentScope loads only for shadow/agentscope."""
     legacy = LangChainChainProvider(cfg)
     mode = getattr(getattr(cfg, "pipeline", None), "agent_runtime", "legacy")
@@ -57,7 +60,7 @@ def _build_provider(cfg: Any) -> Provider:
     from src.pipeline.skills.fact_chain.translate import TranslateSkill
     from src.pipeline.skills.fact_chain.verify import VerifySkill
 
-    skills = {skill.stage: skill for skill in (ExtractSkill(cfg), VerifySkill(cfg), TranslateSkill(cfg))}
+    skills = {skill.stage: skill for skill in (ExtractSkill(cfg, memory=memory), VerifySkill(cfg), TranslateSkill(cfg))}
     return StageRouterProvider(legacy=legacy, skills=skills, mode=mode)
 
 
@@ -72,9 +75,11 @@ class SourceFactChainService:
         window_chars: int = DEFAULT_WINDOW_CHARS,
         window_overlap: int = DEFAULT_WINDOW_OVERLAP,
         max_provider_calls: int = 0,
+        memory: MemoryClient | None = None,
     ):
         self._cfg = cfg
-        self._provider = provider if provider is not None else _build_provider(cfg)
+        self._memory = memory if memory is not None else build_memory_client(cfg)
+        self._provider = provider if provider is not None else _build_provider(cfg, self._memory)
         self._window_chars = window_chars
         self._window_overlap = window_overlap
         self._max_provider_calls = max_provider_calls
@@ -128,7 +133,30 @@ class SourceFactChainService:
         )
 
     def run(self, document: SourceDocument) -> ChainRun:
-        return ChainRunner(self._provider, self.config).run(document)
+        run = ChainRunner(self._provider, self.config).run(document)
+        self._remember(run)
+        return run
+
+    def _remember(self, run: ChainRun) -> None:
+        """Best-effort run summary; counts and field ids only, never raw text."""
+        labels: dict[str, int] = {}
+        for verification in run.verifications:
+            key = verification.label.value
+            labels[key] = labels.get(key, 0) + 1
+        summary = canonical_json(
+            {
+                "language": run.language,
+                "windows": len(run.windows),
+                "facts": len(run.facts),
+                "field_ids": sorted({fact.field_id for fact in run.facts}),
+                "verifications": labels,
+                "rejections": sorted({rejection.reason for rejection in run.rejections}),
+                "prompt_versions": run.prompt_versions.model_dump() if run.prompt_versions else {},
+            }
+        )
+        receipt = self._memory.auto_memory(session_id=run.document_id, text=summary)
+        if not receipt.accepted:
+            logger.debug("run memory not written: {}", receipt.detail)
 
     async def run_async(self, document: SourceDocument) -> ChainRun:
         """Run the synchronous model chain without blocking the event loop."""
