@@ -54,8 +54,13 @@ jobs:
         env:
           # ansible.cfg logs to /var/log/ansible, which does not exist on the runner.
           ANSIBLE_LOG_PATH: /tmp/ansible-syntax-check.log
+          # ansible.cfg requires deploy/ansible/.vault_pass, which is not
+          # committed. Syntax check needs the file to exist, not the real secret:
+          # nothing under group_vars/ is vault-encrypted in this repo.
+          ANSIBLE_VAULT_PASSWORD_FILE: /tmp/ansible-vault-pass
         run: |
           set -euo pipefail
+          printf 'ci-syntax-check\n' > /tmp/ansible-vault-pass
           pip install ansible-core --quiet
           for inv in inventories/*/hosts.yml; do
             env=$(basename "$(dirname "$inv")")
