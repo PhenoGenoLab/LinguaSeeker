@@ -38,7 +38,7 @@ uv run python scripts/pipeline_shadow_compare.py /tmp/legacy.json /tmp/agent.jso
 
 判定：
 
-- 退出码 `0` 且 `identical=true`：facts（id/字段/极性/主体/span/window）、verification（label+reason）、English（status+text）全部一致。
+- 退出码 `0` 且 `identical=true`：facts（id/字段/极性/主体/span/window）、verification（label+reason）、English（status+text）全部一致，且两次运行的 `ChainConfig` 与 `PromptVersions` 完全相同（配置或提示词不一致会直接失败，避免拿不同版本的 run 做对照）。
 - 退出码 `1`：按输出逐条归因（模型随机性/提示词/校验顺序），记录到实施记录；不允许用“可接受差异”跳过 facts 差异。
 - 成本：`legacy_provider_calls` vs `agent_provider_calls`，增幅 ≤15%。
 - 延迟：用同一台机器各跑 5 次取 P95，增幅 ≤20%。

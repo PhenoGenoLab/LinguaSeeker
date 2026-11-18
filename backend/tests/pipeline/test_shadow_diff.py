@@ -10,6 +10,7 @@ from src.pipeline.tools.fact_chain.contracts import (
     EnglishView,
     Polarity,
     PresentationMode,
+    PromptVersions,
     Subject,
     SubjectStatus,
     SourceFact,
@@ -45,8 +46,20 @@ def _run(
     english: str = "severe hypotonia",
     calls: int = 1,
     omit: bool = False,
+    window_chars: int = 4000,
+    extract_prompt: str | None = None,
 ) -> ChainRun:
-    config = ChainConfig(extract_model="fast", verify_model="reasoning", translate_model="fast")
+    config = ChainConfig(
+        extract_model="fast",
+        verify_model="reasoning",
+        translate_model="fast",
+        window_chars=window_chars,
+    )
+    prompts = (
+        PromptVersions(extract=extract_prompt, verify="verify:v1", translate="translate:v1", presentation="p:v1")
+        if extract_prompt
+        else None
+    )
     facts = [] if omit else [_fact(raw_value)]
     verifications = [] if omit else [Verification(fact_id=FACT_ID, label=label, reason=reason)]
     english_views = (
@@ -70,6 +83,7 @@ def _run(
         source_hash="hash",
         language="zh",
         config=config,
+        prompt_versions=prompts,
         facts=facts,
         verifications=verifications,
         english=english_views,
@@ -108,6 +122,27 @@ def test_verification_label_and_reason_changes_are_reported() -> None:
     assert label_report.verification_diffs
     assert reason_report.identical is False
     assert reason_report.verification_diffs
+
+
+def test_config_change_fails_the_comparison() -> None:
+    report = compare_chain_runs(_run(), _run(window_chars=2000))
+
+    assert not report.identical
+    assert report.config_diffs[0].field == "window_chars"
+
+
+def test_prompt_version_change_fails_the_comparison() -> None:
+    report = compare_chain_runs(_run(extract_prompt="extract:v1"), _run(extract_prompt="extract:v2"))
+
+    assert not report.identical
+    assert report.prompt_version_diffs[0].field == "extract"
+
+
+def test_missing_prompt_versions_are_reported() -> None:
+    report = compare_chain_runs(_run(), _run(extract_prompt="extract:v1"))
+
+    assert not report.identical
+    assert {diff.field for diff in report.prompt_version_diffs} == {"extract", "presentation", "translate", "verify"}
 
 
 def test_english_text_change_is_reported() -> None:

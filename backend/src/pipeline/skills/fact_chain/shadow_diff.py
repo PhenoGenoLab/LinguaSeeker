@@ -20,6 +20,14 @@ class FactDifference(BaseModel):
     fields: list[str]
 
 
+class RuntimeDifference(BaseModel):
+    """A configuration or prompt identity that differs between the runs."""
+
+    field: str
+    legacy: str
+    agent: str
+
+
 class ShadowReport(BaseModel):
     """Deterministic diff between a legacy run and an agent run."""
 
@@ -31,6 +39,8 @@ class ShadowReport(BaseModel):
     fact_field_diffs: list[FactDifference] = Field(default_factory=list)
     verification_diffs: list[str] = Field(default_factory=list)
     english_diffs: list[str] = Field(default_factory=list)
+    config_diffs: list[RuntimeDifference] = Field(default_factory=list)
+    prompt_version_diffs: list[RuntimeDifference] = Field(default_factory=list)
     legacy_provider_calls: int = 0
     agent_provider_calls: int = 0
 
@@ -85,7 +95,31 @@ def compare_chain_runs(legacy: ChainRun, agent: ChainRun) -> ShadowReport:
         if left != right:
             english_diffs.append(f"{key}: legacy={left} agent={right}")
 
-    identical = not (only_legacy or only_agent or field_diffs or verification_diffs or english_diffs)
+    legacy_config = legacy.config.model_dump(mode="json")
+    agent_config = agent.config.model_dump(mode="json")
+    config_diffs = [
+        RuntimeDifference(field=key, legacy=str(legacy_config.get(key)), agent=str(agent_config.get(key)))
+        for key in sorted(set(legacy_config) | set(agent_config))
+        if legacy_config.get(key) != agent_config.get(key)
+    ]
+
+    legacy_prompts = legacy.prompt_versions.model_dump() if legacy.prompt_versions else {}
+    agent_prompts = agent.prompt_versions.model_dump() if agent.prompt_versions else {}
+    prompt_version_diffs = [
+        RuntimeDifference(field=key, legacy=str(legacy_prompts.get(key)), agent=str(agent_prompts.get(key)))
+        for key in sorted(set(legacy_prompts) | set(agent_prompts))
+        if legacy_prompts.get(key) != agent_prompts.get(key)
+    ]
+
+    identical = not (
+        only_legacy
+        or only_agent
+        or field_diffs
+        or verification_diffs
+        or english_diffs
+        or config_diffs
+        or prompt_version_diffs
+    )
     return ShadowReport(
         identical=identical,
         legacy_facts=len(legacy_facts),
@@ -95,9 +129,11 @@ def compare_chain_runs(legacy: ChainRun, agent: ChainRun) -> ShadowReport:
         fact_field_diffs=field_diffs,
         verification_diffs=verification_diffs,
         english_diffs=english_diffs,
+        config_diffs=config_diffs,
+        prompt_version_diffs=prompt_version_diffs,
         legacy_provider_calls=legacy.provider_calls,
         agent_provider_calls=agent.provider_calls,
     )
 
 
-__all__ = ["FactDifference", "ShadowReport", "compare_chain_runs"]
+__all__ = ["FactDifference", "RuntimeDifference", "ShadowReport", "compare_chain_runs"]
