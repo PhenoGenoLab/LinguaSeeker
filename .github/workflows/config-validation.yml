@@ -98,8 +98,11 @@ jobs:
       - name: Check model name consistency
         run: |
           set -euo pipefail
-          # The canonical rerank model must be BAAI/bge-reranker-v2-m3 everywhere
-          STALE=$(git grep -rn 'Qwen/Qwen3-Reranker' -- '*.yaml' '*.yml' '*.py' || true)
+          # The canonical rerank model must be BAAI/bge-reranker-v2-m3 everywhere.
+          # This file is excluded: it holds the pattern and the message, so it
+          # always matched itself.
+          STALE=$(git grep -rn 'Qwen/Qwen3-Reranker' -- '*.yaml' '*.yml' '*.py' \
+            ':!.github/workflows/config-validation.yml' || true)
           if [[ -n "$STALE" ]]; then
             echo "::error::Stale rerank model name 'Qwen/Qwen3-Reranker' found:"
             echo "$STALE"
