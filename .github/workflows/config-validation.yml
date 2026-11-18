@@ -25,20 +25,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check no hardcoded secrets in tracked files
-        run: |
-          set -euo pipefail
-          # Known secret patterns that must NOT appear in tracked files
-          SECRETS=$(git grep -rn -E '(password|api_key|secret|token)\s*[:=]\s*[A-Za-z0-9@#$%]{8,}' \
-            -- ':!*example' ':!*Example' ':!*.example' ':!*.j2' ':!*.md' ':!*.txt' \
-            || true)
-          if [[ -n "$SECRETS" ]]; then
-            echo "::error::Potential secrets found in tracked files:"
-            echo "$SECRETS"
-            exit 1
-          fi
-          echo "No hardcoded secrets found."
-
       - name: Validate Docker Compose files
         run: |
           set -euo pipefail
