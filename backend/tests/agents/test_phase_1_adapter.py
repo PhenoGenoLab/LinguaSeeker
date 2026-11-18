@@ -11,7 +11,7 @@ from src.agents.contracts import (
     RetryablePhaseError,
     PermanentPhaseError,
 )
-from src.agents.phase_1_adapter import Phase1Adapter
+from src.pipeline.graph.phases.phase_1 import Phase1Adapter
 
 
 @pytest.fixture
@@ -55,9 +55,7 @@ def _stored_pdf(path: str = "/tmp/test.pdf"):
 async def test_phase_1_adapter_success(sample_state: PipelineGraphState):
     """Phase 1 adapter successfully acquires the document PDF."""
     mock_acquisition = MagicMock()
-    mock_acquisition.acquire = AsyncMock(
-        return_value=_make_acquisition_result(stored_file=_stored_pdf())
-    )
+    mock_acquisition.acquire = AsyncMock(return_value=_make_acquisition_result(stored_file=_stored_pdf()))
 
     adapter = Phase1Adapter(acquisition_service=mock_acquisition)
 
@@ -76,9 +74,7 @@ async def test_phase_1_adapter_raises_permanent_on_acquisition_failure(
 ):
     """Phase 1 adapter raises PermanentPhaseError on acquisition failure."""
     mock_acquisition = MagicMock()
-    mock_acquisition.acquire = AsyncMock(
-        return_value=_make_acquisition_result(success=False, error="File not found")
-    )
+    mock_acquisition.acquire = AsyncMock(return_value=_make_acquisition_result(success=False, error="File not found"))
 
     adapter = Phase1Adapter(acquisition_service=mock_acquisition)
 

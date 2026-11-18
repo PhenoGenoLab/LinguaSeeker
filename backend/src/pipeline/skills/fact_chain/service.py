@@ -13,19 +13,21 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from loguru import logger
+
 from src.core.evidence_extraction.contracts import DualEvidenceExtractionResult
 
-from .contracts import (
+from src.pipeline.tools.fact_chain.contracts import (
     ChainConfig,
     ChainRun,
     PromptVersions,
     SourceDocument,
     sha256_text,
 )
-from .projection import project_dual_result, supported_facts
-from .prompts import PRESENTATION_VERSION, current_prompt_versions
-from .providers import LangChainChainProvider, Provider
-from .runner import ChainRunner
+from src.pipeline.tools.fact_chain.projection import project_dual_result, supported_facts
+from src.pipeline.skills.fact_chain.prompts import PRESENTATION_VERSION, current_prompt_versions
+from src.pipeline.skills.fact_chain.runner import ChainRunner
+from src.pipeline.skills.runtime.llm import LangChainChainProvider, Provider
 
 DEFAULT_WINDOW_CHARS = 4000
 DEFAULT_WINDOW_OVERLAP = 200
@@ -42,6 +44,19 @@ class ChainArtifacts:
     bilingual_jsonl: str
 
 
+def _build_provider(cfg: Any) -> Provider:
+    """Build the stage provider; AgentScope loads only for shadow/agentscope."""
+    legacy = LangChainChainProvider(cfg)
+    mode = getattr(getattr(cfg, "pipeline", None), "agent_runtime", "legacy")
+    if mode not in ("shadow", "agentscope"):
+        if mode != "legacy":
+            logger.warning("unknown pipeline.agent_runtime={!r}; using legacy provider", mode)
+        return legacy
+    from src.pipeline.skills.fact_chain.extract import ExtractSkill, StageRouterProvider
+
+    return StageRouterProvider(legacy=legacy, extract=ExtractSkill(cfg), mode=mode)
+
+
 class SourceFactChainService:
     """Runs window -> extract -> verify -> fact-English -> bilingual rows."""
 
@@ -55,7 +70,7 @@ class SourceFactChainService:
         max_provider_calls: int = 0,
     ):
         self._cfg = cfg
-        self._provider = provider if provider is not None else LangChainChainProvider(cfg)
+        self._provider = provider if provider is not None else _build_provider(cfg)
         self._window_chars = window_chars
         self._window_overlap = window_overlap
         self._max_provider_calls = max_provider_calls

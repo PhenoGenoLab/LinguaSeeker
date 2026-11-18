@@ -27,12 +27,12 @@ from src.core.evidence_extraction.domain.catalog import get_field_spec
 
 from .contracts import (
     EVIDENCE_LABELS,
+    ChainRun,
     EnglishStatus,
     EnglishView,
     SourceFact,
     VerificationLabel,
 )
-from .runner import ChainRun
 
 _PRESENTED_STATUSES = frozenset(
     {EnglishStatus.TRANSLATED.value, EnglishStatus.PASSTHROUGH.value, EnglishStatus.PRESERVED.value}

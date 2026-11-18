@@ -31,6 +31,7 @@ dependencies = [
     "langchain-core>=1.4.0",
     "langchain-openai>=1.2.1",
     "langgraph>=1.2.0",
+    "agentscope==2.0.12",
     "langsmith>=0.8.3",
     "pgvector>=0.4.2",
     "aiofiles>=25.1.0",
@@ -109,6 +110,7 @@ dev = [
 # extension just to execute pure-Python tests.
 ci = [
     "acmg-config-loader",
+    "agentscope==2.0.12",
     "aiofiles>=25.1.0",
     "aiosqlite>=0.22.1",
     "asyncpg>=0.29.0",

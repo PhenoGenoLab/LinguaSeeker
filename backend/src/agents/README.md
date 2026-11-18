@@ -1,16 +1,15 @@
 # Agents
 
-> 管线编排和任务调度层——LangGraph 有向图编排、后台任务执行、状态持久化和作业队列。
+> 后台运行与任务调度层——任务执行、状态持久化和作业队列。LangGraph 拓扑与 phase 适配器位于 `src/pipeline/graph/`。
 
 ## Overview
 
-`agents/` 实现 Lingua Seeker 的管线编排引擎。核心是一个基于 LangGraph 的 4 阶段有向图编排器（Phase 1 文献获取 → Phase 2 文档解析 → Phase 3 翻译+证据提取 → Phase 4 实体标准化），配合后台运行器、作业调度器和 PostgreSQL 状态持久化层。Phase 5 不是图节点——它是独立的请求-响应式交互服务（证据审核、对话、审计），通过 `Phase5ServiceFactory` 在 API 层创建。
+`agents/` 实现 Lingua Seeker 管线的**外层运行时**：后台运行器、作业调度器、PostgreSQL 状态持久化和作业队列。4 阶段有向图（Phase 1 文献获取 → Phase 2 文档解析 → Phase 3 翻译+证据提取 → Phase 4 实体标准化）的拓扑与各 Phase 适配器已在阶段 1 目录迁移中移到 `src/pipeline/graph/`；本目录不再包含编排器实现。Phase 5 不是图节点——它是独立的请求-响应式交互服务（证据审核、对话、审计），通过 `Phase5ServiceFactory` 在 API 层创建。
 
 ## Structure
 
 ```
 agents/
-├── orchestrator.py          # LangGraph 有向图编排器（4 阶段节点）
 ├── runner.py                # 后台管线运行器（asyncio task + DB fallback）
 ├── dispatcher.py            # 单任务作业调度器（轮询 pipeline_jobs 表）
 ├── contracts.py             # 状态模型、枚举、错误层次、状态转换守卫
@@ -18,19 +17,19 @@ agents/
 ├── processing_cache.py      # 两级文档处理缓存（L1 Redis + L2 PostgreSQL）
 ├── content_hash.py          # 内容哈希计算（SHA-256 去重）
 ├── concurrency.py           # 并发控制（信号量 + 重试执行器）
-├── phase_1_adapter.py       # Phase 1 适配器（文献/文档获取）
-├── phase_2_adapter.py       # Phase 2 适配器（文档解析 MinerU）
-├── phase_3_adapter.py       # Phase 3 适配器（翻译 + 双轨证据提取）
-├── phase_4_adapter.py       # Phase 4 适配器（实体标准化）
 ├── phase_5_factory.py       # Phase 5 服务工厂（交互审核层，API 层边界）
 └── __init__.py
+
+# 编排器与 Phase 1-4 适配器：
+src/pipeline/graph/topology.py
+src/pipeline/graph/phases/phase_{1..4}.py
 ```
 
 ## Key Components
 
-### `PipelineOrchestrator` (orchestrator.py)
+### `PipelineOrchestrator` (src/pipeline/graph/topology.py)
 
-基于 LangGraph 的管线编排器，构建 4 节点有向图：
+基于 LangGraph 的管线编排器，构建 4 节点有向图（实现位于 pipeline 领域层）：
 
 ```
 Phase 1 (文献获取) → Phase 2 (文档解析) → Phase 3 (翻译+提取) → Phase 4 (标准化) → END
@@ -151,5 +150,6 @@ print(state.pipeline_status, state.phase_2.status)
 | SQLAlchemy | 状态持久化 |
 | Redis (asyncio) | L1 缓存 |
 | loguru | 结构化日志 |
+| `src.pipeline.graph.*` | LangGraph 拓扑与 Phase 1-4 适配器 |
 | `src.core.*` | Phase 1-4 业务逻辑服务 |
 | `src.dao.postgresql.*` | 数据库模型和仓储 |

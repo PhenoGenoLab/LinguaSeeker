@@ -75,8 +75,11 @@ class Phase2Adapter:
                 )
             pdf_path = state.phase_1_output.pdf_path
 
-            # Parse document — use absolute path to survive CWD changes
-            _backend_root = Path(__file__).resolve().parent.parent.parent.parent
+            # Parse document — use absolute path to survive CWD changes.
+            # ``phase_2.py`` sits four levels below the app root
+            # (``<root>/src/pipeline/graph/phases``), so the default data
+            # directory stays ``<root>/data/pipeline`` as before the move.
+            _backend_root = Path(__file__).resolve().parents[5]
             output_dir = str(_backend_root / "data" / "pipeline" / state.processing_run_id / "phase_2")
             parse_result = await self._parse.parse_local_files_and_save(
                 file_paths=[pdf_path],
@@ -117,7 +120,7 @@ class Phase2Adapter:
         assert state.pre_parsed_markdown is not None  # noqa: S101
         markdown_text = state.pre_parsed_markdown
 
-        backend_root = Path(__file__).resolve().parent.parent.parent.parent
+        backend_root = Path(__file__).resolve().parents[5]
         output_dir = backend_root / "data" / "pipeline" / state.processing_run_id / "phase_2"
         output_dir.mkdir(parents=True, exist_ok=True)
 

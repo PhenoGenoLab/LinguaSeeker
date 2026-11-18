@@ -15,7 +15,7 @@ from src.agents.contracts import (
     PermanentPhaseError,
     RetryablePhaseError,
 )
-from src.agents.phase_2_adapter import Phase2Adapter
+from src.pipeline.graph.phases.phase_2 import Phase2Adapter
 
 
 @pytest.fixture
@@ -128,9 +128,7 @@ async def test_phase_2_adapter_raises_retryable_on_mineru_timeout(sample_state: 
     )
 
     mock_parse = MagicMock()
-    mock_parse.parse_local_files_and_save = AsyncMock(
-        side_effect=MinerUTimeoutError(total_timeout=120.0)
-    )
+    mock_parse.parse_local_files_and_save = AsyncMock(side_effect=MinerUTimeoutError(total_timeout=120.0))
 
     adapter = Phase2Adapter(parse_service=mock_parse)
 

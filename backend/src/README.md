@@ -4,7 +4,7 @@
 
 ## Overview
 
-`src/` 是 Lingua Seeker 后端的核心代码包，按职责分为 5 个子包：配置管理（`core/`）、管线编排（`agents/`）、HTTP API（`api/`）、数据访问（`dao/`）和通用工具（`utils/`）。
+`src/` 是 Lingua Seeker 后端的核心代码包，按职责分为 6 个子包：配置管理（`core/`）、pipeline 领域层（`pipeline/`）、后台运行与调度（`agents/`）、HTTP API（`api/`）、数据访问（`dao/`）和通用工具（`utils/`）。
 
 ## Structure
 
@@ -17,8 +17,13 @@ src/
 │   ├── cross_lingual_process_and_extract_evidence/  # Phase 2: 翻译和证据提取
 │   ├── standardize_entities_and_align_knowledge/    # Phase 3: 实体标准化
 │   └── visualize_evidence_with_expert_in_loop/      # Phase 4: 专家审核反馈
-├── agents/              # 管线编排和任务调度
-│   ├── orchestrator.py          # LangGraph 管线编排器
+├── pipeline/            # pipeline 领域层（阶段 1-2 目录迁移）
+│   ├── graph/                   # LangGraph 拓扑与 Phase 1-4 适配器
+│   ├── skills/                  # AgentScope 子智能体、prompt、模型运行时
+│   ├── tools/                   # 确定性能力（事实链校验、窗口、投影）
+│   ├── mcp/                     # 外部协议适配
+│   └── contracts/               # 跨层 DTO
+├── agents/              # 后台运行与任务调度（外层）
 │   ├── runner.py                # 后台管线运行器
 │   ├── dispatcher.py            # 单任务作业调度器
 │   ├── contracts.py             # 状态模型、错误层次、状态转换守卫
@@ -26,7 +31,7 @@ src/
 │   ├── processing_cache.py      # 两级缓存（L1 Redis + L2 PostgreSQL）
 │   ├── content_hash.py          # 内容哈希去重
 │   ├── concurrency.py           # 信号量和重试执行器
-│   └── phase_*_adapter.py       # Phase 1-3 适配器
+│   └── phase_5_factory.py       # Phase 5 服务工厂
 ├── api/                 # HTTP API 层
 │   ├── wiring.py                # 依赖注入和服务组装
 │   ├── auth.py                  # API Key 和会话认证
