@@ -28,7 +28,7 @@
 - 编排层只负责流程拓扑、全局状态、路由决策与节点可观测性；不得包含具体业务规则。
 - 垂直特性包负责完整业务闭环：对编排器暴露 `api.py`/Node 接口，内部使用 `core.py` 放纯业务逻辑，`providers.py` 封装 LLM/DB/Rust I/O/外部服务，`contracts.py` 或 `schema.py` 放强类型契约。
 - 全局状态使用 Pydantic 模型作为单一真相源；节点之间通过类型化状态增量通信，禁止裸 `dict` 作为稳定跨模块契约。
-- 本仓库 Backend 映射：`backend/src/agents/` 是 Orchestrator，`backend/src/core/<feature>/` 是 Features，`backend/src/utils/`、`backend/src/dao/`、Rust crates 是 Shared infrastructure，`backend/src/core/config.py` 是 Config。
+- 本仓库 Backend 映射：`backend/src/pipeline/`（graph/skills/tools/mcp）是 pipeline 领域层，`backend/src/agents/` 是外层运行时（runner、dispatcher、状态持久化），`backend/src/core/<feature>/` 是 Features，`backend/src/utils/`、`backend/src/dao/`、Rust crates 是 Shared infrastructure，`backend/src/core/config.py` 是 Config。
 - Frontend 映射：`frontend/src/pages/` 负责页面级编排，`frontend/src/components/<feature>/` 与 `frontend/src/hooks/` 承载垂直 UI 特性，`frontend/src/components/`（antd 衍生组件）、`frontend/src/api/`、`frontend/src/types/`、`frontend/src/stores/` 为共享基础设施。
 
 ### 3. 文档管理
@@ -375,11 +375,12 @@ Lingua Seeker is a Multi-Agent infrastructure platform for medical genetics lite
 
 #### Backend (`backend/`)
 
-FastAPI async application. Business logic lives in `backend/src/` (not `app/`) and should prefer **Orchestrated Vertical Slice Architecture** for new modules: `src/agents/` owns workflow topology, global Pydantic state, routing decisions, and node telemetry; `src/core/<feature>/` owns vertical feature slices; `src/dao/`, `src/utils/`, Rust crates, and shared clients provide infrastructure.
+FastAPI async application. Business logic lives in `backend/src/` (not `app/`) and should prefer **Orchestrated Vertical Slice Architecture** for new modules: `src/pipeline/` owns the pipeline domain (LangGraph topology, AgentScope skills, deterministic tools); `src/agents/` owns the outer runtime (global Pydantic state, runner, dispatcher, node telemetry); `src/core/<feature>/` owns vertical feature slices; `src/dao/`, `src/utils/`, Rust crates, and shared clients provide infrastructure.
 
 ```
 src/
-├── agents/        # Orchestrator: LangGraph topology, GraphState, router decisions
+├── pipeline/      # Pipeline domain: graph topology, skills, deterministic tools
+├── agents/        # Outer runtime: GraphState, runner, dispatcher, state persistence
 ├── core/
 │   ├── config.py                          # pydantic-settings singleton, all env vars
 │   ├── ingest_and_digitize_data/          # Phase 1 feature slices: acquisition + upload + parsing

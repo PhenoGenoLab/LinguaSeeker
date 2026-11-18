@@ -55,7 +55,7 @@ graph LR
     C --> D[Phase 4<br/>专家审核]
 ```
 
-- **编排器** (`src/agents/orchestrator.py`) — LangGraph StateGraph，3 节点有向图
+- **编排器** (`src/pipeline/graph/topology.py`) — LangGraph StateGraph，4 阶段有向图
 - **运行器** (`src/agents/runner.py`) — asyncio 后台任务管理，内存缓存 + DB 持久化
 - **调度器** (`src/agents/dispatcher.py`) — 单任务轮询，`SELECT FOR UPDATE SKIP LOCKED`
 - **状态持久化** (`src/agents/state_persistence.py`) — 崩溃恢复，状态转换守卫

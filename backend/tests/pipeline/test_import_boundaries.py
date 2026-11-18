@@ -14,25 +14,17 @@ BACKEND_ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = BACKEND_ROOT / "src"
 PIPELINE_ROOT = SRC_ROOT / "pipeline"
 
-# The five modules moved to ``src/pipeline/graph`` in stage 1.  Their old paths
-# remain as re-export shims; production code may only reach them through the
-# allowlist below (in practice, ``src/api/wiring.py``).
-LEGACY_GRAPH_MODULES = (
+# Modules replaced by the pipeline directory migration.  Their transitional
+# re-export shims were removed, so importing an old path is a hard failure; the
+# AST check also guards against re-introducing a legacy module.
+REMOVED_LEGACY_MODULES = (
     "src.agents.orchestrator",
     "src.agents.phase_1_adapter",
     "src.agents.phase_2_adapter",
     "src.agents.phase_3_adapter",
     "src.agents.phase_4_adapter",
+    "src.core.source_fact_chain",
 )
-
-# The source-fact-chain modules moved to ``src/pipeline/{tools,skills}`` in
-# stage 2.  Their old paths stay importable as shims for one release cycle.
-LEGACY_FACT_CHAIN_MODULES = ("src.core.source_fact_chain",)
-
-# Files outside ``src/pipeline`` that are allowed to import a legacy module
-# path.  Wiring intentionally keeps the old imports so the outer service layer
-# does not change in the migration.
-LEGACY_IMPORT_ALLOWLIST = frozenset({"api/wiring.py"})
 
 
 def _iter_python_files(root: Path) -> list[Path]:
@@ -42,16 +34,16 @@ def _iter_python_files(root: Path) -> list[Path]:
     return sorted(path for path in root.rglob("*.py") if "__pycache__" not in path.parts and ".venv" not in path.parts)
 
 
-def _module_name(path: Path) -> str:
-    """Return the dotted module name for a file under ``src``."""
-    relative = path.relative_to(SRC_ROOT).with_suffix("")
+def _module_name(path: Path, package_root: Path) -> str:
+    """Return the dotted module name for a file under ``package_root``."""
+    relative = path.relative_to(package_root).with_suffix("")
     parts = list(relative.parts)
     if parts and parts[-1] == "__init__":
         parts.pop()
     return ".".join(parts)
 
 
-def _resolve_import(node: ast.AST, importer: Path) -> list[str]:
+def _resolve_import(node: ast.AST, importer: Path, package_root: Path) -> list[str]:
     """Resolve absolute and relative imports of one AST node to module names."""
     if isinstance(node, ast.Import):
         return [alias.name for alias in node.names]
@@ -61,7 +53,7 @@ def _resolve_import(node: ast.AST, importer: Path) -> list[str]:
     if node.level == 0:
         return [node.module] if node.module else []
 
-    importer_parts = _module_name(importer).split(".")
+    importer_parts = _module_name(importer, package_root).split(".")
     if importer.is_file() and importer.name != "__init__.py":
         importer_parts = importer_parts[:-1]
     # ``level == 1`` means the current package, ``level == 2`` its parent, ...
@@ -72,13 +64,13 @@ def _resolve_import(node: ast.AST, importer: Path) -> list[str]:
     return [".".join(base)] if base else []
 
 
-def _imported_modules(path: Path) -> set[str]:
+def _imported_modules(path: Path, package_root: Path = SRC_ROOT) -> set[str]:
     """Return every module name imported by ``path`` (including submodules)."""
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     modules: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
-            modules.update(_resolve_import(node, path))
+            modules.update(_resolve_import(node, path, package_root))
     return modules
 
 
@@ -94,10 +86,11 @@ def _assert_no_imports(
     root: Path,
     forbidden: tuple[str, ...],
     boundary: str,
+    package_root: Path = SRC_ROOT,
 ) -> None:
     violations: list[str] = []
     for path in _iter_python_files(root):
-        hits = _imports_any(_imported_modules(path), forbidden)
+        hits = _imports_any(_imported_modules(path, package_root), forbidden)
         if hits:
             relative = path.relative_to(BACKEND_ROOT)
             violations.append(f"{relative} -> {', '.join(hits)}")
@@ -180,27 +173,22 @@ def test_phase_modules_resolve_default_output_root_to_app_root() -> None:
         )
 
 
-def test_pipeline_tree_does_not_import_legacy_modules() -> None:
+def test_pipeline_tree_does_not_import_removed_legacy_modules() -> None:
     _assert_no_imports(
         PIPELINE_ROOT,
-        LEGACY_GRAPH_MODULES + LEGACY_FACT_CHAIN_MODULES,
-        "src/pipeline must import the new module paths, not the legacy shims",
+        REMOVED_LEGACY_MODULES,
+        "src/pipeline must import the new module paths, not the removed legacy shims",
     )
 
 
-def test_legacy_imports_are_confined_to_allowlist() -> None:
-    legacy = LEGACY_GRAPH_MODULES + LEGACY_FACT_CHAIN_MODULES
-    violations: list[str] = []
-    for path in _iter_python_files(SRC_ROOT):
-        relative = path.relative_to(SRC_ROOT)
-        if not relative.parts or relative.parts[0] == "pipeline":
-            continue
-        if str(relative) in LEGACY_IMPORT_ALLOWLIST:
-            continue
-        hits = _imports_any(_imported_modules(path), legacy)
-        if hits:
-            violations.append(f"src/{relative} -> {', '.join(hits)}")
-    assert not violations, (
-        "legacy module imports are only allowed in the shim allowlist "
-        f"{sorted(LEGACY_IMPORT_ALLOWLIST)}:\n" + "\n".join(violations)
-    )
+def test_source_and_tests_do_not_import_removed_legacy_modules() -> None:
+    for root, package_root, boundary in (
+        (SRC_ROOT, SRC_ROOT, "src/"),
+        (BACKEND_ROOT / "tests", BACKEND_ROOT / "tests", "tests/"),
+    ):
+        _assert_no_imports(
+            root,
+            REMOVED_LEGACY_MODULES,
+            f"{boundary} must not import the removed legacy shim modules",
+            package_root,
+        )

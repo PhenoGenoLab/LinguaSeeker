@@ -135,17 +135,12 @@ def wire_dependencies() -> None:
     engine → session_factory → adapters → orchestrator → runner → factory.
     """
     from src.agents.concurrency import PipelineSemaphore, RetryablePhaseExecutor
-    from src.agents.orchestrator import PipelineOrchestrator
-    from src.agents.phase_1_adapter import Phase1Adapter
-    from src.agents.phase_2_adapter import Phase2Adapter
-    from src.agents.phase_3_adapter import Phase3Adapter
-    from src.agents.phase_4_adapter import Phase4Adapter
     from src.agents.phase_5_factory import Phase5ServiceFactory
     from src.agents.runner import PipelineRunner
     from src.agents.state_persistence import SessionBoundStatePersistence
     from src.api.deps import set_neo4j_repository, set_phase5_factory
     from src.api.v1.pipeline import set_pipeline_runner
-    from src.core.source_fact_chain.api import SourceFactChainService
+    from src.core.graph_rag.api import GraphRagService
     from src.core.ingest_and_digitize_data.document_acquisition.service import (
         DocumentAcquisitionService,
     )
@@ -158,13 +153,18 @@ def wire_dependencies() -> None:
     from src.core.ingest_and_digitize_data.parse_document.remote.parser import (
         MinerURemoteParser,
     )
-    from src.core.graph_rag.api import GraphRagService
     from src.core.ingest_and_digitize_data.parse_document.service import (
         ParseDocumentService,
     )
     from src.core.standardize_entities_and_align_knowledge.api import (
         EntityStandardizationService,
     )
+    from src.pipeline.graph.phases.phase_1 import Phase1Adapter
+    from src.pipeline.graph.phases.phase_2 import Phase2Adapter
+    from src.pipeline.graph.phases.phase_3 import Phase3Adapter
+    from src.pipeline.graph.phases.phase_4 import Phase4Adapter
+    from src.pipeline.graph.topology import PipelineOrchestrator
+    from src.pipeline.skills.fact_chain.service import SourceFactChainService
 
     global _engine, _session_factory, _redis_client, _local_parser, _dispatcher, _neo4j_driver, _neo4j_repository
 

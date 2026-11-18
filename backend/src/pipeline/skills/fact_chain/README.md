@@ -1,8 +1,8 @@
-# source_fact_chain — 原文事实链（Phase 3）
+# fact_chain — 原文事实链（Phase 3）
 
-> **已迁移（阶段 2）**：实现位于 `src/pipeline/tools/fact_chain`（确定性能力）与
-> `src/pipeline/skills/fact_chain`（prompt、阶段编排、服务门面）。本目录仅保留
-> 一个发布周期的 re-export shim，新代码请勿再引用 `src.core.source_fact_chain.*`。
+> 实现分两层：确定性能力在 `src/pipeline/tools/fact_chain`（契约、校验、窗口、投影），
+> prompt、阶段编排与服务门面在本目录 `src/pipeline/skills/fact_chain`。旧路径
+> `src.core.source_fact_chain` 的 re-export shim 已删除。
 >
 > 把解析后的原文按窗口切分，只从原文抽取事实，先核验再只翻译展示字段，最终产出
 > 双语事实行和 Phase 4 可消费的双轨投影。全流程不再翻译整篇文档，也不再从译文
