@@ -52,7 +52,7 @@ CI 等价环境（`uv export --frozen --only-group ci` + PyPI 安装）：
 
 | 检查 | 命令 | 结果 |
 |---|---|---|
-| 确定性套件 + 覆盖率 | CI 同款命令 | **382 passed**，覆盖率 **89.34%**（含运行时开关接线、legacy 惰性加载、全部 62 个 shim 导入与节点级进度测试） |
+| 确定性套件 + 覆盖率 | CI 同款命令 | **383 passed**，覆盖率 **89.34%**（含运行时开关接线、legacy 惰性加载、全部 62 个 shim 导入与节点级进度测试） |
 | pipeline API（独立进程） | `pytest tests/api/test_pipeline_api.py -q` | **18 passed** |
 | 术语库 + graph_rag + evidence_extraction | 三目录联合 | **841 passed, 3 skipped** |
 | 全后端离线套件 | `pytest tests`（排除 `rust_io` facade、`test_mineru_parser`、`cross_lingual_translation`、pipeline API 单独跑） | **2148 passed, 14 skipped, 2 failed**；2 个失败为 `pgvector` 迁移断言与 `origin/dev` 完全一致（`git diff origin/dev...HEAD -- backend/database backend/tests/dao` 为空），非本次改动 |

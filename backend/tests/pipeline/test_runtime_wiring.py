@@ -76,3 +76,16 @@ def test_legacy_mode_never_imports_agentscope() -> None:
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_fastapi_app_imports_with_new_domain_layout() -> None:
+    """The ASGI entry point must import after the domain-layer migration."""
+    result = subprocess.run(
+        [sys.executable, "-c", "from app.main import app; assert app.routes"],
+        cwd=BACKEND_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+
+    assert result.returncode == 0, result.stderr
