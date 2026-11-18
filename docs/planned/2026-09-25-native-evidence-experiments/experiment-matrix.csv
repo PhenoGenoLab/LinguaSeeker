@@ -1,0 +1,12 @@
+unit_id,unit_kind,proposal_tracks,semantic_review,output_policy,candidate_parent,primary_comparator,execution_mode,notes
+B0,method,O1,off,all_valid_facts,,false,live_recipe_may_share_declared_nodes,low-cost prompting; full window coverage; not matched-cost claim
+B1,method,O1,on,full_acceptance,,false,live_recipe_may_share_declared_nodes,shared proposer/reviewer roles; no test-informed repair
+B2,method,O1+O2,on,full_acceptance,,true,live_recipe_may_share_declared_nodes,OO independent proposals; primary control; common total budget cap
+B3,method,T1,on,full_acceptance,,false,live_recipe_may_share_declared_nodes,translation charged; source evidence must map to original
+M,method,O1+T1,on,full_acceptance,,true,live_recipe_may_share_declared_nodes,OT full method; common total budget cap
+F_OO_R0,method_derived,O1+O2,off,structural_and_location,B2.proposal_pool,false,derive_existing_candidate_pool,reuse frozen pre-review candidates; semantic labels remain unevaluated
+F_OT_R0,method_derived,O1+T1,off,structural_and_location,M.proposal_pool,false,derive_existing_candidate_pool,reuse frozen pre-review candidates; semantic labels remain unevaluated
+BIO,method,biomedical_tool+adapter,on,full_acceptance,,false,live_recipe_may_share_declared_nodes,implementation pending development feasibility; MT charged if used
+P_FULL,policy_replay,O1+T1,frozen,full_acceptance,M.proposal_pool+review,false,offline_policy_replay,must reproduce M exactly
+P_NO_SPAN,policy_replay,O1+T1,frozen,full_except_span_requirement,M.proposal_pool+review,false,offline_policy_replay,selection-only analysis; not live removal of verifier
+P_ALL,policy_replay,O1+T1,frozen,all_valid_facts,M.proposal_pool+review,false,offline_policy_replay,gate-free output of same candidate pool

@@ -1,0 +1,80 @@
+{
+  "task_id": "EVAL-C3-OMP",
+  "executor": "omp CLI",
+  "dispatch_status": "completed",
+  "execution_status": "delivered",
+  "acceptance_status": "accepted_for_this_scope",
+  "started_at": "2026-10-31T08:17:16.103938+00:00",
+  "pid": 1116655,
+  "cwd": "/data/yangzs/Projects/04_Papers/01_ACMG_Lingua-paper",
+  "publication": "docs/archive/papers/2026-10-31-native-source-task-release-11",
+  "stdout": "logs/2026-10-31-eval-c5-omp.stdout.jsonl",
+  "stderr": "logs/2026-10-31-eval-c5-omp.stderr.log",
+  "session_dir": "logs/2026-10-31-eval-c3-omp-sessions",
+  "coordinator": "publication and independent acceptance only",
+  "model_override": true,
+  "attempt": 3,
+  "attempts": [
+    {
+      "attempt": 1,
+      "pid": 1091427,
+      "session_id": "01a190ed-6b3e-72a0-9794-1d5e7d95944b",
+      "model": "commandcode/claude-sonnet-5",
+      "status": "failed_before_implementation",
+      "error": "403 MODEL_NOT_IN_PLAN: Claude Sonnet 5 requires Pro or on-demand usage",
+      "stdout": "logs/2026-10-31-eval-c3-omp.stdout.jsonl",
+      "stderr": "logs/2026-10-31-eval-c3-omp.stderr.log"
+    },
+    {
+      "attempt": 2,
+      "pid": 1094133,
+      "model": "commandcode/deepseek-v4.1-flash",
+      "status": "failed_before_model_call",
+      "error": "CLI requires canonical model ID commandcode/deepseek/deepseek-v4.1-flash",
+      "stdout": "logs/2026-10-31-eval-c3-omp.attempt2.stdout.jsonl",
+      "stderr": "logs/2026-10-31-eval-c3-omp.attempt2.stderr.log"
+    }
+  ],
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "model_override_authority": "user requested commandcode deepseek-v4.1-flash; resolved to canonical catalog ID",
+  "session_id": "01a19108-d15e-727e-a98a-486605500d00",
+  "observed_tool_calls": 10,
+  "observed_model_errors": 0,
+  "rounds": [
+    {
+      "round": 1,
+      "session_id": "01a190f4-6117-7501-af78-2ee369345788",
+      "pid": 1097257,
+      "delivered_version": "eval-c1-resume-c4",
+      "delivery_status": "delivered",
+      "acceptance_status": "changes_requested",
+      "review": "docs/archive/papers/2026-10-31-omp-eval-delivery-review/README.md",
+      "stdout": "logs/2026-10-31-eval-c3-omp.attempt3.stdout.jsonl",
+      "stderr": "logs/2026-10-31-eval-c3-omp.attempt3.stderr.log"
+    },
+    {
+      "round": 2,
+      "session_id": "01a19108-d15e-727e-a98a-486605500d00",
+      "pid": 1116655,
+      "model": "commandcode/deepseek/deepseek-v4.1-flash",
+      "delivered_version": "eval-c1-resume-c5",
+      "delivery_status": "delivered",
+      "acceptance_status": "accepted_for_this_scope",
+      "review": "docs/archive/papers/2026-10-31-omp-eval-final-review/README.md",
+      "stdout": "logs/2026-10-31-eval-c5-omp.stdout.jsonl",
+      "stderr": "logs/2026-10-31-eval-c5-omp.stderr.log"
+    }
+  ],
+  "execution_round": 2,
+  "task_followup": "docs/archive/papers/2026-10-31-omp-eval-delivery-review/next-task.md",
+  "accepted_version": "eval-c1-resume-c5",
+  "acceptance_record": "docs/archive/papers/2026-10-31-omp-eval-final-review/acceptance.json",
+  "finished_at": "2026-10-31T08:42:02.588874+00:00",
+  "coordinator_implemented_eval_logic": false,
+  "future_implementation_executor": "omp",
+  "total_cli_launches": 4,
+  "failed_cli_launches": 2,
+  "successful_implementation_sessions": 2,
+  "research_execution_authorized": false,
+  "frozen": false
+}

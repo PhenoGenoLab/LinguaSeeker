@@ -1,0 +1,33 @@
+{
+  "task_id": "REFERENCE-PROTOCOL-R1",
+  "executor": "omp",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 3984920,
+  "started_at": "2026-11-03T04:25:36.926128+00:00",
+  "execution_status": "delivered",
+  "acceptance_status": "changes_requested",
+  "review": "docs/archive/papers/2026-11-03-native-reference-r1-content-review/acceptance.json",
+  "task": "docs/archive/papers/2026-11-03-native-source-task-release-19/reference-protocol-r1.md",
+  "worktree": ".worktrees/native-reference-r1",
+  "stdout": "logs/2026-11-03-native-reference-r1-omp.stdout.jsonl",
+  "stderr": "logs/2026-11-03-native-reference-r1-omp.stderr.log",
+  "args": [
+    "/home/yangzs/.bun/bin/omp",
+    "--model",
+    "commandcode/deepseek/deepseek-v4.1-flash",
+    "--print",
+    "--mode",
+    "json",
+    "--no-title",
+    "--no-prewalk",
+    "--no-pty",
+    "--tools",
+    "read,bash,edit,write,grep,glob,todo",
+    "--session-dir",
+    "/data/yangzs/Projects/04_Papers/01_ACMG_Lingua-paper/logs/2026-11-03-native-reference-r1-omp-sessions",
+    "@/data/yangzs/Projects/04_Papers/01_ACMG_Lingua-paper/docs/archive/papers/2026-11-03-native-source-task-release-19/reference-protocol-r1.md"
+  ],
+  "external_services_in_scope": false,
+  "research_requests_allowed": false,
+  "protected_paths": 1481
+}

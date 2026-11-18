@@ -1,5 +1,9 @@
 # dev → prod 数据库同步 Runbook
 
+> **已失效（2026-10-22）**：PG 自 2026-10-16 起从 `backend-host` compose 解耦为独立容器（`172.17.0.1:5432`），
+> `lingua_seeker` 不再是 superuser，空库引导改走 pg_dump custom-format。
+> 以 [云上 PG 建库 / 全量引导 / 增量同步 SOP](2026-10-22-cloud-pg-sync-sop.md) 为准；本文仅保留历史排查记录（§4、§8 仍有参考价值）。
+
 > 首次走通: 2026-08-01(sync_bundle_batch_20260801_094627,~134k 行)
 
 ## 0. 概述

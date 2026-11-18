@@ -1,0 +1,15 @@
+{
+  "task_id": "FROZEN-INPUT-R1-C3",
+  "executor": "omp",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 781954,
+  "started_at": "2026-11-04T03:25:50.969378+00:00",
+  "execution_status": "delivered",
+  "acceptance_status": "accepted_for_offline_frozen_input_scope",
+  "task": "docs/archive/papers/2026-11-04-native-frozen-input-r1-c3-review/frozen-input-r1-c3.md",
+  "stdout": "logs/2026-11-04-frozen-input-r1-c3-omp.stdout.jsonl",
+  "stderr": "logs/2026-11-04-frozen-input-r1-c3-omp.stderr.log",
+  "research_requests_allowed": false,
+  "review": "docs/archive/papers/2026-11-04-native-frozen-input-r1-c3-independent-review/README.md",
+  "delivery": "docs/archive/papers/2026-11-04-native-frozen-input-delivery/frozen-input-r1-c3/"
+}

@@ -1,0 +1,19 @@
+{
+  "task_id": "EVIDENCE-ROLE-IMPL-R1-REVIEW",
+  "executor": "omp",
+  "role": "post_delivery_review",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 3205639,
+  "started_at": "2026-11-11T07:48:28.743440+00:00",
+  "execution_status": "running",
+  "acceptance_status": "pending",
+  "parent_task": "EVIDENCE-ROLE-IMPL-R1",
+  "delivery": "docs/archive/papers/2026-11-11-native-evidence-role-impl-delivery/evidence-role-impl-r1",
+  "task": "docs/archive/papers/2026-11-11-native-source-task-release-48/omp-review-after-delivery.md",
+  "review_dir": "docs/archive/papers/2026-11-11-native-evidence-role-impl-r1-review",
+  "stdout": "logs/2026-11-11-evidence-role-impl-r1-omp-review.stdout.jsonl",
+  "stderr": "logs/2026-11-11-evidence-role-impl-r1-omp-review.stderr.log",
+  "delivery_seal_sha256": "dbc131018d8431898283eda94d3da78c89789a7154df600f106f716c528853b8",
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false
+}

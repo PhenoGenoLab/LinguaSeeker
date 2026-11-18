@@ -1,0 +1,17 @@
+{
+  "task_id": "PILOT-R1-GPT6-LUNA-PREP",
+  "executor": "coordinator",
+  "reviewer": "coordinator_independent_offline",
+  "model_research": "gpt-6-luna",
+  "endpoint": "responses",
+  "execution_status": "delivered",
+  "acceptance_status": "accepted_for_offline_gpt6_luna_preparation",
+  "research_requests_allowed": false,
+  "research_requests_made": 0,
+  "live_run_authorized": false,
+  "awaiting_external_inputs": true,
+  "delivery": "docs/archive/papers/2026-11-09-native-pilot-model-switch-delivery/gpt6-luna-prep",
+  "acceptance": "docs/archive/papers/2026-11-09-native-pilot-gpt6-luna-prep-coordinator-acceptance",
+  "release": "docs/archive/papers/2026-11-09-native-source-task-release-37",
+  "completed_at": "2026-11-09T04:02:41.952455+00:00"
+}

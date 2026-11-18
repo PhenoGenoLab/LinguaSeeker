@@ -1,0 +1,20 @@
+{
+  "task_id": "CONTRACT-COVERAGE-R1",
+  "executor": "omp",
+  "model": "volcengine-plan/deepseek-v4.1-flash",
+  "pid": 1804661,
+  "started_at": "2026-11-05T02:20:43.235897+00:00",
+  "execution_status": "delivered",
+  "acceptance_status": "changes_requested",
+  "priority": "P1",
+  "parent_gap": "G-02",
+  "task": "docs/archive/papers/2026-11-05-native-source-task-release-24/contract-coverage-r1.md",
+  "worktree": ".worktrees/native-contract-coverage-r1",
+  "delivery": "docs/archive/papers/2026-11-05-native-contract-coverage-delivery/contract-coverage-r1",
+  "stdout": "logs/2026-11-05-contract-coverage-r1-omp.stdout.jsonl",
+  "stderr": "logs/2026-11-05-contract-coverage-r1-omp.stderr.log",
+  "research_requests_allowed": false,
+  "business_source_changes_allowed": false,
+  "old_sealed_paths_writable": false,
+  "review": "docs/archive/papers/2026-11-05-native-contract-coverage-r1-review"
+}

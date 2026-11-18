@@ -1,0 +1,55 @@
+{
+  "task_id": "LOCAL-R1-C1",
+  "subtasks": [
+    "LOCAL-G04-R1",
+    "LOCAL-G03-R1"
+  ],
+  "executor": "omp",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 3235449,
+  "started_at": "2026-11-02T12:03:00.714038+00:00",
+  "execution_status": "delivered",
+  "acceptance_status": "accepted_for_local_engineering_scope",
+  "acceptance_date": "2026-11-02",
+  "delivery": "docs/archive/papers/2026-11-02-native-local-gap-delivery/local-r1-c1",
+  "tests_independently_passed": 176,
+  "blocked_network_attempts": 0,
+  "g03_scope": "generated_window_coverage_only",
+  "g04_scope": "retained_scorer_boundaries_only",
+  "base_r1_status": "in-progress / changes_requested",
+  "human_review_and_merge": "not_approved",
+  "task": "docs/archive/papers/2026-11-02-native-local-r1-review/local-r1-c1.md",
+  "worktree": ".worktrees/native-local-r1",
+  "stdout": "logs/2026-11-02-native-local-r1-c1-omp.stdout.jsonl",
+  "stderr": "logs/2026-11-02-native-local-r1-c1-omp.stderr.log",
+  "research_requests_allowed": false,
+  "external_dependencies_in_scope": false,
+  "args": [
+    "/home/yangzs/.bun/bin/omp",
+    "--model",
+    "commandcode/deepseek/deepseek-v4.1-flash",
+    "--print",
+    "--mode",
+    "json",
+    "--no-title",
+    "--no-prewalk",
+    "--no-pty",
+    "--tools",
+    "read,bash,edit,write,grep,glob,todo",
+    "--session-dir",
+    "/data/yangzs/Projects/04_Papers/01_ACMG_Lingua-paper/logs/2026-11-02-native-local-r1-omp-sessions",
+    "@/data/yangzs/Projects/04_Papers/01_ACMG_Lingua-paper/docs/archive/papers/2026-11-02-native-local-r1-review/local-r1-c1.md"
+  ],
+  "rounds": [
+    {
+      "task_id": "LOCAL-R1",
+      "pid": 3202822,
+      "started_at": "2026-11-02T11:31:40.567875+00:00",
+      "stdout": "logs/2026-11-02-native-local-r1-omp.stdout.jsonl",
+      "stderr": "logs/2026-11-02-native-local-r1-omp.stderr.log",
+      "execution_status": "delivered",
+      "acceptance_status": "changes_requested"
+    }
+  ],
+  "review": "docs/archive/papers/2026-11-02-native-local-r1-review"
+}

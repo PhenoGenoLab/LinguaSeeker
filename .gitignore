@@ -220,3 +220,9 @@ benchmark/data/processed/filtered_pdf_markdown_corpus/markdown/*/*.md
 **/*paper*.html
 lingua_seeker.dump
 data/*
+
+# ── Generated API schema snapshot ────────────────────────────────────────
+backend/openapi.json
+
+# ── CodeGraph workspace index (per-machine, keep its nested .gitignore) ──
+.codegraph/

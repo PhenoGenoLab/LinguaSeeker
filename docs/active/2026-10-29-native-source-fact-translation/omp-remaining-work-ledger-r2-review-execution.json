@@ -1,0 +1,46 @@
+{
+  "task_id": "REMAINING-WORK-LEDGER-R2-REVIEW",
+  "executor": "omp",
+  "role": "post_delivery_review",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 1208838,
+  "started_at": "2026-11-09T07:34:02.252396+00:00",
+  "execution_status": "completed",
+  "acceptance_status": "accepted_for_offline_remaining_work_ledger_r2_scope",
+  "parent_task": "REMAINING-WORK-LEDGER-R2",
+  "delivery": "docs/archive/papers/2026-11-09-native-remaining-work-ledger-delivery/remaining-work-ledger-r2",
+  "task": "docs/archive/papers/2026-11-09-native-source-task-release-34/omp-review-after-delivery.md",
+  "review_dir": "docs/archive/papers/2026-11-09-native-remaining-work-ledger-r2-review",
+  "stdout": "logs/2026-11-09-remaining-work-ledger-r2-omp-review.stdout.jsonl",
+  "stderr": "logs/2026-11-09-remaining-work-ledger-r2-omp-review.stderr.log",
+  "delivery_seal_sha256": "31161b1225befaeacb54b5c74f4dbdd9a7fc54a2e25dc1ad242eb0ae4ee4e989",
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false,
+  "recommended_status": "accepted_for_offline_remaining_work_ledger_r2_scope",
+  "final_acceptance": "pending_coordinator",
+  "completed_at": "2026-11-09T08:00:08Z",
+  "review_seal_sha256": "df9932926290764631a81ac9855c726c8969004de387fb28be524a762c770a9e",
+  "review_checks": {
+    "total": 27,
+    "pass": 25,
+    "observed": 2,
+    "fail": 0
+  },
+  "observations": [
+    "O1: Coordinator-owned active route README changed after the delivery seal; the sealed input-manifest and protected evidence were valid at seal time and are now point-in-time.",
+    "O2: Delivery process-deviations.md declares no substantive deviations, while release-34 HOST-PROTECTED-REFRESH.md records two incomplete host builds saved as failed-host-build-r1/r2."
+  ],
+  "summary": "Delivery seal closes (54/54 members, 0 symlinks, digest 31161b12… matches the review receipt). Ledger matches the fixed R2 adjudication: only C01/C06/C07 changed (17 cells); C01 seal_accepted with still_open=false limited to direct-construction sealing; C06/C07 design_accepted with still_open=true and product_enablement_pending/product_activation_pending; C02-C05/C08/C09 preserve R1. R1/31/32/33 delivery and acceptance seals verify; product 32 .py files are byte-identical to the constructor-seal seed; 89/89 seed rows reproduce; append-only prefixes intact. Independent offline reruns: 6 new tests and 428 full-suite tests passed with 0 network attempts; Ruff clean and 0 bare dict returns. One coordinator-owned active README drifted after the seal (O1); it is point-in-time evidence, not a delivery defect. Product enablement/activation remains open; G-02/BASE remain open.",
+  "boundaries": {
+    "product_bytes_modified": false,
+    "sealed_packages_modified": false,
+    "gates_closed": [],
+    "default_entry_changed": false,
+    "merged_or_pushed": false,
+    "research_requests": 0,
+    "candidate_clinical_gold_text_read": false,
+    "g02_base_closed": false
+  },
+  "coordinator_acceptance": "docs/archive/papers/2026-11-09-native-remaining-work-ledger-r2-coordinator-acceptance",
+  "coordinator_accepted_at": "2026-11-09T09:25:03.992268+00:00"
+}

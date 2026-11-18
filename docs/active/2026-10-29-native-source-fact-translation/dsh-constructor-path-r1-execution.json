@@ -1,0 +1,57 @@
+{
+  "task_id": "CONSTRUCTOR-PATH-R1",
+  "executor": "dsh",
+  "reviewer": "omp",
+  "model": "qwen-token-plan-cn/deepseek-v4.1-flash-1017",
+  "pid": 3532010,
+  "started_at": "2026-11-06T03:17:41.862820+00:00",
+  "execution_status": "delivered",
+  "acceptance_status": "accepted_for_offline_constructor_path_audit_scope",
+  "review_status": "completed_by_coordinator_offline",
+  "priority": "P1",
+  "parent_gap": "G-02/C01",
+  "worktree": ".worktrees/native-constructor-path-r1",
+  "task": "docs/archive/papers/2026-11-06-native-source-task-release-27/constructor-path-r1.md",
+  "delivery": "docs/archive/papers/2026-11-06-native-constructor-path-delivery/constructor-path-r1",
+  "stdout": "logs/2026-11-06-constructor-path-r1-dsh.stdout.jsonl",
+  "stderr": "logs/2026-11-06-constructor-path-r1-dsh.stderr.log",
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false,
+  "runtime_patch": "docs/archive/papers/2026-11-06-native-source-task-release-27/dsh-model-qwen-token-plan-cn.patch.yml",
+  "reviewer_model": "sbs/deepSeek-v4.1-flash-1017",
+  "seed_worktree": ".worktrees/native-nfkc-expansion-r1",
+  "prior_pid": 2904898,
+  "prior_execution_status": "timeout_waiting_for_delivery",
+  "redispatch": "r2_finish_builder_and_seal_after_disk_full",
+  "continuation_task": "docs/archive/papers/2026-11-06-native-source-task-release-27/constructor-path-r1-continuation.md",
+  "disk_note": "first attempt blocked by full disk; /data now ~166G free",
+  "history": [
+    {
+      "at": "2026-11-06T17:09:22.689869+00:00",
+      "event": "r2_redispatch_after_disk_full"
+    },
+    {
+      "at": "2026-11-06T17:10:07.122377+00:00",
+      "event": "r2_quota_then_host_seal"
+    }
+  ],
+  "started_at_r2": "2026-11-06T17:09:22.718806+00:00",
+  "stdout_r2": "logs/2026-11-07-constructor-path-r1-dsh-r2.stdout.jsonl",
+  "stderr_r2": "logs/2026-11-07-constructor-path-r1-dsh-r2.stderr.log",
+  "waiter_pid_r2": 3532019,
+  "r2_error": "QUOTA insufficient_quota token-plan reset 2026-12-05 16:00:00 UTC",
+  "r2_pid": 3532010,
+  "host_build_reason": "token-plan quota exhausted after disk-full interruption; implementation already in worktree with 23 tests green",
+  "delivery_seal_sha256": "e5e8c413dfee2c31dfd2c4025bd54a446fe81b289c04f49c3eda92cf797e1afa",
+  "delivered_at": "2026-11-06T17:13:52.769412+00:00",
+  "review_pid": 3540728,
+  "host_build": {
+    "note": "r1 disk full; r2 token-plan quota exhausted; coordinator wrote builder and sealed on host after 23 new tests / 390 full suite green",
+    "failed_partials_preserved_under": "docs/archive/papers/2026-11-06-native-constructor-path-delivery/",
+    "build_log": "logs/2026-11-07-constructor-path-r1-host-build-r4.log",
+    "seal_entries": 51,
+    "full_suite_passed": 390
+  },
+  "accepted_at": "2026-11-06T17:16:37.962557+00:00",
+  "review": "docs/archive/papers/2026-11-06-native-constructor-path-r1-review"
+}

@@ -20,7 +20,7 @@ document_acquisition/
     └── workflow.py      # upload_document() 入口
 ```
 
-在线文献获取（搜索、下载、多语言翻译、相关性门控、提供商健康追踪、Web 搜索适配器）由 **`lit-acquisition` SDK** 提供：本地路径依赖（`../../17_lit-acquisition`，editable，声明于 `backend/pyproject.toml` 的 `[tool.uv.sources]`）。SDK 自身的 LLM / Web 搜索 / 代理配置在应用启动时由 `src/api/wiring.py::_configure_lit_acquisition()` 从后端配置桥接注入；`UNPAYWALL_EMAIL` / `PUBMED_API_KEY` 等提供商密钥经后端 YAML 扁平化为环境变量后由 SDK 自动读取。
+在线文献获取（搜索、下载、多语言翻译、相关性门控、提供商健康追踪、Web 搜索适配器）由 **`lit-acquisition` SDK** 提供：本地路径依赖（`../../05_lit-acquisition`，editable，声明于 `backend/pyproject.toml` 的 `[tool.uv.sources]`）。SDK 自身的 LLM / Web 搜索 / 代理配置在应用启动时由 `src/api/wiring.py::_configure_lit_acquisition()` 从后端配置桥接注入；`UNPAYWALL_EMAIL` / `PUBMED_API_KEY` 等提供商密钥经后端 YAML 扁平化为环境变量后由 SDK 自动读取。
 
 ## 核心组件
 

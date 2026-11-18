@@ -23,7 +23,7 @@ classifiers = [
 dynamic = ["version"]
 
 [project.urls]
-Homepage = "https://github.com/lanshi17/LinguaSeeker"
-Repository = "https://github.com/lanshi17/LinguaSeeker"
+Homepage = "https://github.com/PhenoGenoLab/LinguaSeeker"
+Repository = "https://github.com/PhenoGenoLab/LinguaSeeker"
 [tool.maturin]
 features = ["pyo3/extension-module"]

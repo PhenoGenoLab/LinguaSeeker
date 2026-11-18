@@ -134,6 +134,11 @@ class DocumentAcquisitionService:
             online_acquisition_workflow,
         )
 
+        # ``request.timeout`` is seconds (int, 60 default) — lit-acquisition
+        # expects ``timeout`` as float phase budget (5..300s, default 30s).
+        # Clamp to the SDK valid range so a large outer budget is not
+        # rejected by pydantic validation.
+        phase_timeout = float(max(5.0, min(300.0, float(request.timeout or 60))))
         payload: dict[str, object] = {
             "action": request.action,
             "query": request.query,
@@ -144,6 +149,7 @@ class DocumentAcquisitionService:
             "prefer": request.prefer,
             "api_provider": request.api_provider,
             "relevance_gate": request.relevance_gate,
+            "timeout": phase_timeout,
         }
         if request.literature_types:
             payload["literature_types"] = list(request.literature_types)
