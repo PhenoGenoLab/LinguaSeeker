@@ -48,24 +48,31 @@ Contracts:
 - `supervisor.py`/workflow code wires nodes and edges only. It must not embed extraction, translation, standardization, or report-generation business logic.
 - Telemetry should wrap every node so input IDs, output IDs, warnings, errors, and duration are traceable without ad-hoc logging in each workflow edge.
 
-**Current state**: The codebase partially follows this pattern. Phases 3 and 4 feature slices use `api.py`/`core.py`/`providers.py`/`contracts.py` naming. The orchestrator layer (`agents/`) uses adapter classes (`phase_*_adapter.py`) rather than a single `supervisor.py`. Phase 1 and Phase 2 features use more descriptive internal naming (e.g., `workflow.py`, `orchestrator.py`) rather than the standard `core.py` convention.
+**Current state**: The codebase partially follows this pattern. Phases 3 and 4 feature slices use `api.py`/`core.py`/`providers.py`/`contracts.py` naming. The pipeline graph layer (`src/pipeline/graph/`) uses adapter classes (`phases/phase_*.py`) rather than a single `supervisor.py`. Phase 1 and Phase 2 features use more descriptive internal naming (e.g., `workflow.py`, `orchestrator.py`) rather than the standard `core.py` convention.
 
 ## 2. Directory Structure
 
 ```text
 backend/
 ├── src/
-│   ├── agents/                                         # Orchestrator layer
+│   ├── agents/                                         # Outer runtime: scheduling, persistence, contracts
 │   │   ├── contracts.py                                # PipelineGraphState, enums, error hierarchy
-│   │   ├── orchestrator.py                             # PipelineOrchestrator — LangGraph graph wiring
 │   │   ├── runner.py                                   # PipelineRunner — background asyncio.Task management
 │   │   ├── concurrency.py                              # PipelineSemaphore, RetryablePhaseExecutor
 │   │   ├── state_persistence.py                        # PostgreSQL state save/load
-│   │   ├── phase_1_adapter.py                          # Phase1Adapter — wraps document acquisition
-│   │   ├── phase_2_adapter.py                          # Phase2Adapter — wraps document parsing (MinerU)
-│   │   ├── phase_3_adapter.py                          # Phase3Adapter — wraps translation + extraction
-│   │   ├── phase_4_adapter.py                          # Phase4Adapter — wraps entity standardization
 │   │   └── phase_5_factory.py                          # Phase5ServiceFactory — creates Phase 5 (interactive review) services
+│   ├── pipeline/                                       # Pipeline domain layer (stage 1-2 migration)
+│   │   ├── graph/
+│   │   │   ├── topology.py                             # PipelineOrchestrator — LangGraph graph wiring
+│   │   │   └── phases/
+│   │   │       ├── phase_1.py                          # Phase1Adapter — wraps document acquisition
+│   │   │       ├── phase_2.py                          # Phase2Adapter — wraps document parsing (MinerU)
+│   │   │       ├── phase_3.py                          # Phase3Adapter — wraps translation + extraction
+│   │   │       └── phase_4.py                          # Phase4Adapter — wraps entity standardization
+│   │   ├── skills/                                     # AgentScope skills, prompts, model runtime
+│   │   ├── tools/                                      # Deterministic helpers (fact-chain checks, windows, projection)
+│   │   ├── mcp/                                        # External protocol adapters (ReMe, planned)
+│   │   └── contracts/                                  # Cross-layer DTOs
 │   ├── api/
 │   │   ├── auth.py                                     # Authentication logic
 │   │   ├── deps.py                                     # Dependency injection
@@ -249,7 +256,7 @@ Environment variables are flat, for example `LLM_API_KEY`, and are mapped to nes
 
 ### 3.2 Task Runtime and Lifecycle
 
-`POST /api/v1/pipeline` creates an async evidence extraction task and returns `task_id` immediately. The pipeline endpoint is defined in `api/v1/pipeline.py` and backed by the orchestrator layer (`agents/orchestrator.py`, `agents/runner.py`).
+`POST /api/v1/pipeline` creates an async evidence extraction task and returns `task_id` immediately. The pipeline endpoint is defined in `api/v1/pipeline.py` and backed by the pipeline graph (`pipeline/graph/topology.py`) and the runtime layer (`agents/runner.py`).
 
 Supported task inputs:
 
@@ -259,7 +266,7 @@ Supported task inputs:
 
 Runtime behavior:
 
-- The `PipelineOrchestrator` (`agents/orchestrator.py`) wires the LangGraph topology with phase adapters.
+- The `PipelineOrchestrator` (`pipeline/graph/topology.py`) wires the LangGraph topology with phase adapters.
 - `PipelineRunner` (`agents/runner.py`) manages background `asyncio.Task` lifecycle.
 - `PipelineSemaphore` and `RetryablePhaseExecutor` (`agents/concurrency.py`) handle concurrency control and phase-level retries.
 - `PipelineGraphState` (`agents/contracts.py`) is the single source of truth for cross-phase data flow.
@@ -699,7 +706,7 @@ Phase-specific tests should cover:
 
 | Old Path | New Target | Reuse |
 |---|---|---|
-| `src/agents/supervisor.py` | `src/agents/orchestrator.py` | LangGraph workflow |
+| `src/agents/supervisor.py` | `src/pipeline/graph/topology.py` | LangGraph workflow |
 | `src/agents/extraction/node.py` | Phase 2 `extract_evidence/` | Evidence extraction logic |
 | `src/agents/parsing/translation_tool.py` | Phase 2 `cross_lingual/translate/` | Adapt between native and translated extraction passes |
 | `src/domain/agent/prompts.py` | Phase 2 `extract_evidence/prompts.py` | Native extraction, translated extraction prompts; reconciliation prompts (planned) |

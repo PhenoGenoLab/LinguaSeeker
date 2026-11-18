@@ -19,14 +19,14 @@
 
 | 现有模块 | 目标层 | 迁移阶段 | 状态 |
 |---|---|---|---|
-| `src/agents/orchestrator.py` | `src/pipeline/graph/topology.py` | 1 | 已迁移，旧路径 shim |
-| `src/agents/phase_1_adapter.py` | `src/pipeline/graph/phases/phase_1.py` | 1 | 已迁移，旧路径 shim |
-| `src/agents/phase_2_adapter.py` | `src/pipeline/graph/phases/phase_2.py` | 1 | 已迁移，旧路径 shim |
-| `src/agents/phase_3_adapter.py` | `src/pipeline/graph/phases/phase_3.py` | 1 | 已迁移，旧路径 shim |
-| `src/agents/phase_4_adapter.py` | `src/pipeline/graph/phases/phase_4.py` | 1 | 已迁移，旧路径 shim |
-| `src/core/source_fact_chain/{contracts,core,windowing,projection,api}.py` | `src/pipeline/tools/fact_chain/` | 2 | 未开始 |
-| `src/core/source_fact_chain/{runner,prompts}.py` | `src/pipeline/skills/fact_chain/` | 2 | 未开始 |
-| `src/core/source_fact_chain/providers.py` | `src/pipeline/skills/runtime/llm.py` | 2 | 未开始 |
+| `src/agents/orchestrator.py` | `src/pipeline/graph/topology.py` | 1 | 已迁移；旧路径 shim 已删除（2026-11-18） |
+| `src/agents/phase_1_adapter.py` | `src/pipeline/graph/phases/phase_1.py` | 1 | 已迁移；旧路径 shim 已删除（2026-11-18） |
+| `src/agents/phase_2_adapter.py` | `src/pipeline/graph/phases/phase_2.py` | 1 | 已迁移；旧路径 shim 已删除（2026-11-18） |
+| `src/agents/phase_3_adapter.py` | `src/pipeline/graph/phases/phase_3.py` | 1 | 已迁移；旧路径 shim 已删除（2026-11-18） |
+| `src/agents/phase_4_adapter.py` | `src/pipeline/graph/phases/phase_4.py` | 1 | 已迁移；旧路径 shim 已删除（2026-11-18） |
+| `src/core/source_fact_chain/{contracts,core,windowing,projection,api}.py` | `src/pipeline/tools/fact_chain/` | 2 | 已迁移；旧路径 shim 已删除 |
+| `src/core/source_fact_chain/{runner,prompts}.py` | `src/pipeline/skills/fact_chain/` | 2 | 已迁移；旧路径 shim 已删除 |
+| `src/core/source_fact_chain/providers.py` | `src/pipeline/skills/runtime/llm.py` | 2 | 已迁移；旧路径 shim 已删除 |
 | `src/core/ingest_and_digitize_data/document_acquisition/` | `src/pipeline/tools/acquisition/` | 3 | 未开始 |
 | `src/core/ingest_and_digitize_data/parse_document/` | `src/pipeline/tools/parsing/` | 3 | 未开始 |
 | `src/core/standardize_entities_and_align_knowledge/` 实现 | `src/pipeline/tools/terminology/` | 4 | 未开始 |
@@ -74,8 +74,8 @@
 | fact_chain / acquisition / parsing / terminology | 未开始 | 同基线 | 0 | 0 | 同基线 |
 
 - `src/pipeline` 合计：12 个文件 / 1177 行（含骨架与 `__init__.py`）。
-- 生产代码只剩 `src/api/wiring.py` 仍 import 旧路径，这是“wiring 零改动”的刻意选择；shim 一个发布周期后删除。
-- 测试已切到新路径；`tests/pipeline/test_legacy_shims.py` 校验 shim 与新实现是同一个对象。
+- 迁移当时只有 `src/api/wiring.py` 仍 import 旧路径（“wiring 零改动”）；后续清理已把 wiring 改为新路径，并删除全部旧路径 shim。
+- 测试已切到新路径；`tests/pipeline/test_import_boundaries.py` 断言源码与测试不再 import 已删除的旧路径。
 
 ## 4. 验证
 
@@ -118,5 +118,5 @@ CI 同步调整：mypy/coverage 目标从 `src/agents/phase_3_adapter.py` 改为
 ## 7. 限制与后续
 
 - 本 PR 的阶段 1 按任务定义只做**目录迁移**；方案 §5 阶段 1 中的“Phase 3 窗口子图、`Send` fan-out、节点级进度”尚未实施，不能据此认为拓扑显式化已完成。
-- 旧路径 shim 需在发布一个周期后、确认无外部调用方时单独删除。
+- 旧路径 shim 已于 2026-11-18 作为独立清理删除（含阶段 2 shim）；`test_import_boundaries.py` 防止旧路径回流。
 - 阶段 2 开始前需重新运行 inventory，并确认 `skills/` 与 `tools/` 的边界口径（尤其无 LLM 的 Phase 1/2 skill）。

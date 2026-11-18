@@ -12,7 +12,7 @@
 | 方案阶段 2 产出 | 状态 | 说明 |
 |---|---|---|
 | `agentscope==2.0.12` 入 backend | 完成 | 同步升级 `certifi 2026.10.23`；新增 `mcp 2.3.0`、`httpx2 2.16.2` 等；`fastapi/numpy/openai/pydantic` 版本不变 |
-| 目录迁移：`source_fact_chain` → `tools/fact_chain` + `skills/fact_chain` + `skills/runtime/llm.py` | 完成 | 56 个文件中本层 9 个；旧路径 9 个 shim |
+| 目录迁移：`source_fact_chain` → `tools/fact_chain` + `skills/fact_chain` + `skills/runtime/llm.py` | 完成 | 56 个文件中本层 9 个；旧路径 9 个 shim（2026-11-18 已删除） |
 | `AgentScopeNode` 适配（`reply(structured_schema=...)`、异常分类） | 完成 | `skills/runtime/agent.py`：`build_agent`、`run_reply_sync`；异常统一映射为 `SkillError`（默认 retryable） |
 | 多 key 轮换 credential/model 包装 | 完成 | `skills/runtime/agentscope_llm.py`：仅 `AuthenticationError`/`PermissionDeniedError` 轮换，其余错误交回 runner 重试 |
 | `ExtractAgent`（工具 + 结构化输出） | 完成 | `skills/fact_chain/extract.py`：`ExtractReply` schema；工具 `quote_in_window`、`atomic_value`；复用 `validate_reply_schema` |
@@ -78,7 +78,7 @@ CI 等价环境：`uv export --frozen --only-group ci --no-emit-project` + `uv p
 
 1. `PIPELINE_AGENT_RUNTIME=legacy`（或删除配置）→ 新路径不再加载，行为等同阶段 1。
 2. `shadow` 的 agent 失败只写日志，主路径继续用旧 provider；不影响产出。
-3. 目录迁移可整体 revert 本分支；旧路径 shim 保留一个发布周期。
+3. 目录迁移可整体 revert 本分支；旧路径 shim 已在 2026-11-18 独立清理中删除。
 4. 依赖可回退：删除 `agentscope` 后 `uv lock` 会恢复 certifi/mcp 版本；代码在 legacy 模式下不 import agentscope。
 
 ## 7. 未决与后续
@@ -86,4 +86,4 @@ CI 等价环境：`uv export --frozen --only-group ci --no-emit-project` + `uv p
 - 阶段 2 的真实影子验收（成本增幅 ≤15%、P95 延迟 ≤20%、差异归因）需在具备凭证的环境执行。
 - `graph/nodes.py`、`graph/progress.py`、Phase 3 窗口子图仍属阶段 1 未完成项。
 - `agentscope` 引入的 `mcp 2.3.0` 与后续 ReMe MCP 客户端版本需要对齐（D4 已定 ReMe 为外部服务）。
-- 旧路径 shim 删除单独立项，不与行为切换同 PR。
+- 旧路径 shim 已于 2026-11-18 作为独立清理删除，不与行为切换同 PR。
