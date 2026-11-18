@@ -98,6 +98,9 @@ jobs:
           src/pipeline/skills/fact_chain
           src/pipeline/skills/runtime
           src/pipeline/mcp
+          src/pipeline/contracts/skill_io.py
+          src/pipeline/graph/topology.py
+          src/pipeline/graph/progress.py
           src/pipeline/graph/phases/phase_3.py
           src/agents/contracts.py
 

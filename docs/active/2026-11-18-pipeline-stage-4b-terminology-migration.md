@@ -56,7 +56,7 @@ CI 等价环境（`uv export --frozen --only-group ci` + PyPI 安装）：
 | pipeline API（独立进程） | `pytest tests/api/test_pipeline_api.py -q` | **18 passed** |
 | 术语库 + graph_rag + evidence_extraction | 三目录联合 | **841 passed, 3 skipped** |
 | 全后端离线套件 | `pytest tests`（排除 `rust_io` facade、`test_mineru_parser`、`cross_lingual_translation`、pipeline API 单独跑） | **2148 passed, 14 skipped, 2 failed**；2 个失败为 `pgvector` 迁移断言与 `origin/dev` 完全一致（`git diff origin/dev...HEAD -- backend/database backend/tests/dao` 为空），非本次改动 |
-| Ruff / Mypy | `ruff check` / `ruff format --check` / mypy（26 files） | 通过 |
+| Ruff / Mypy | `ruff check` / `ruff format --check` / mypy（29 files） | 通过 |
 | 清单 | `scripts/pipeline_migration_inventory.py` | terminology 27/27 shim；`src/pipeline` 77 files / 11,145 lines |
 
 > 注意：`test_pipeline_api.py` 与 graph/evidence 套件同进程运行会因既有全局 mock 泄漏失败，CI 已按独立进程执行；本次沿用该隔离方式验证。
