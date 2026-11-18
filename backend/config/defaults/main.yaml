@@ -114,6 +114,7 @@ redis:
   max_connections: 20
 
 # ── Neo4j Graph Database ────────────────────────────────────────────────
+# Community edition: single user DB. Isolate services by instance (NEO4J_URI).
 neo4j:
   uri: "bolt://localhost:7687"
   user: "neo4j"
