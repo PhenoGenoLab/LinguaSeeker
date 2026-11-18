@@ -25,6 +25,10 @@ LEGACY_GRAPH_MODULES = (
     "src.agents.phase_4_adapter",
 )
 
+# The source-fact-chain modules moved to ``src/pipeline/{tools,skills}`` in
+# stage 2.  Their old paths stay importable as shims for one release cycle.
+LEGACY_FACT_CHAIN_MODULES = ("src.core.source_fact_chain",)
+
 # Files outside ``src/pipeline`` that are allowed to import a legacy module
 # path.  Wiring intentionally keeps the old imports so the outer service layer
 # does not change in the migration.
@@ -162,15 +166,30 @@ def test_mcp_does_not_import_skills_or_tools() -> None:
     )
 
 
-def test_pipeline_tree_does_not_import_legacy_graph_modules() -> None:
+def test_phase_modules_resolve_default_output_root_to_app_root() -> None:
+    """Phase modules must keep ``<app root>/data/pipeline`` as the default.
+
+    ``phase_2.py`` and ``phase_3.py`` derive the data directory from their own
+    location.  Moving them one level deeper must come with an explicit depth
+    change, otherwise artifacts silently land in ``src/data``.
+    """
+    for name in ("phase_2.py", "phase_3.py"):
+        module_path = PIPELINE_ROOT / "graph" / "phases" / name
+        assert module_path.resolve().parents[5] == BACKEND_ROOT.parent, (
+            f"{name} no longer sits four levels below the app root; update its parents[] depth"
+        )
+
+
+def test_pipeline_tree_does_not_import_legacy_modules() -> None:
     _assert_no_imports(
         PIPELINE_ROOT,
-        LEGACY_GRAPH_MODULES,
+        LEGACY_GRAPH_MODULES + LEGACY_FACT_CHAIN_MODULES,
         "src/pipeline must import the new module paths, not the legacy shims",
     )
 
 
-def test_legacy_graph_imports_are_confined_to_allowlist() -> None:
+def test_legacy_imports_are_confined_to_allowlist() -> None:
+    legacy = LEGACY_GRAPH_MODULES + LEGACY_FACT_CHAIN_MODULES
     violations: list[str] = []
     for path in _iter_python_files(SRC_ROOT):
         relative = path.relative_to(SRC_ROOT)
@@ -178,10 +197,10 @@ def test_legacy_graph_imports_are_confined_to_allowlist() -> None:
             continue
         if str(relative) in LEGACY_IMPORT_ALLOWLIST:
             continue
-        hits = _imports_any(_imported_modules(path), LEGACY_GRAPH_MODULES)
+        hits = _imports_any(_imported_modules(path), legacy)
         if hits:
             violations.append(f"src/{relative} -> {', '.join(hits)}")
     assert not violations, (
-        "legacy graph module imports are only allowed in the shim allowlist "
+        "legacy module imports are only allowed in the shim allowlist "
         f"{sorted(LEGACY_IMPORT_ALLOWLIST)}:\n" + "\n".join(violations)
     )
