@@ -23,10 +23,10 @@ from ..contracts import (
     TrackDocument,
 )
 from src.core.cross_lingual_translation.contracts import TranslationAlignmentChunk
-from src.core.standardize_entities_and_align_knowledge.context_pack.contracts import (
+from src.core.terminology_shared.context_pack.contracts import (
     TargetContextPack,
 )
-from src.core.standardize_entities_and_align_knowledge.context_pack.core import (
+from src.core.terminology_shared.context_pack.core import (
     build_context_pack_from_runtime_target,
 )
 

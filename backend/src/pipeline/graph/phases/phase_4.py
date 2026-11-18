@@ -29,7 +29,7 @@ from src.core.evidence_extraction.contracts import (
 )
 
 if TYPE_CHECKING:
-    from src.core.standardize_entities_and_align_knowledge.api import (
+    from src.pipeline.tools.terminology.api import (
         EntityStandardizationService,
     )
 

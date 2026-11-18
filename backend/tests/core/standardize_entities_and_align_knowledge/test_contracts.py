@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.core.terminology_shared.contracts import (
     AcmgReadyEvidenceItem,
     AcmgReadyEvidenceSet,
     BindingRole,

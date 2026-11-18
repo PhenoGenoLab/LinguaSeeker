@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.core.terminology_shared.contracts import (
     BindingRole,
     EntityType,
     MatchMethod,
@@ -12,7 +12,7 @@ from src.core.standardize_entities_and_align_knowledge.contracts import (
     StandardizationCandidate,
     TerminologyCandidate,
 )
-from src.core.standardize_entities_and_align_knowledge.precise_match.core import PreciseTerminologyMatcher
+from src.pipeline.tools.terminology.precise_match.core import PreciseTerminologyMatcher
 
 
 class FakeRepository:

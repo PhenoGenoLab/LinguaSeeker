@@ -5,17 +5,17 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.core.terminology_shared.contracts import (
     BindingRole,
     EntityType,
     MatchStatus,
     StandardizationCandidate,
 )
-from src.core.standardize_entities_and_align_knowledge.matchers import HybridTerminologyMatcher
-from src.core.standardize_entities_and_align_knowledge.similarity_match.core import (
+from src.pipeline.tools.terminology.matchers import HybridTerminologyMatcher
+from src.pipeline.tools.terminology.similarity_match.core import (
     SemanticMatchServiceError,
 )
-from src.core.standardize_entities_and_align_knowledge.similarity_match.providers import (
+from src.pipeline.tools.terminology.similarity_match.providers import (
     EmbeddingHttpProvider,
     RerankHttpProvider,
 )
@@ -197,7 +197,7 @@ async def test_hybrid_matcher_downgrades_similarity_service_errors_to_unmapped()
 
     class FakePreciseMatcher:
         async def match(self, candidate):
-            from src.core.standardize_entities_and_align_knowledge.contracts import (
+            from src.core.terminology_shared.contracts import (
                 EntityMatch,
                 MatchMethod,
             )

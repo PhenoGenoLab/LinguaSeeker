@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ast
 
-from src.core.standardize_entities_and_align_knowledge.hgvs_normalizer import expand_hgvs_aliases
+from src.core.terminology_shared.hgvs_normalizer import expand_hgvs_aliases
 
 from ..domain.catalog import EVIDENCE_FIELD_SPECS, EvidenceFieldSpec
 from ..contracts import (

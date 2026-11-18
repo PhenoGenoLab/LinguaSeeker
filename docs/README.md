@@ -55,6 +55,9 @@ docs/
 | 2026-11-18 | [Pipeline 阶段 2 迁移实施记录：AgentScope 运行时](active/2026-11-18-pipeline-stage-2-agentscope-runtime.md) | in-progress |
 | 2026-11-18 | [Pipeline 阶段 3 迁移实施记录：Phase 3 全链路 agent 化](active/2026-11-18-pipeline-stage-3-phase3-agents-and-ingest-migration.md) | in-progress |
 | 2026-11-18 | [Pipeline 阶段 4a 迁移实施记录：ReMe 外部记忆服务](active/2026-11-18-pipeline-stage-4a-reme-memory.md) | in-progress |
+| 2026-11-18 | [Pipeline 阶段 4b 迁移实施记录：术语库迁移](active/2026-11-18-pipeline-stage-4b-terminology-migration.md) | in-progress |
+| 2026-11-18 | [Pipeline 迁移验收 Runbook（真实模型 / ReMe / 窗口并行）](active/2026-11-18-pipeline-shadow-acceptance-runbook.md) | active |
+| 2026-11-18 | [ReMe 外部知识服务 HTTP 契约](active/2026-11-18-reme-http-contract.md) | active |
 | 2026-06-29 | [Evidence DB Field Model Implementation Plan](active/2026-06-29-evidence-db-field-model-plan.md) | in-progress |
 | 2026-06-15 | [ClinGen + ClinVar Fused Benchmark Dataset Plan](active/2026-06-15-clingen-clinvar-fused-benchmark-dataset-plan.md) | in-progress |
 | 2026-06-14 | [Traceability Metrics Guide](active/2026-06-14-traceability-metrics-guide.md) | reference |
@@ -92,7 +95,7 @@ docs/
 
 | 日期 | 标题 | 状态 |
 |------|------|------|
-| 2026-11-17 | [Pipeline 技术栈替换：LangGraph + AgentScope + ReMe](planned/2026-11-17-pipeline-agentscope-reme-migration.md) | planned（r2：含 skills/mcp/tools 领域层目录划分） |
+| 2026-11-17 | [Pipeline 技术栈替换：LangGraph + AgentScope + ReMe](planned/2026-11-17-pipeline-agentscope-reme-migration.md) | active（r3：阶段 0–4b 已实施，真实验收待执行） |
 
 ## 归档计划
 

@@ -31,13 +31,13 @@ from src.core.config import Settings, get_config
 from src.core.evidence_extraction.contracts import (
     DualEvidenceExtractionResult,
 )
-from src.core.standardize_entities_and_align_knowledge.api import (
+from src.pipeline.tools.terminology.api import (
     EntityStandardizationService,
     build_summary_metadata,
     import_terminology,
     serialize_matches,
 )
-from src.core.standardize_entities_and_align_knowledge.contracts import StandardizationResult
+from src.core.terminology_shared.contracts import StandardizationResult
 from src.dao.postgresql.connection import async_session_factory, build_async_engine, get_async_session
 
 

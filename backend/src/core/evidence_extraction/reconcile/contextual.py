@@ -34,7 +34,7 @@ from src.core.evidence_extraction.verify.contracts import (
 from src.core.evidence_extraction.verify.core import (
     score_candidate_support,
 )
-from src.core.standardize_entities_and_align_knowledge.context_pack.contracts import (
+from src.core.terminology_shared.context_pack.contracts import (
     TargetContextPack,
 )
 

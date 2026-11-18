@@ -299,8 +299,8 @@ def test_projection_drops_unsupported_facts() -> None:
 
 
 def test_projection_feeds_phase_four_standardization_input() -> None:
-    from src.core.standardize_entities_and_align_knowledge.adapters import DualResultAdapter
-    from src.core.standardize_entities_and_align_knowledge.contracts import EntityType
+    from src.pipeline.tools.terminology.adapters import DualResultAdapter
+    from src.core.terminology_shared.contracts import EntityType
 
     run = run_chain()
     result = project_dual_result(run, target_gene="BRCA1", target_disease="breast cancer")
@@ -382,8 +382,8 @@ def test_projection_keeps_each_gene_with_its_own_variant() -> None:
 
 
 def test_projection_target_guard_keeps_off_target_facts_out_of_phase_four() -> None:
-    from src.core.standardize_entities_and_align_knowledge.adapters import DualResultAdapter
-    from src.core.standardize_entities_and_align_knowledge.contracts import EntityType
+    from src.pipeline.tools.terminology.adapters import DualResultAdapter
+    from src.core.terminology_shared.contracts import EntityType
 
     text, facts = multi_gene_facts()
     run = run_chain(text=text, provider=StubProvider(facts))

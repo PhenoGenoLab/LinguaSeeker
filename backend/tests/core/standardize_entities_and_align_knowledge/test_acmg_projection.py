@@ -6,8 +6,8 @@ from src.core.evidence_extraction.contracts import (
     EvidenceItem,
     EvidenceStatus,
 )
-from src.core.standardize_entities_and_align_knowledge.acmg_projection import AcmgReadyProjector
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.pipeline.tools.terminology.acmg_projection import AcmgReadyProjector
+from src.core.terminology_shared.contracts import (
     BindingRole,
     EntityMatch,
     EntityType,

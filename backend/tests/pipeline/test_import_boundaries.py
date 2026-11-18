@@ -36,6 +36,10 @@ LEGACY_INGEST_MODULES = (
     "src.core.ingest_and_digitize_data.parse_document",
 )
 
+# The terminology slices moved to ``src/pipeline/tools/terminology`` and
+# ``src/core/terminology_shared`` in stage 4b.
+LEGACY_TERMINOLOGY_MODULES = ("src.core.standardize_entities_and_align_knowledge",)
+
 # Files outside ``src/pipeline`` that are allowed to import a legacy module
 # path.  Wiring intentionally keeps the old imports so the outer service layer
 # does not change in the migration.
@@ -187,16 +191,38 @@ def test_phase_modules_resolve_default_output_root_to_app_root() -> None:
         )
 
 
+def test_terminology_shared_does_not_import_pipeline() -> None:
+    shared_root = SRC_ROOT / "core" / "terminology_shared"
+    assert _iter_python_files(shared_root), f"no files to scan under {shared_root}"
+    _assert_no_imports(
+        shared_root,
+        ("src.pipeline",),
+        "src/core/terminology_shared must stay neutral (graph_rag and evidence_extraction import it)",
+    )
+
+
+def test_dormant_and_shared_core_do_not_import_pipeline() -> None:
+    """graph_rag/evidence_extraction/translation must never depend on the pipeline layer."""
+    for name in ("graph_rag", "evidence_extraction", "cross_lingual_translation"):
+        root = SRC_ROOT / "core" / name
+        assert _iter_python_files(root), f"no files to scan under {root}"
+        _assert_no_imports(
+            root,
+            ("src.pipeline",),
+            f"src/core/{name} must not import src.pipeline (reverse dependency)",
+        )
+
+
 def test_pipeline_tree_does_not_import_legacy_modules() -> None:
     _assert_no_imports(
         PIPELINE_ROOT,
-        LEGACY_GRAPH_MODULES + LEGACY_FACT_CHAIN_MODULES + LEGACY_INGEST_MODULES,
+        LEGACY_GRAPH_MODULES + LEGACY_FACT_CHAIN_MODULES + LEGACY_INGEST_MODULES + LEGACY_TERMINOLOGY_MODULES,
         "src/pipeline must import the new module paths, not the legacy shims",
     )
 
 
 def test_legacy_imports_are_confined_to_allowlist() -> None:
-    legacy = LEGACY_GRAPH_MODULES + LEGACY_FACT_CHAIN_MODULES + LEGACY_INGEST_MODULES
+    legacy = LEGACY_GRAPH_MODULES + LEGACY_FACT_CHAIN_MODULES + LEGACY_INGEST_MODULES + LEGACY_TERMINOLOGY_MODULES
     violations: list[str] = []
     for path in _iter_python_files(SRC_ROOT):
         relative = path.relative_to(SRC_ROOT)

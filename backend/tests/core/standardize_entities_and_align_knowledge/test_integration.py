@@ -13,14 +13,14 @@ from src.core.evidence_extraction.contracts import (
     EvidenceStatus,
     Track,
 )
-from src.core.standardize_entities_and_align_knowledge import api as api_module
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.pipeline.tools.terminology import api as api_module
+from src.core.terminology_shared.contracts import (
     EntityMatch,
     EntityType,
     MatchStatus,
     TerminologyCandidate,
 )
-from src.core.standardize_entities_and_align_knowledge.matchers import HybridTerminologyMatcher
+from src.pipeline.tools.terminology.matchers import HybridTerminologyMatcher
 
 
 class FakeRepository:

@@ -2,14 +2,14 @@
 
 > LangGraph 状态图 + AgentScope 子智能体 + ReMe 知识/记忆层，仅改领域层，外层服务不动
 >
-> 状态：调研与方案（**未改业务代码**）
-> **Status:** planned
+> 状态：实施中（阶段 0–4 代码已完成；真实模型影子验收与 ReMe 服务联调待执行）
+> **Status:** active
 > **Created:** 2026-11-17
-> **Revised:** 2026-11-17（r2：补充 `skills/` / `mcp/` / `tools/` 领域层目录划分；初版见 PR #28）
-> **PR:** #30（r2 修订；初版 #28 已合并）
+> **Revised:** 2026-11-18（r3：阶段 0–4b 实施结果、决策落定、偏差与未完成项，见 §5.6）
+> **PR:** #30（r2 修订；初版 #28 已合并）；实施 PR #32 / #33 / #34 / #35 / #36
 > 目标仓库：`/data/yangzs/Projects/01_Platform/01_ACMG_Lingua`
 > 适用对象：pipeline 服务（`backend/src/agents/` + 其调用的 `backend/src/core/*` 领域切片 + `backend/src/api/v1/pipeline.py`；迁移后领域层为 `backend/src/pipeline/{graph,skills,tools,mcp}`）
-> 结论摘要：**总体可行，但需调整 3 处定位**；需求方已确认 **ReMe 按外部知识库服务处理**；工作量 **中大型（约 10.5–12.5 人周，不含可选的 KB 整体切换；含 KB 切换 13.5–17.5 人周；含 20% 缓冲分别为 12.5–15 / 16–21 人周）**；共 9 个架构决策点，其中 D4 已确认，其余 8 项待拍板（见 §8）。
+> 结论摘要：**总体可行，3 处定位调整已按建议落地**；ReMe 已按外部知识库服务接入（默认关闭）；阶段 0–4b 代码完成，9 个架构决策点全部落定（见 §8）；真实模型影子验收（成本/延迟/差异归因）与 ReMe 服务联调仍未执行。
 
 ---
 
@@ -59,19 +59,19 @@ pipeline 领域层目录调整           →      按职责拆到 src/pipeline/{
 
 > 目录迁移的 1.5 人周已计入“核心替换”的 10.5–12.5 区间；若不做目录重构，核心部分仍为原估算 9–11 人周。
 
-### 0.5 决策点（D4 已确认，其余 8 项待拍板，详见 §8）
+### 0.5 决策点（9 项已全部落定，详见 §8）
 
-1. **D1 ReMe 的定位**：记忆层（推荐）还是术语/图谱知识库的整体替代（成本高、风险大）。
-2. **D2 节点粒度**：4 个 phase 各一个 agent（推荐，改动可控），还是把每个 stage 都做成图节点 + agent。
-3. **D3 智能体自主度**：有界工具调用 + 结构化输出（推荐），还是自由 ReAct 自主决策。
+1. **D1 ReMe 的定位**：✅ 记忆/文献知识层（非权威库）；术语库（PG）与证据图（Neo4j）保持权威。
+2. **D2 节点粒度**：✅ 4 个 phase 节点；Phase 3 内部 extract/verify/translate 以 skill 形式挂载。
+3. **D3 智能体自主度**：✅ 有界工具调用 + 结构化输出；不使用自由 ReAct。
 4. **D4 ReMe 部署形态**：✅ **已确认（需求方，2026-11-17）——ReMe 作为外部服务，用于知识库调用**，不计入“外层服务不动”的冻结范围。
-5. **D5 版本钉法**：backend 用 AgentScope 2.0.12、ReMe 服务内用 2.0.11（推荐），还是同环境 2.0.11 + `reme-ai[core]`。
-6. **D6 Phase 4 是否 agent 化**：薄封装、LLM 默认关闭（推荐），还是完全保留纯确定性服务。
-7. **D7 遗留代码处置**：`evidence_extraction`（12k 行）与 `cross_lingual_translation` 保持休眠、不迁移（推荐），还是单独立项 agent 化/删除。
-8. **D8 恢复与人工介入语义**：v1 保持不变（推荐），还是引入 LangGraph checkpointer + `interrupt()`（需改外层契约）。
-9. **D9 领域层目录划分**：采用 `src/pipeline/{graph,skills,tools,mcp,contracts}`（推荐），还是保留 `src/core/<feature>` 只加 `skills/mcp`；并确认 skills 与 tools 的边界、MCP 配置存放位置（见 §3.2 与 §8 的 D9）。
+5. **D5 版本钉法**：✅ backend `agentscope==2.0.12`（`certifi` 随之上调）；ReMe 未装进 backend。
+6. **D6 Phase 4 是否 agent 化**：✅ 不封装（纯确定性匹配，无无行为转发层）；目录仍迁入 `tools/terminology`。
+7. **D7 遗留代码处置**：✅ `evidence_extraction` 与 `cross_lingual_translation` 保持休眠、不迁移。
+8. **D8 恢复与人工介入语义**：✅ v1 保持不变（未引入 checkpointer/`interrupt()`）。
+9. **D9 领域层目录划分**：✅ `src/pipeline/{graph,skills,tools,mcp,contracts}`；skills/tools 边界与 MCP 配置位置见 §3.2 与 §5.6 的偏差记录。
 
-> 以上决策不影响“先做阶段 0/1”，可以边做边定。
+> 决策落定时间：D4 于 2026-11-17 由需求方确认；其余按推荐项在阶段 2 前统一落定，实施结果与偏差见 §5.6。
 
 ---
 
@@ -955,6 +955,35 @@ mcp==2.3.0            ➕ 新增
 - **阶段 4 可与阶段 3 并行**（ReMe 服务部署不依赖 verify/translate 改造），但召回接入需要在阶段 3 之后。
 - **目录迁移与行为改造解耦**：阶段 1 只迁 `graph/` + adapters，阶段 2 迁 `fact_chain`，阶段 3 迁 acquisition/parsing，阶段 4 迁 terminology + 新增 `mcp/`；任何一层的搬迁失败都可单独 revert，不影响其他层的行为开关。
 
+### 5.6 实施状态（2026-11-18）
+
+| 阶段 | 状态 | 交付 | 验证（CI 等价环境） |
+|---|---|---|---|
+| 0 | 完成 | 骨架、import 基线、边界测试、inventory 脚本 | 边界测试通过 |
+| 1 | **部分完成** | `graph/` 目录迁移、orchestrator + 4 adapter 迁入、节点级进度写入 `summary.nodes`（`graph/progress.py`）；窗口 `Send` fan-out 与 `graph/nodes.py` **未实现** | CI 1234 passed / 88.36% |
+| 2 | 完成（代码） | fact_chain 迁移、AgentScope extract、`legacy/shadow/agentscope` 开关、多 key 轮换 | 288 passed / 88.15% |
+| 3 | 完成（代码） | acquisition/parsing 迁移、verify/translate skill、`SkillError→ProviderError` | 294 passed / 88.55%；ingest 154 |
+| 4a | 完成（代码） | ReMe HTTP 客户端/registry、记忆注入、counts-only 摘要、默认关闭 | 308 passed / 88.84% |
+| 4b | 完成（代码） | `terminology_shared` + terminology 迁移（27 files） | 1234 passed / 88.36%；术语+graph_rag+evidence 841 |
+| 5 | 未做（可选） | — | — |
+
+实施记录：`docs/active/2026-11-17-pipeline-stage-0-1-migration.md`、`2026-11-18-pipeline-stage-2-agentscope-runtime.md`、`2026-11-18-pipeline-stage-3-phase3-agents-and-ingest-migration.md`、`2026-11-18-pipeline-stage-4a-reme-memory.md`、`2026-11-18-pipeline-stage-4b-terminology-migration.md`。验收步骤见 `2026-11-18-pipeline-shadow-acceptance-runbook.md`。
+
+**与方案的偏差（均为有意）**
+
+1. 服务门面 `SourceFactChainService` 落在 `skills/fact_chain/service.py`，而非 `tools/fact_chain/api.py`：`tools/` 禁止 import `skills/`，门面需要构造 provider。
+2. `terminology_shared` 额外下沉 `normalizers.py` 与 `amino_acids.py`：`context_pack` 依赖 `collapse_spaces`、`hgvs_normalizer` 依赖 `AA3_TO_1`，不下沉会形成 shared → pipeline 反向依赖。
+3. ReMe 配置使用 `pipeline.memory.*`（env `PIPELINE_MEMORY_*`），而非 `pipeline.mcp.reme.*`：沿用仓库扁平配置约定。
+4. 单一 `pipeline.agent_runtime` 覆盖 Phase 3 三个阶段，不引入按节点开关（回滚粒度已足够）。
+5. Acquisition/Parse/Standardize 的“薄 agent 封装”未做：无 LLM 决策，按 `AGENTS.md` §20.2 不引入无行为转发层。
+6. 阶段 1 的窗口 `Send` fan-out 与 `graph/nodes.py` 未实现：skill 已通过 `Provider` 协议挂载，独立节点适配器无额外价值；窗口并行缺少黄金文档基线，无法验证“并发与串行语义一致”。节点级进度（`summary.nodes`）已实现。
+
+**仍未执行的验收项**
+
+- 真实模型影子对照：阶段 2/3 的成本（≤+15%）、P95 延迟（≤+20%）与逐条差异归因，需要真实 API 凭证与黄金文档。
+- ReMe 服务联调与 50–100 条查询的召回评测；`auto_resource` 接入 Phase 2 产物。
+- 阶段 1 窗口并行的等价性验收（同黄金文档）；节点级进度已交付。
+
 ---
 
 ## 6. 风险与回滚
@@ -1005,9 +1034,9 @@ mcp==2.3.0            ➕ 新增
 
 ---
 
-## 8. 待拍板的架构决策
+## 8. 架构决策与落定结果
 
-> 这些决策不影响阶段 0/1 开工；建议在阶段 2 开始前定 D1–D5，阶段 4 前定 D6–D7，D9 的边界问题在阶段 2 前确认。
+> 2026-11-18：D1–D3、D5–D9 按各节推荐项落定，D4 由需求方确认；实施结果见 §5.6。以下各节保留原始选项与理由，作为决策依据。
 
 ### D1 — ReMe 的定位：记忆层还是权威知识库？
 

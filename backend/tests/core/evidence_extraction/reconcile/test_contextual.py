@@ -14,7 +14,7 @@ from src.core.evidence_extraction.contracts import (
 from src.core.evidence_extraction.reconcile.contextual import (
     reconcile_with_context,
 )
-from src.core.standardize_entities_and_align_knowledge.context_pack.contracts import (
+from src.core.terminology_shared.context_pack.contracts import (
     DiseaseContext,
     GeneContext,
     TargetContextPack,
