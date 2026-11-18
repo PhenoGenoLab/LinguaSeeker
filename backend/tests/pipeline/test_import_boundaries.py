@@ -13,6 +13,7 @@ from pathlib import Path
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = BACKEND_ROOT / "src"
 PIPELINE_ROOT = SRC_ROOT / "pipeline"
+CORE_ROOT = SRC_ROOT / "core"
 
 # Modules replaced by the pipeline directory migration.  Their transitional
 # re-export shims were removed, so importing an old path is a hard failure; the
@@ -24,6 +25,11 @@ REMOVED_LEGACY_MODULES = (
     "src.agents.phase_3_adapter",
     "src.agents.phase_4_adapter",
     "src.core.source_fact_chain",
+    # skills/tools/mcp/contracts were split: tools, mcp and contracts now live
+    # in src/core, only the orchestration and the agents stay in src/pipeline.
+    "src.pipeline.tools",
+    "src.pipeline.mcp",
+    "src.pipeline.contracts",
 )
 
 
@@ -98,9 +104,15 @@ def _assert_no_imports(
 
 
 def test_pipeline_skeleton_packages_exist() -> None:
-    for layer in ("graph", "skills", "tools", "mcp", "contracts"):
+    for layer in ("graph", "skills"):
         package = PIPELINE_ROOT / layer
-        assert (package / "__init__.py").is_file(), f"missing skeleton package: {package}"
+        assert (package / "__init__.py").is_file(), f"missing pipeline package: {package}"
+
+
+def test_core_packages_hold_the_concrete_layers() -> None:
+    for layer in ("tools", "mcp", "contracts"):
+        package = CORE_ROOT / layer
+        assert (package / "__init__.py").is_file(), f"missing core package: {package}"
 
 
 def test_graph_does_not_import_agentscope() -> None:
@@ -137,25 +149,33 @@ def test_skills_do_not_import_graph() -> None:
 
 def test_tools_do_not_import_agentscope() -> None:
     _assert_no_imports(
-        PIPELINE_ROOT / "tools",
+        CORE_ROOT / "tools",
         ("agentscope",),
-        "tools/ must not import agentscope (tools carry no agent decisions)",
+        "core/tools must not import agentscope (tools carry no agent decisions)",
     )
 
 
-def test_tools_do_not_import_skills_or_graph() -> None:
+def test_tools_do_not_import_pipeline() -> None:
     _assert_no_imports(
-        PIPELINE_ROOT / "tools",
-        ("src.pipeline.skills", "src.pipeline.graph"),
-        "tools/ must not import skills/ or graph/ (tools stay deterministic leaves)",
+        CORE_ROOT / "tools",
+        ("src.pipeline",),
+        "core/tools must not import src.pipeline (tools stay deterministic leaves)",
     )
 
 
-def test_mcp_does_not_import_skills_or_tools() -> None:
+def test_mcp_does_not_import_pipeline_or_tools() -> None:
     _assert_no_imports(
-        PIPELINE_ROOT / "mcp",
-        ("src.pipeline.skills", "src.pipeline.tools"),
-        "mcp/ must not import skills/ or tools/ (external adapters stay isolated)",
+        CORE_ROOT / "mcp",
+        ("src.pipeline", "src.core.tools"),
+        "core/mcp must not import pipeline or tools (external adapters stay isolated)",
+    )
+
+
+def test_core_does_not_import_pipeline() -> None:
+    _assert_no_imports(
+        CORE_ROOT,
+        ("src.pipeline",),
+        "src/core must not import src.pipeline (pipeline depends on core, never the reverse)",
     )
 
 

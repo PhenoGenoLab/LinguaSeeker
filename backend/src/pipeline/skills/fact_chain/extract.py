@@ -15,12 +15,12 @@ from typing import Any, Protocol
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from src.pipeline.contracts.skill_io import SkillError, SkillFailureKind, SkillRequest, SkillResult
+from src.core.contracts.skill_io import SkillError, SkillFailureKind, SkillRequest, SkillResult
 from src.pipeline.skills.fact_chain.prompts import EXTRACT_PROMPT, EXTRACT_PROMPT_VERSION
 from src.pipeline.skills.runtime.agent import build_agent, run_reply_sync
 from src.pipeline.skills.runtime.llm import Provider, ProviderError
-from src.pipeline.tools.fact_chain.contracts import ChainContractError, canonical_json
-from src.pipeline.tools.fact_chain.core import is_atomic, locate_quote, validate_reply_schema
+from src.core.tools.fact_chain.contracts import ChainContractError, canonical_json
+from src.core.tools.fact_chain.core import is_atomic, locate_quote, validate_reply_schema
 
 
 class ExtractedFact(BaseModel):
