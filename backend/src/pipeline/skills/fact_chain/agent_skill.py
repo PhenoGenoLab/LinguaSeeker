@@ -17,6 +17,7 @@ from loguru import logger
 from pydantic import BaseModel, ValidationError
 
 from src.pipeline.contracts.skill_io import SkillError, SkillFailureKind, SkillRequest, SkillResult
+from src.pipeline.mcp.reme.client import MemoryClient
 from src.pipeline.skills.runtime.agent import build_agent, run_reply_sync
 from src.pipeline.tools.fact_chain.contracts import ChainContractError, canonical_json
 from src.pipeline.tools.fact_chain.core import validate_reply_schema
@@ -43,13 +44,21 @@ class StageAgentSkill:
         *,
         model: Any | None = None,
         agent_factory: Callable[[dict[str, Any]], Any] | None = None,
+        memory: MemoryClient | None = None,
     ) -> None:
         self._cfg = cfg
         self._model = model
         self._agent_factory = agent_factory
+        self._memory = memory
+        memory_cfg = getattr(getattr(cfg, "pipeline", None), "memory", None)
+        self._top_k = max(1, int(getattr(memory_cfg, "top_k", 5) or 5))
 
     def _tools(self, payload: dict[str, Any]) -> list[Callable[..., str]]:
         return []
+
+    def _system_prompt(self, payload: dict[str, Any]) -> str:
+        """Stage prompt; subclasses may append reference-only context."""
+        return self.prompt
 
     def _build_agent(self, payload: dict[str, Any]) -> Any:
         if self._agent_factory is not None:
@@ -60,7 +69,7 @@ class StageAgentSkill:
             self._model = build_chat_model(self._cfg, tier=self.tier)
         return build_agent(
             name=self.name,
-            system_prompt=self.prompt,
+            system_prompt=self._system_prompt(payload),
             model=self._model,
             tools=self._tools(payload),
         )

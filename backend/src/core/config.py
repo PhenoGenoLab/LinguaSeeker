@@ -213,12 +213,27 @@ class RedisConfig(BaseModel):
     max_connections: int = 20
 
 
+class PipelineMemoryConfig(BaseModel):
+    """ReMe external knowledge service (optional, disabled by default).
+
+    ReMe runs as a separate process/container; the backend only calls its HTTP
+    contract.  An empty URL or ``enabled=False`` yields an inert client.
+    """
+
+    enabled: bool = False
+    url: str = ""
+    api_key: str = ""
+    timeout: float = 0.8
+    top_k: int = 5
+
+
 class PipelineConfig(BaseModel):
     """Pipeline runtime behavior switches."""
 
     cache_enabled: bool = False
     dedup_enabled: bool = False
     agent_runtime: Literal["legacy", "shadow", "agentscope"] = "legacy"
+    memory: PipelineMemoryConfig = Field(default_factory=PipelineMemoryConfig)
 
 
 class PostgreSQLConfig(BaseModel):
@@ -443,6 +458,11 @@ class Settings(BaseSettings):
     pipeline_cache_enabled: bool | None = None
     pipeline_dedup_enabled: bool | None = None
     pipeline_agent_runtime: Literal["legacy", "shadow", "agentscope"] = "legacy"
+    pipeline_memory_enabled: bool = False
+    pipeline_memory_url: str = ""
+    pipeline_memory_api_key: str = ""
+    pipeline_memory_timeout: float = 0.8
+    pipeline_memory_top_k: int = 5
 
     # ── Dispatcher / heartbeat I/O tuning (DISPATCHER_*, PIPELINE_HEARTBEAT_*) ──
 
@@ -631,6 +651,13 @@ class Settings(BaseSettings):
             cache_enabled=production_like if self.pipeline_cache_enabled is None else self.pipeline_cache_enabled,
             dedup_enabled=production_like if self.pipeline_dedup_enabled is None else self.pipeline_dedup_enabled,
             agent_runtime=self.pipeline_agent_runtime,
+            memory=PipelineMemoryConfig(
+                enabled=self.pipeline_memory_enabled,
+                url=self.pipeline_memory_url,
+                api_key=self.pipeline_memory_api_key,
+                timeout=self.pipeline_memory_timeout,
+                top_k=self.pipeline_memory_top_k,
+            ),
         )
         self.postgresql = PostgreSQLConfig(
             host=self.postgres_host,

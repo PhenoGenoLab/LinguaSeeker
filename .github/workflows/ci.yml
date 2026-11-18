@@ -97,6 +97,7 @@ jobs:
           src/pipeline/tools/fact_chain
           src/pipeline/skills/fact_chain
           src/pipeline/skills/runtime
+          src/pipeline/mcp
           src/pipeline/graph/phases/phase_3.py
           src/agents/contracts.py
 
@@ -147,6 +148,7 @@ jobs:
           --cov=src.pipeline.tools.fact_chain
           --cov=src.pipeline.skills.fact_chain
           --cov=src.pipeline.skills.runtime
+          --cov=src.pipeline.mcp
           --cov=src.pipeline.graph.phases.phase_3
           --cov-branch
           --cov-report=term-missing
