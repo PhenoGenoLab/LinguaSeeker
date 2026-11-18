@@ -30,7 +30,7 @@ def sample_state(tmp_path) -> PipelineGraphState:
 
 
 def _make_parse_result():
-    from src.core.ingest_and_digitize_data.parse_document.contracts import (
+    from src.pipeline.tools.parsing.contracts import (
         MinerULocalBatchSaveResult,
         MinerULocalBatchParseResult,
         MinerUBatchStatus,
@@ -95,7 +95,7 @@ async def test_phase_2_adapter_raises_permanent_without_phase_1_output(sample_st
 @pytest.mark.asyncio
 async def test_phase_2_adapter_raises_permanent_when_no_saved_files(sample_state: PipelineGraphState):
     """Phase 2 adapter raises PermanentPhaseError when parsing produced no output."""
-    from src.core.ingest_and_digitize_data.parse_document.contracts import (
+    from src.pipeline.tools.parsing.contracts import (
         MinerULocalBatchSaveResult,
         MinerULocalBatchParseResult,
         MinerUBatchStatus,
@@ -123,7 +123,7 @@ async def test_phase_2_adapter_raises_permanent_when_no_saved_files(sample_state
 @pytest.mark.asyncio
 async def test_phase_2_adapter_raises_retryable_on_mineru_timeout(sample_state: PipelineGraphState):
     """Phase 2 adapter raises RetryablePhaseError on MinerU timeout."""
-    from src.core.ingest_and_digitize_data.parse_document.exceptions import (
+    from src.pipeline.tools.parsing.exceptions import (
         MinerUTimeoutError,
     )
 

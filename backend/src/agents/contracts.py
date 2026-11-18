@@ -290,7 +290,7 @@ def build_retryable_errors() -> tuple[type, ...]:
         pass
 
     try:
-        from src.core.ingest_and_digitize_data.parse_document.exceptions import (
+        from src.pipeline.tools.parsing.exceptions import (
             MinerUTimeoutError,
         )
 

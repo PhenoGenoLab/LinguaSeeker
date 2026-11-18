@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.ingest_and_digitize_data.parse_document.base import ParserStrategy
-from src.core.ingest_and_digitize_data.parse_document.contracts import (
+from src.pipeline.tools.parsing.base import ParserStrategy
+from src.pipeline.tools.parsing.contracts import (
     DocumentMetadata,
     PageContent,
     ParseResult,

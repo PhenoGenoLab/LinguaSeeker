@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from src.core.ingest_and_digitize_data.parse_document import (
+from src.pipeline.tools.parsing import (
     MinerULocalParser,
     ParseDocumentService,
     ParseResult,

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.core.ingest_and_digitize_data.parse_document.common.converters import (
+from src.pipeline.tools.parsing.common.converters import (
     block_to_markdown,
     html_table_to_markdown,
     html_table_to_structured,

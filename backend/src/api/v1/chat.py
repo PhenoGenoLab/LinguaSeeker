@@ -227,7 +227,7 @@ async def parse_chat_file(
     # ── Use wired parser singleton, fall back to fresh instance ──
     parser = get_local_parser()
     if parser is None:
-        from src.core.ingest_and_digitize_data.parse_document.local.parser import (
+        from src.pipeline.tools.parsing.local.parser import (
             MinerULocalParser,
         )
 

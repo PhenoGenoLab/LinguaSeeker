@@ -33,7 +33,7 @@ from src.api.v1.contracts import (
 )
 from src.core.config import get_config
 from src.core.auth.contracts import AuthContext
-from src.core.ingest_and_digitize_data.document_acquisition.contracts import (
+from src.pipeline.tools.acquisition.contracts import (
     AcquisitionSource,
     DocumentAcquisitionRequest,
 )
@@ -228,7 +228,7 @@ async def acquire_literature(
     apply); prefer `action="search"` for cheap metadata-only lookups.
     """
     # Imported here so tests can patch the service class where it is defined.
-    from src.core.ingest_and_digitize_data.document_acquisition.service import (
+    from src.pipeline.tools.acquisition.service import (
         DocumentAcquisitionService,
     )
 
