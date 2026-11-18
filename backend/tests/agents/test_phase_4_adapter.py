@@ -13,7 +13,7 @@ from src.agents.contracts import (
     StandardizationOutput,
     SkipPhase4Reason,
 )
-from src.agents.phase_4_adapter import Phase4Adapter
+from src.pipeline.graph.phases.phase_4 import Phase4Adapter
 
 
 @pytest.fixture
@@ -67,7 +67,7 @@ async def test_phase_4_adapter_success(sample_state: PipelineGraphState):
     )
 
     with patch(
-        "src.agents.phase_4_adapter.DualEvidenceExtractionResult.model_validate",
+        "src.pipeline.graph.phases.phase_4.DualEvidenceExtractionResult.model_validate",
         return_value=MagicMock(),
     ):
         result_state = await adapter.run(sample_state)
@@ -152,7 +152,7 @@ async def test_phase_4_adapter_skipped_when_zero_standardized(
     )
 
     with patch(
-        "src.agents.phase_4_adapter.DualEvidenceExtractionResult.model_validate",
+        "src.pipeline.graph.phases.phase_4.DualEvidenceExtractionResult.model_validate",
         return_value=MagicMock(),
     ):
         result_state = await adapter.run(sample_state)
@@ -237,7 +237,7 @@ async def _run_phase_4_with_counts(
     )
 
     with patch(
-        "src.agents.phase_4_adapter.DualEvidenceExtractionResult.model_validate",
+        "src.pipeline.graph.phases.phase_4.DualEvidenceExtractionResult.model_validate",
         return_value=MagicMock(),
     ):
         return await adapter.run(sample_state)

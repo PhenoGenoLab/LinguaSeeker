@@ -14,7 +14,7 @@ from src.agents.contracts import (
     SkipPhase4Reason,
     PermanentPhaseError,
 )
-from src.agents.orchestrator import PipelineOrchestrator
+from src.pipeline.graph.topology import PipelineOrchestrator
 
 PARSE_OUTPUT = ParseOutput(
     md_path="/tmp/test.md",
