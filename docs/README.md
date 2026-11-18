@@ -93,7 +93,7 @@ docs/
 
 | 日期 | 标题 | 状态 |
 |------|------|------|
-| 2026-11-17 | [Pipeline 技术栈替换：LangGraph + AgentScope + ReMe](planned/2026-11-17-pipeline-agentscope-reme-migration.md) | planned（r2：含 skills/mcp/tools 领域层目录划分） |
+| 2026-11-17 | [Pipeline 技术栈替换：LangGraph + AgentScope + ReMe](planned/2026-11-17-pipeline-agentscope-reme-migration.md) | active（r3：阶段 0–4b 已实施，真实验收待执行） |
 
 ## 归档计划
 
