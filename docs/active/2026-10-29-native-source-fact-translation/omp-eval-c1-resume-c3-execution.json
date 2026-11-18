@@ -1,0 +1,19 @@
+{
+  "task_id": "EVAL-C1-RESUME-C3",
+  "executor": "omp",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 964479,
+  "started_at": "2026-11-04T07:45:29.470119+00:00",
+  "execution_status": "finished_duplicate_dispatch",
+  "acceptance_status": "not_accepted_as_new_delivery",
+  "task": "docs/archive/papers/2026-11-05-native-eval-task-release-22/eval-c1-resume-c3.md",
+  "worktree": ".worktrees/native-v3",
+  "stdout": "logs/2026-11-05-eval-c1-resume-c3-omp.stdout.jsonl",
+  "stderr": "logs/2026-11-05-eval-c1-resume-c3-omp.stderr.log",
+  "research_requests_allowed": false,
+  "disposition": "duplicate_dispatch_withdrawn",
+  "actual_delivery": "docs/archive/papers/2026-10-30-native-source-review-and-design-delivery/eval-c1-resume-c6",
+  "review": "docs/archive/papers/2026-11-04-eval-release22-duplicate-review-final",
+  "original_acceptance": "docs/archive/papers/2026-10-31-omp-eval-final-review/README.md",
+  "new_gap_closures": 0
+}

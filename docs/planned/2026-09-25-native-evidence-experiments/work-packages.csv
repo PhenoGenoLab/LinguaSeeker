@@ -1,0 +1,23 @@
+task_id,task,depends_on,owner_role_unassigned,relative_window_estimate,deliverable,acceptance,status
+WP00,protocol_and_decision_ledger,,research_lead,week1,protocol_v2+decision_ledger,unresolved resources explicit,completed
+WP01,catalog_scope_and_atomicity,WP00,domain_schema_role,week1,catalog_v3+mapping,all fields have scope and source rules,planned
+WP02,typed_atomic_contracts_and_states,WP01,backend_engineer,week1,contracts+normalization,unknown is not found; preserve distinct cases,in-progress
+WP03,full_windows_and_translation_mapping,WP02,backend_engineer,week1-2,coverage+source_map,no silent middle truncation,in-progress
+WP04,reference_alignment_and_scoring,WP01;WP02,evaluation_engineer,week1-2,versioned_evaluator,fixed denominator and one-to-one matching,in-progress
+WP05,gold_input_isolation,WP02;WP04,engineering_reviewer,week2,access_allowlist+audit,no gold-dependent product requests,in-progress
+WP06,dev_v3_reference,WP01;WP03;WP04,reference_runner,week2,dev_reference_seal,2026-10-09 four-document offline migration accepted; 2026-10-12 twenty references and seals byte-reproduced; 491 of 493 patient facts unresolved; semantic scoring pending; v2 unchanged,completed-offline
+WP07,method_matrix_and_factorial,WP02;WP03;WP05,backend_engineer,week2,method_arms+candidate_pools,review labels only; no candidate rewriting,in-progress
+WP08,scheduler_receipts_budget_resume,WP07,evaluation_engineer,week2,runner+receipts,earliest valid result and exact request binding,in-progress
+WP09,four_document_preflight,WP06;WP08,experiment_operator,week2,preflight+node_costs,metadata-selected hard cases; traceability complete,in-progress
+WP10,paired_development_experiment,WP09,experiment_operator,week3,paired_dev_counts,2026-10-14 recheck34 current-DAG prerecovery closes remaining P1; 74 tests and 5726 zero-call cache hits; development outputs and offline corrections accepted within silver-reference scope; G1 and G2 remain pending,completed-offline
+WP11,biomedical_baseline_feasibility,WP07,baseline_engineer,week2-3,BIO_adapter_or_report,2026-10-19 C2 submitted_with_external_blockers; local corrections closed by user evidence review; coordinator verified 50 sealed files; resources terms and vendor runtime remain pending; no execution release,in-progress
+WP12,new_source_inventory_and_groups,WP00,data_role,week1-3_parallel,source+exposure_manifests,2026-10-22 REV local repair accepted_for_this_scope: complete 60-file seal; 30 rows x 34 columns; restored CSV and five derived artifacts byte-reproduced; comma-regression guard passes; claims 64/70/16/0; refs 194/69; historical exclusion supported; rights and source admission remain open; all not_admitted unfrozen,in-progress
+WP13,sample_size_and_cost_simulation,WP10;WP12,statistical_role,week3,power_precision_cost_curves,joint paired simulation; MC uncertainty,planned
+WP14,model_threshold_and_budget_selection,WP10;WP11;WP13,research_lead,week3,filled_freeze_manifest,no required null; justified SESOI or precision target,planned
+WP15,test_protocol_and_code_freeze,WP04;WP05;WP11;WP12;WP13;WP14,research_lead,week4,signed_protocol+run_DAG,primary comparator unchanged; amendments tracked,planned
+WP16,test_reference_and_seal,WP15,reference_runner,week4,test_reference_seal,before any test product inference,planned
+WP17,formal_matrix_and_repeats,WP16,experiment_operator,week5,outputs+cost_receipts,planned completeness; no duplicated pseudo-repeats,planned
+WP18,blind_external_audit_and_alignment,WP17,evaluation_operator,week5,audit_ballots+alignment,no method identity or gate labels revealed,planned
+WP19,independent_recompute_and_exports,WP18,statistical_role,week5,analysis+tables+figures,group count conservation and reproducible bootstrap,planned
+WP20,manuscript_and_review_response,WP19,writing_role,week6,manuscript+claim_map,one frozen study; silver limitation explicit,planned
+WP21,human_review_delivery_and_archive,WP20,project_author,week6,guides+delivery_receipt,reviewable package; no automatic external submission,planned

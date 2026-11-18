@@ -1,0 +1,32 @@
+{
+  "task_id": "REMAINING-WORK-LEDGER-R2",
+  "executor": "dsh",
+  "reviewer": "omp",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 1011929,
+  "started_at": "2026-11-09T03:10:32.150344+00:00",
+  "execution_status": "delivered",
+  "acceptance_status": "pending_omp_review",
+  "review_status": "running",
+  "priority": "P1",
+  "parent_gap": "G-02/ledger-r2",
+  "worktree": ".worktrees/native-remaining-work-ledger-r2",
+  "task": "docs/archive/papers/2026-11-09-native-source-task-release-34/remaining-work-ledger-r2.md",
+  "delivery": "docs/archive/papers/2026-11-09-native-remaining-work-ledger-delivery/remaining-work-ledger-r2",
+  "stdout": "logs/2026-11-09-remaining-work-ledger-r2-dsh.stdout.jsonl",
+  "stderr": "logs/2026-11-09-remaining-work-ledger-r2-dsh.stderr.log",
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false,
+  "runtime_patch": "docs/archive/papers/2026-11-09-native-source-task-release-34/dsh-model-commandcode.patch.yml",
+  "reviewer_model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "seed_worktree": ".worktrees/native-constructor-seal-r1",
+  "host_seal": "docs/archive/papers/2026-11-09-native-remaining-work-ledger-delivery/remaining-work-ledger-r2",
+  "failed_builds": [
+    "failed-host-build-r1",
+    "failed-host-build-r2"
+  ],
+  "host_sealed_at": "2026-11-09T07:33:49.438113+00:00",
+  "delivery_seal_sha256": "31161b1225befaeacb54b5c74f4dbdd9a7fc54a2e25dc1ad242eb0ae4ee4e989",
+  "delivered_at": "2026-11-09T07:34:02.251738+00:00",
+  "review_pid": 1208838
+}

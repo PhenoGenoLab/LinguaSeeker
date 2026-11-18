@@ -1,0 +1,21 @@
+{
+  "task_id": "ARRAY-BOUNDARY-R1-REVIEW",
+  "executor": "omp",
+  "role": "post_delivery_review",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 114997,
+  "started_at": "2026-11-08T06:32:06.791878+00:00",
+  "execution_status": "completed",
+  "acceptance_status": "accepted_for_offline_array_boundary_probe_scope",
+  "parent_task": "ARRAY-BOUNDARY-R1",
+  "delivery": "docs/archive/papers/2026-11-08-native-array-boundary-delivery/array-boundary-r1",
+  "task": "docs/archive/papers/2026-11-08-native-source-task-release-29/omp-review-after-delivery.md",
+  "review_dir": "docs/archive/papers/2026-11-08-native-array-boundary-r1-review",
+  "stdout": "logs/2026-11-08-array-boundary-r1-omp-review.stdout.jsonl",
+  "stderr": "logs/2026-11-08-array-boundary-r1-omp-review.stderr.log",
+  "delivery_seal_sha256": "e5f7e9208d99ea36e093cbde63dfcc49ef4e483618786270646fe4c8455e22d8",
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false,
+  "coordinator_acceptance": "docs/archive/papers/2026-11-08-native-array-boundary-r1-coordinator-acceptance",
+  "accepted_at": "2026-11-08T06:39:20.340573+00:00"
+}

@@ -1,0 +1,22 @@
+{
+  "task_id": "PILOT-R1-GPT6-LUNA-STABLE-RESPONSES-RUN-R6-REVIEW",
+  "executor": "omp",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 1334496,
+  "started_at": "2026-11-09T09:25:03.992268+00:00",
+  "execution_status": "completed",
+  "acceptance_status": "accepted_for_descriptive_responses_run_scope",
+  "task": "docs/archive/papers/2026-11-09-native-source-task-release-43/omp-review-after-delivery.md",
+  "delivery": "docs/archive/papers/2026-11-09-native-pilot-r1-delivery/gpt6-luna-run-r6",
+  "review_dir": "docs/archive/papers/2026-11-09-native-pilot-r1-gpt6-luna-run-r6-review",
+  "stdout": "logs/2026-11-09-gpt6-luna-run-r6-omp-review.stdout.jsonl",
+  "stderr": "logs/2026-11-09-gpt6-luna-run-r6-omp-review.stderr.log",
+  "research_requests_allowed": false,
+  "process_alive": false,
+  "completed_at": "2026-11-09T11:02:43.839519+00:00",
+  "review": "docs/archive/papers/2026-11-09-native-pilot-r1-gpt6-luna-run-r6-review",
+  "recommended_status": "recommend_acceptance_for_descriptive_run_scope",
+  "delivery_seal_sha256": "3644df402c152324433d8f02ee7d792c9aed5bd21ae975f83b50111d405bba37",
+  "coordinator_acceptance": "docs/archive/papers/2026-11-09-native-pilot-r1-gpt6-luna-run-r6-coordinator-acceptance",
+  "coordinator_accepted_at": "2026-11-09T11:02:43.839519+00:00"
+}

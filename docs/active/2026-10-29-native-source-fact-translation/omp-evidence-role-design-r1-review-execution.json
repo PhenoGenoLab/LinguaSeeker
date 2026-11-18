@@ -1,0 +1,21 @@
+{
+  "task_id": "EVIDENCE-ROLE-DESIGN-R1-REVIEW",
+  "executor": "omp",
+  "role": "post_delivery_review",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 962389,
+  "started_at": "2026-11-09T02:09:55.224996+00:00",
+  "execution_status": "completed",
+  "acceptance_status": "accepted_for_offline_evidence_role_design_scope",
+  "parent_task": "EVIDENCE-ROLE-DESIGN-R1",
+  "delivery": "docs/archive/papers/2026-11-08-native-evidence-role-design-delivery/evidence-role-design-r1",
+  "task": "docs/archive/papers/2026-11-08-native-source-task-release-31/omp-review-after-delivery.md",
+  "review_dir": "docs/archive/papers/2026-11-08-native-evidence-role-design-r1-review",
+  "stdout": "logs/2026-11-08-evidence-role-design-r1-omp-review.stdout.jsonl",
+  "stderr": "logs/2026-11-08-evidence-role-design-r1-omp-review.stderr.log",
+  "delivery_seal_sha256": "4b92eb32d7bec2e9df61e21c6be72e2089b42d049d4c70742c5915930891de67",
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false,
+  "coordinator_acceptance": "docs/archive/papers/2026-11-08-native-evidence-role-design-r1-coordinator-acceptance",
+  "accepted_at": "2026-11-09T02:16:11.159538+00:00"
+}

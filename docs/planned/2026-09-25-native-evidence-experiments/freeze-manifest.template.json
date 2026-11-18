@@ -1,0 +1,181 @@
+{
+  "schema_version": "planning-2.0",
+  "status": "not_executable_template",
+  "execution_authorized": false,
+  "study_id": null,
+  "resource_constraints": {
+    "user_reply_date": "2026-09-25",
+    "user_reply": "未定",
+    "total_api_budget": null,
+    "billing_unit": null,
+    "submission_target_date": null,
+    "new_native_source_availability": null
+  },
+  "scope": {
+    "target_diseases": null,
+    "target_languages": null,
+    "publication_types": null,
+    "query_manifest_sha256": null,
+    "catalog_version": null,
+    "catalog_sha256": null,
+    "scope_mapping_sha256": null,
+    "primary_output": "accepted_atomic_explicit_or_deterministically_normalized_facts",
+    "external_target_information": "none",
+    "reference_type": "model_consensus_silver_no_human_gold"
+  },
+  "data": {
+    "source_manifest_sha256": null,
+    "exposure_manifest_sha256": null,
+    "split_manifest_sha256": null,
+    "publication_group_rule_version": null,
+    "test_publication_groups": null,
+    "test_documents": null,
+    "reference_seal_sha256": null,
+    "reference_ready_before_test_inference": true
+  },
+  "models": {
+    "proposer": {
+      "configuration_role": "LLM_MODEL",
+      "requested_model": null,
+      "expected_returned_identifier": null,
+      "actual_request_parameters": null
+    },
+    "internal_reviewer": {
+      "configuration_role": "REASONING_LLM_MODEL",
+      "requested_model": null,
+      "expected_returned_identifier": null,
+      "actual_request_parameters": null
+    },
+    "translation": {
+      "configuration_role": "LLM_MODEL with declared translation-stage settings",
+      "requested_model": null,
+      "expected_returned_identifier": null,
+      "actual_request_parameters": null
+    },
+    "reference_panel": null,
+    "external_audit_panel": null,
+    "biomedical_tool_and_adapter": null
+  },
+  "implementation": {
+    "paper_commit": null,
+    "backend_commit": null,
+    "dirty_patch_sha256": null,
+    "actual_source_archive_sha256": null,
+    "lockfile_sha256": null,
+    "window_policy_sha256": null,
+    "prompt_manifest_sha256": null,
+    "acceptance_policy_sha256": null,
+    "scorer_version": null
+  },
+  "methods": {
+    "evaluation_units": [
+      "B0",
+      "B1",
+      "B2",
+      "B3",
+      "M",
+      "F_OO_R0",
+      "F_OT_R0",
+      "BIO"
+    ],
+    "primary_comparison": [
+      "M",
+      "B2"
+    ],
+    "factorial_2x2": {
+      "OO_review_off": "F_OO_R0",
+      "OO_review_on": "B2",
+      "OT_review_off": "F_OT_R0",
+      "OT_review_on": "M"
+    },
+    "policy_replays": [
+      "P_FULL",
+      "P_NO_SPAN",
+      "P_ALL"
+    ],
+    "relevance_skip_enabled": false,
+    "reviewer_can_change_fact_values": false,
+    "BIO_feasibility_resolved": false
+  },
+  "budget": {
+    "main_per_document_cap": null,
+    "stage_caps": {
+      "dev_reference": null,
+      "dev_preflight": null,
+      "dev_product": null,
+      "test_reference": null,
+      "test_product": null,
+      "external_audit_alignment": null,
+      "reserve": null
+    },
+    "price_ledger_sha256": null,
+    "charge_translation_review_retries": true,
+    "report_standalone_and_actual_bill_separately": true,
+    "missing_usage_policy": "unknown_not_zero"
+  },
+  "runs": {
+    "recommended_repeats": 3,
+    "frozen_repeats": null,
+    "recommended_product_concurrency": 2,
+    "frozen_product_concurrency": null,
+    "recommended_panel_concurrency": 3,
+    "frozen_panel_concurrency": null,
+    "recommended_max_attempts": 3,
+    "frozen_max_attempts": null,
+    "recommended_timeout_seconds": 300,
+    "frozen_timeouts": null,
+    "run_dag_sha256": null,
+    "order_manifest_sha256": null,
+    "cross_repeat_product_cache_allowed": false,
+    "cache_identity": [
+      "document_id",
+      "repeat_id",
+      "node_id",
+      "proposal_round",
+      "request_hash"
+    ],
+    "shared_node_plan_sha256": null,
+    "unique_call_counts_must_derive_from_DAG": true
+  },
+  "statistics": {
+    "primary_estimator": "mean_repeat_pooled_F1_M_minus_B2",
+    "primary_output": "method_policy_output",
+    "unit": "publication_group",
+    "bootstrap_replicates": 10000,
+    "bootstrap_seed": 42,
+    "confidence_level": 0.95,
+    "alpha": 0.05,
+    "planning_target_power": 0.8,
+    "sensitivity_target_power": 0.9,
+    "sesoi": null,
+    "precision_target": null,
+    "sample_size_plan_sha256": null,
+    "secondary_status": "exploratory unless amended before freeze",
+    "undefined_metric_policy": "NA",
+    "macro_document_subset": "fixed reference_count > 0"
+  },
+  "randomization_seeds": {
+    "source_order": 20260925,
+    "ready_node_order": 20260926,
+    "anonymous_audit": 20260927
+  },
+  "unresolved_before_paid_preflight": [
+    "execution_authorized",
+    "stage budget and billing unit",
+    "available model IDs and supported request parameters",
+    "source/schema/protocol hashes for development",
+    "bounded retries and timeouts"
+  ],
+  "unresolved_before_test": [
+    "new unexposed source groups",
+    "catalog and source eligibility",
+    "BIO implementation or explicit prospective amendment",
+    "all model/prompt/source/parameter versions",
+    "SESOI or precision-based rationale and sample-size plan",
+    "N and R",
+    "full test and evaluation budget",
+    "run DAG and shared-node rules",
+    "test reference seal"
+  ],
+  "template_note": "Documentation only. Nulls are intentional. No study has been preregistered and no v3 live model run was performed by creating this file."
+}

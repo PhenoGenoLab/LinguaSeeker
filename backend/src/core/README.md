@@ -32,10 +32,12 @@ core/
 
 | 子模块 | 说明 |
 |--------|------|
-| `ingest_and_digitize_data/` | 阶段 1 — 文献采集（本地上传/在线获取）与文档解析（MinerU） |
-| `cross_lingual_process_and_extract_evidence/` | 阶段 2 — 跨语言处理与证据提取 |
-| `standardize_entities_and_align_knowledge/` | 阶段 3 — 实体标准化与知识对齐 |
-| `visualize_evidence_with_expert_in_loop/` | 阶段 4 — 证据可视化与专家审核 |
+| `ingest_and_digitize_data/` | 阶段 1/2 — 文献采集（本地上传/在线获取）与文档解析（MinerU） |
+| `source_fact_chain/` | 阶段 3 — 原文分窗→事实抽取→核验→事实英译→双语行 |
+| `cross_lingual_translation/` | 翻译基础设施（术语映射、句级对齐）；Phase 3 主流程不再整篇翻译 |
+| `evidence_extraction/` | ACMG 字段目录、证据契约、分组规则；供事实链投影与离线基准使用 |
+| `standardize_entities_and_align_knowledge/` | 阶段 4 — 实体标准化与知识对齐 |
+| `visualize_evidence_with_expert_in_loop/` | 阶段 5 — 证据可视化与专家审核 |
 
 ## 数据流
 

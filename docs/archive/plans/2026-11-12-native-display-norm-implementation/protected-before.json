@@ -1,0 +1,210 @@
+[
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/HOST-SEAL.md",
+    "sha256": "ee2200772b8e6c9ddb992a73e938ecfa84c90cea5c2b90f53dde34ac82ce7e4d"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/README.md",
+    "sha256": "ce2414aeb6956cbf86fbf930ad4155fc082e485a7b317a85f5d607acd4217f19"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/SHA256SUMS",
+    "sha256": "4ec66817b08f57a1577e58d85a3654be6031e2eeeb4baa0703fb2ace5873596c"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/changed-files.csv",
+    "sha256": "ef79cc05efcb8a36c4fc2a3882877983e07911531f1e16f2f5589cdd5b6cbf68"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/commands.json",
+    "sha256": "a0c78531ea4135bd150ab153e440bc288eda3f6725ef7c7448dd123609659018"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/criterion-results.csv",
+    "sha256": "7f1a0ab65d3b77fc9054acfde7b1a6e02c3f662098f050f464d6a887363c6bcd"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/current-state.md",
+    "sha256": "576ddb0569125d82799a8a6229fe58a0ac5c0408513fbfe0ff3550fab09e3882"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/display-norm-current-state.csv",
+    "sha256": "5bcb9bbfc55b98c8b23d035b771e8c44dcdd0037eed3b72f11528f856bb1e144"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/display-norm-design.json",
+    "sha256": "78a104c0f1e59a19ebb79efa5062d63ccc1f79f51e4a6b94ffc0afd51456d6f3"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/display-norm-fields.csv",
+    "sha256": "812f0930bdb5980c3a3fd475fec9d0ec5560b3ece630c1dcedca6ff4131af78a"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/display-norm-non-goals.csv",
+    "sha256": "a05ec6b605529d6e820e681281ca3971150bdcd6586d402de442cd0137c74fdb"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/display-norm-options.csv",
+    "sha256": "07456e09ad0a29c15ea6ea888e735f4e6c32bf748c929f055b37c2fd891391a7"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/display-norm-orthogonality.csv",
+    "sha256": "df1c85dc9f86cdd789fcb70fcc74216d9a34abbfe4ad74f004a8007ca54c9029"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/display-norm-rules.csv",
+    "sha256": "5f27893cb69c542e5a8887df1cf8d3883a4d09a231e7d25e1a1d06da2d4ce5c7"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/doc-organize.json",
+    "sha256": "d03d8dbfbc5e35a828c04c05a2c0e938513aa0ba2319c57c5ba5f1e203217b72"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/field-inventory.md",
+    "sha256": "80d9ce294949e0b1452e249be4cbd8be10281cec6b66fc5ad418b44efb9f3769"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/input-manifest.csv",
+    "sha256": "268cb24dbb8d7eee530c3b51cfba1bfabb1f49ab0ba2e0d27f3657543aff55ea"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/link-check.csv",
+    "sha256": "15bb99900b7b74fa9489702e11e8e338ba78ee800401f0d19e0b43288972c71e"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/logs/ast-bare-dict.log",
+    "sha256": "764927d804f0c204c521e89f560de46416d8094d9666426dc7f66a164c201226"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/logs/design-check.log",
+    "sha256": "ebb3e7ba9dc0b10a5648f23c8e3a7e7973646cf23619a62e2fbe6e801dc7613d"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/logs/full-suite.log",
+    "sha256": "ed350eb455602f429e908c5077a035c07277bf736b587a7aaa0f1a46793121df"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/logs/new-tests.log",
+    "sha256": "a865177cee6dab635db161f969bcf867f12937df07e2753ee3becd45cca8ec7f"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/logs/nfkc-review-seal.log",
+    "sha256": "34f90338e45a11a6c45655e948fe56a2fa69ce77fd49e037670316f522774d1f"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/logs/release-seal.log",
+    "sha256": "b92da536968d07d99d4c40e8aa4e27d54522860e6efa81a3b3845a70660ea286"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/logs/ruff.log",
+    "sha256": "5afc600987e01050a7978ac4446c3acdf9a1388a96f1e763cd9be4d3eb6ebd3f"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/logs/seal-check.log",
+    "sha256": "fbb8b324ef7ef115ca7c8d6ac3a69a9b9e86f600b1de13554bd79fc26f469edb"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/membership-check.json",
+    "sha256": "4a9116320a33d749ff70ef9d03f5ec7dcb331baab0721af8399261228cbcc800"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/non-goals.md",
+    "sha256": "8d666e27ff34a766bafb5275b242a164136a139793221cb2b9f39900bcc24ba9"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/options.md",
+    "sha256": "c536a6ebccce610eae374d0e5787e6b0a6026712e0e335f4d78107061238258c"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/orthogonality.md",
+    "sha256": "0b488a684790ee0d2d78befa889262ae03bb192c48bb0cdaac93a1b9a1e8a464"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/probes/display-pipeline.json",
+    "sha256": "03e683d0419082aef1260900c7bc2915e72a907b3a18cfcfd8516be00f69329d"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/probes/orthogonality-probe.json",
+    "sha256": "37836327f4f374651a9e1eb4ca6477f53d4b7a8f08712de5fc9221430ca7a2f2"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/process-deviations.md",
+    "sha256": "3e08d5be5a3953486f970c84544eaf15e7f6c2a71bd0f11e8072451d1376f147"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/product-freeze.csv",
+    "sha256": "062c5bf4ff9cbb8f8c08b25301d552caeecc71c085e14c9d6a0e7a91d5f59a9b"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/product-freeze.json",
+    "sha256": "3c3fd5145a550348fca966af6c5acc853e18489245b3fc6ccbd9ee03656974b2"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/response-to-task.md",
+    "sha256": "da0e948cc066523eed518f2ad4c26db47b06166c904258ec8263df8e3666b36d"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/rules.md",
+    "sha256": "76e9639ea014091a37877c7a2751b06e6ce0b52eba2980baea1d40976ad5eea2"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/seed-relative.patch",
+    "sha256": "2e6f46d8ef4ed5507ecc0592732b0a1106a0716a44478980426b9e1aeb3fa20b"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/snapshots/scripts/build_display_norm_design_r1_delivery.py",
+    "sha256": "b28305fccb2438454ce34c743970395aa11d79e4e200befbed6322530096cf50"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/snapshots/scripts/display_norm_design_r1.py",
+    "sha256": "2f3a0f8afef79acc120af1e234481e68e0a49258a639a4b6b2ba59915a076405"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/snapshots/scripts/host_install_display_norm_design_r1.py",
+    "sha256": "2d40678da0b6dc6e5994c9fdaf53f4c5ac303b2ea87167556da70590e6af6a44"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/snapshots/tests/npj_native_v3/test_display_norm_design_r1.py",
+    "sha256": "9de99a28e6a529fa252ee69e56deadf75dd622506b402c0944a76538cbaabd6b"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-delivery/display-norm-design-r1/verification.json",
+    "sha256": "58189e2709ea013b7b059f5c022a20fc203dc5ceb9ed60154bcf2550bed7fe13"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-r1-coordinator-acceptance/README.md",
+    "sha256": "e12756db448ae056b5ffb5d67fa313d6f28d19dccd0938c4c11476c5fe0c5e87"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-r1-coordinator-acceptance/SHA256SUMS",
+    "sha256": "bf41a165a3487814456cdb6c3caf24a76459d0908812483eed554806d94ce3b3"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-r1-coordinator-acceptance/acceptance.json",
+    "sha256": "7f883234859c354744214c8cb8c4b5218386d04c6c4c715ed295844d5a8e6104"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-r1-coordinator-acceptance/input-manifest.csv",
+    "sha256": "55ee8b9558dfcbca06ca15cd1a6ed3c7674343cecce27b787f2ce150563f0c15"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-09-native-display-norm-design-r1-coordinator-acceptance/link-check.csv",
+    "sha256": "31af219266fe7c46be0ef985ad6a622c1af9191300b297dff871c28cf81fa15e"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-12-native-remaining-work-ledger-r5-coordinator-acceptance/README.md",
+    "sha256": "dc05740069e2a73df364d0326b48c82437aac0b3752435268a87db9a29854309"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-12-native-remaining-work-ledger-r5-coordinator-acceptance/SHA256SUMS",
+    "sha256": "fa7129bd5ff0dab916c5fdffaff23dee6f0650af21336ba37087e467e071b6b4"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-12-native-remaining-work-ledger-r5-coordinator-acceptance/acceptance.json",
+    "sha256": "fe3da81d0484fa163fb362d5836bb3c8b276b645193825df944a352dc080888a"
+  },
+  {
+    "path": "docs/archive/papers/2026-11-12-native-remaining-work-ledger-r5-coordinator-acceptance/doc-organize.json",
+    "sha256": "e46eab293ec1e2b038fc9db97aed8038a160aae12a8eb120337e3ebabda92d98"
+  }
+]

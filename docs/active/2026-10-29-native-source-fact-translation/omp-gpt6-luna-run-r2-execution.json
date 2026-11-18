@@ -1,0 +1,23 @@
+{
+  "task_id": "PILOT-R1-GPT6-LUNA-RUN-R2",
+  "executor": "omp",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "research_model": "gpt-6-luna",
+  "client_group_selection": false,
+  "upstream_auto_chain": true,
+  "pid": 1211682,
+  "started_at": "2026-11-09T07:36:11.239233+00:00",
+  "execution_status": "running",
+  "acceptance_status": "pending",
+  "task": "docs/archive/papers/2026-11-09-native-source-task-release-39/pilot-r1-gpt6-luna-run-r2.md",
+  "release": "docs/archive/papers/2026-11-09-native-source-task-release-39",
+  "runtime": "logs/pilot-r1-gpt6-luna-resume-r2-20261109",
+  "delivery": "docs/archive/papers/2026-11-09-native-pilot-r1-delivery/gpt6-luna-run-r2",
+  "ledger_seed": "logs/pilot-r1-gpt6-luna-resume-r1-20261109/budget-ledger.json",
+  "stdout": "logs/2026-11-09-gpt6-luna-run-r2-omp.stdout.jsonl",
+  "stderr": "logs/2026-11-09-gpt6-luna-run-r2-omp.stderr.log",
+  "research_requests_allowed": true,
+  "live_run_authorized": true,
+  "research_budget_usd": "10.00",
+  "committed_before_usd": "0.138933000000"
+}

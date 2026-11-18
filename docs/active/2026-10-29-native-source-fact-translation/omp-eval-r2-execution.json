@@ -1,0 +1,48 @@
+{
+  "task_id": "EVAL-CORE-R1-C1",
+  "executor": "omp",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 3888853,
+  "started_at": "2026-11-03T03:10:21.210795+00:00",
+  "execution_status": "delivered",
+  "acceptance_status": "accepted_for_offline_evaluation_core_scope",
+  "args": [
+    "/home/yangzs/.bun/bin/omp",
+    "--model",
+    "commandcode/deepseek/deepseek-v4.1-flash",
+    "--print",
+    "--mode",
+    "json",
+    "--no-title",
+    "--no-prewalk",
+    "--no-pty",
+    "--tools",
+    "read,bash,edit,write,grep,glob,todo",
+    "--session-dir",
+    "/data/yangzs/Projects/04_Papers/01_ACMG_Lingua-paper/logs/2026-11-03-native-eval-core-r1-c1-omp-sessions",
+    "@/data/yangzs/Projects/04_Papers/01_ACMG_Lingua-paper/docs/archive/papers/2026-11-03-native-eval-core-r1-review/first-review/eval-core-r1-c1.md"
+  ],
+  "task": "docs/archive/papers/2026-11-03-native-eval-core-r1-review/first-review/eval-core-r1-c1.md",
+  "worktree": ".worktrees/native-eval-r2",
+  "stdout": "logs/2026-11-03-native-eval-core-r1-c1-omp.stdout.jsonl",
+  "stderr": "logs/2026-11-03-native-eval-core-r1-c1-omp.stderr.log",
+  "external_services_in_scope": false,
+  "research_requests_allowed": false,
+  "review": "docs/archive/papers/2026-11-03-native-eval-core-r1-review",
+  "rounds": [
+    {
+      "task_id": "EVAL-CORE-R1",
+      "pid": 3831508,
+      "started_at": "2026-11-03T02:04:51.890935+00:00",
+      "stdout": "logs/2026-11-03-native-eval-core-r1-omp.stdout.jsonl",
+      "stderr": "logs/2026-11-03-native-eval-core-r1-omp.stderr.log",
+      "execution_status": "delivered",
+      "acceptance_status": "changes_requested",
+      "delivery_seal_sha256": "b9780c6936fe4d45a40e4fb6149d5a868744c0fc091a5ba81c2c56166610f54a"
+    }
+  ],
+  "review_seal_sha256": "03e1b5f4bc20f5d2a31a667f271cdba4af3d2e3f2478f5222d65473aa7830dc4",
+  "review_seal_entries": 56,
+  "delivery": "docs/archive/papers/2026-11-03-native-evaluation-delivery/eval-core-r1-c1",
+  "complete_delivery_manifest_members": 81
+}

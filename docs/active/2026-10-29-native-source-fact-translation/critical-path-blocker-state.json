@@ -1,0 +1,29 @@
+{
+  "current_goal_objective": "\u6301\u7eed\u53d1\u5e03\u4efb\u52a1 \u76f4\u81f3\u6211\u4eec\u7684\u89c2\u70b9\u6210\u7acb",
+  "goal_status": "active",
+  "condition": "exploratory scope choice, actual source/equivalence reviewers and frozen English baseline absent",
+  "consecutive_observations": 0,
+  "observation_date": "2026-11-13",
+  "turn_classification": "progress_user_selected_Rett_MECP2_exploratory_scope",
+  "primary_direction_confirmed": true,
+  "scope_choice_received": true,
+  "actual_review_rows": 0,
+  "reviewer_assignments": 0,
+  "English_acquisition_snapshot_bindings": 0,
+  "experiment_process_handle": null,
+  "observed_input_sha256": {
+    "docs/active/2026-10-29-native-source-fact-translation/existing-candidate-review-handoff.md": "838ec5ec0b050bc6868a567c5bfbcc8d7e74b0e82f37ab25790220cb7e8dde4a",
+    "docs/active/2026-10-29-native-source-fact-translation/incremental-evidence-execution-plan.md": "4252a4e6e2a22bec805b06c136aaf9455354020c684ae266ca45ba24bb73d0ca",
+    "docs/archive/papers/2026-11-13-native-candidate-anchor-packets-r1/packets.json": "4004c858a2038a2191ea9daae5ba4c9bf88e74056d16a06eec3549f7ca89e083",
+    "docs/archive/papers/2026-11-13-native-candidate-anchor-packets-r1/review-record.template.csv": "30f36c4dc63e9b11d6182bc6dbbe995713e74fd7c574cf38058eef07cb9b4e63"
+  },
+  "next_action": "Receive scope choice; then begin corresponding acquisition/source review preparation. Real novelty claims still require actual review and frozen English evidence.",
+  "doc_organize": {
+    "skill": "doc-organize",
+    "follow_symlinks": true,
+    "markdown_scanned": 747,
+    "classification": "unresolved state remains active;completed sealed handoffs retained",
+    "moved": 0
+  },
+  "last_revalidation": "third consecutive observation: same four prerequisite hashes unchanged, no scope choice, actual reviewer assignments or English snapshot binding"
+}

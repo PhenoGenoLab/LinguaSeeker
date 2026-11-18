@@ -1,0 +1,23 @@
+{
+  "task_id": "THREE-QUEUE-IMPL-R1-REVIEW",
+  "executor": "omp",
+  "role": "post_delivery_review",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 2033783,
+  "started_at": "2026-11-10T02:37:36.945839+00:00",
+  "execution_status": "completed",
+  "acceptance_status": "not_accepted_changes_requested_f1",
+  "parent_task": "THREE-QUEUE-IMPL-R1",
+  "delivery": "docs/archive/papers/2026-11-10-native-three-queue-impl-delivery/three-queue-impl-r1",
+  "task": "docs/archive/papers/2026-11-10-native-source-task-release-45/omp-review-after-delivery.md",
+  "review_dir": "docs/archive/papers/2026-11-10-native-three-queue-impl-r1-review",
+  "stdout": "logs/2026-11-10-three-queue-impl-r1-omp-review.stdout.jsonl",
+  "stderr": "logs/2026-11-10-three-queue-impl-r1-omp-review.stderr.log",
+  "delivery_seal_sha256": "c924aa741abd77d7a2aade8e929845575135ab1817f37f933f6cb88d67180f05",
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false,
+  "completed_at": "2026-11-10T02:50:10.340146+00:00",
+  "review_verdict": "changes_requested",
+  "review_seal_sha256": "79c75706f5db1653c198d03fa8032578cf0f6876ea1a652cd17e1bb7c8749e3a",
+  "coordinator_acceptance": "docs/archive/papers/2026-11-10-native-three-queue-impl-r1-coordinator-acceptance"
+}

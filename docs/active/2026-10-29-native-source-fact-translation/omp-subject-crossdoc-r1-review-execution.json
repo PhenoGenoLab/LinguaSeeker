@@ -1,0 +1,45 @@
+{
+  "task_id": "SUBJECT-CROSSDOC-R1-REVIEW",
+  "executor": "omp",
+  "role": "post_delivery_review",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 1206243,
+  "started_at": "2026-11-09T07:32:02.559132+00:00",
+  "execution_status": "completed",
+  "acceptance_status": "accepted_for_offline_subject_crossdoc_probe_scope",
+  "recommended_status": "accepted_for_offline_subject_crossdoc_probe_scope",
+  "final_acceptance": "pending_coordinator",
+  "completed_at": "2026-11-09T07:34:29Z",
+  "parent_task": "SUBJECT-CROSSDOC-R1",
+  "delivery": "docs/archive/papers/2026-11-09-native-subject-crossdoc-delivery/subject-crossdoc-r1",
+  "task": "docs/archive/papers/2026-11-09-native-source-task-release-35/omp-review-after-delivery.md",
+  "review_dir": "docs/archive/papers/2026-11-09-native-subject-crossdoc-r1-review",
+  "review_seal_sha256": "adec32a19352c545fe68456cd650c1e517d1b37cc1c6ba136282ed47f51e7fe4",
+  "stdout": "logs/2026-11-09-subject-crossdoc-r1-omp-review.stdout.jsonl",
+  "stderr": "logs/2026-11-09-subject-crossdoc-r1-omp-review.stderr.log",
+  "delivery_seal_sha256": "dec10e688ad2b64e1208bc549b42f9bae479ebe2598c050e160c6e80eb7579cd",
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false,
+  "review_checks": {
+    "total": 22,
+    "pass": 21,
+    "observed": 1,
+    "fail": 0
+  },
+  "observations": [
+    "O1: coordinator-owned docs/active/2026-10-29-native-source-fact-translation/README.md was rewritten after the delivery seal and kept changing during review (a427bdaf -> 37e45d59 -> 72707306); the delivered verifier rerun reports all_met=false only because of this single protected-item drift, not a delivery defect.",
+    "O2: delivery input-manifest.csv is point-in-time: 20/21 rows match at review time, only the O1 active-route README drifted, no file missing."
+  ],
+  "summary": "Seal closed (37/37 delivery hashes, 0 missing/symlinks); 5 changed files and all snapshots byte-match the worktree; product/test/script tree differs from the seed only by the 5 declared new files; 89/89 seed hashes reproduce. Dual probes are byte-identical to each other and to the delivered artifacts. Independent assertions confirm cross-document same subject_id does not merge (distinct fact/document ids, no shared subject object, no mapping), identical text under two document ids still yields distinct fact ids, same-document identity stays fact-level, and subject_id is not required in the quote (recorded limitation). Product source gains no cross-document graph or merge logic. Reruns: 13 new tests and 435 full-suite tests passed offline with 0 network attempts; Ruff clean; AST bare-dict additions 0. Delivered verifier reproduces reproducibility 5/5, criteria 25/25, append-only 2/2; protected 3857/3858 with the single failure being O1 post-seal drift.",
+  "boundaries": {
+    "product_bytes_modified": false,
+    "sealed_packages_modified": false,
+    "gates_closed": [],
+    "default_entry_changed": false,
+    "merged_or_pushed": false,
+    "research_requests": 0,
+    "g02_base_closed": false
+  },
+  "coordinator_acceptance": "docs/archive/papers/2026-11-09-native-subject-crossdoc-r1-coordinator-acceptance",
+  "coordinator_accepted_at": "2026-11-09T09:25:03.992268+00:00"
+}

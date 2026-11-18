@@ -1,0 +1,31 @@
+{
+  "task_id": "CONSTRUCTOR-SEAL-R1-REVIEW",
+  "executor": "omp",
+  "role": "post_delivery_review",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 962390,
+  "started_at": "2026-11-09T02:09:55.228073+00:00",
+  "execution_status": "completed",
+  "acceptance_status": "accepted_for_offline_constructor_seal_scope",
+  "final_acceptance": "pending_coordinator",
+  "reviewed_at": "2026-11-09T02:14:11Z",
+  "parent_task": "CONSTRUCTOR-SEAL-R1",
+  "delivery": "docs/archive/papers/2026-11-08-native-constructor-seal-delivery/constructor-seal-r1",
+  "task": "docs/archive/papers/2026-11-08-native-source-task-release-32/omp-review-after-delivery.md",
+  "review_dir": "docs/archive/papers/2026-11-08-native-constructor-seal-r1-review",
+  "stdout": "logs/2026-11-08-constructor-seal-r1-omp-review.stdout.jsonl",
+  "stderr": "logs/2026-11-08-constructor-seal-r1-omp-review.stderr.log",
+  "delivery_seal_sha256": "0e3121d411d320f609b73a97254cc94f07ae15cba5a64d6473a27c570e92ffcd",
+  "review_seal_sha256": "1a20ec017f160acc66cb4d26f75d4eb57e74c00fc0104e8ec01dd419b35e1b19",
+  "checks_passed": 16,
+  "checks_total": 17,
+  "checks_observed": 1,
+  "observations": [
+    "O1 active-route README drifted 23s post-seal (coordinator note)",
+    "O2 verify 13 vs criterion-results 11 (informational)"
+  ],
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false,
+  "coordinator_acceptance": "docs/archive/papers/2026-11-08-native-constructor-seal-r1-coordinator-acceptance",
+  "accepted_at": "2026-11-09T02:16:11.159538+00:00"
+}

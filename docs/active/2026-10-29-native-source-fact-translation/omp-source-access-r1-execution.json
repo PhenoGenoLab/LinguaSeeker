@@ -1,0 +1,20 @@
+{
+  "task_id": "SOURCE-ACCESS-R1",
+  "executor": "omp",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 1010049,
+  "started_at": "2026-11-04T08:46:27.286723+00:00",
+  "execution_status": "delivered",
+  "acceptance_status": "changes_requested",
+  "priority": "P0",
+  "parent_gap": "G-05",
+  "task": "docs/archive/papers/2026-11-04-native-source-task-release-23/source-access-r1.md",
+  "worktree": ".worktrees/native-source-access-r1",
+  "delivery": "docs/archive/papers/2026-11-04-native-source-access-delivery/source-access-r1",
+  "stdout": "logs/2026-11-04-source-access-r1-omp.stdout.jsonl",
+  "stderr": "logs/2026-11-04-source-access-r1-omp.stderr.log",
+  "research_requests_allowed": false,
+  "external_services_in_scope": false,
+  "old_sealed_paths_writable": false,
+  "review": "docs/archive/papers/2026-11-04-native-source-access-r1-review"
+}

@@ -1,0 +1,44 @@
+{
+  "task_id": "SUBJECT-ID-EVIDENCE-R1",
+  "executor": "dsh",
+  "reviewer": "omp",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 3901354,
+  "started_at": "2026-11-07T02:10:45.705377+00:00",
+  "execution_status": "delivered",
+  "acceptance_status": "accepted_for_offline_subject_id_evidence_probe_scope",
+  "review_status": "completed",
+  "priority": "P1",
+  "parent_gap": "G-02/C08",
+  "worktree": ".worktrees/native-subject-id-r1",
+  "task": "docs/archive/papers/2026-11-07-native-source-task-release-28/subject-id-evidence-r1.md",
+  "delivery": "docs/archive/papers/2026-11-07-native-subject-id-delivery/subject-id-evidence-r1",
+  "stdout": "logs/2026-11-07-subject-id-r1-dsh.stdout.jsonl",
+  "stderr": "logs/2026-11-07-subject-id-r1-dsh.stderr.log",
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false,
+  "runtime_patch": "docs/archive/papers/2026-11-07-native-source-task-release-28/dsh-model-commandcode.patch.yml",
+  "reviewer_model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "seed_worktree": ".worktrees/native-constructor-path-r1",
+  "sandbox_block": "docs/archive read-only Errno 30",
+  "host_build_reason": "dsh completed implementation; sandbox could not write delivery; coordinator sealing on host",
+  "history": [
+    {
+      "at": "2026-11-07T03:41:01.179659+00:00",
+      "event": "host_seal_start"
+    }
+  ],
+  "delivery_seal_sha256": "a8446297da86afc02a8b76a24d6daaec42d1bfd6cb8b9c5c8840b945d9dbe27c",
+  "delivered_at": "2026-11-07T03:41:15.766309+00:00",
+  "review_pid": 3957904,
+  "host_build": {
+    "note": "dsh completed implementation; sandbox read-only on docs/archive; coordinator sealed on host",
+    "build_log": "logs/2026-11-07-subject-id-r1-host-build.log",
+    "seal_entries": 37,
+    "full_suite_passed": 402,
+    "new_tests_passed": 12
+  },
+  "coordinator_acceptance": "docs/archive/papers/2026-11-07-native-subject-id-r1-coordinator-acceptance",
+  "accepted_at": "2026-11-07T03:46:36.882161+00:00",
+  "review": "docs/archive/papers/2026-11-07-native-subject-id-r1-review"
+}

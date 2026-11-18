@@ -1,0 +1,20 @@
+{
+  "task_id": "BASE-R1-FINAL-C1",
+  "executor": "omp",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 176765,
+  "started_at": "2026-11-03T12:22:23.997396+00:00",
+  "execution_status": "finished_erroneous_duplicate_dispatch",
+  "acceptance_status": "not_accepted_as_new_delivery",
+  "incident_review": "docs/archive/papers/2026-11-04-base-c1-dispatch-incident/README.md",
+  "original_audit_acceptance_retained": true,
+  "original_package_restored_against_independent_manifest": true,
+  "task": "docs/archive/papers/2026-10-30-native-source-task-release-08/base-r1-final-c1.md",
+  "stdout": "logs/2026-11-03-native-base-r1-final-c1-omp.stdout.jsonl",
+  "stderr": "logs/2026-11-03-native-base-r1-final-c1-omp.stderr.log",
+  "session_dir": "logs/2026-11-03-native-base-r1-final-c1-omp-sessions",
+  "external_services_in_scope": false,
+  "research_requests_allowed": false,
+  "provider_calls_allowed": false,
+  "merge_or_default_switch_allowed": false
+}

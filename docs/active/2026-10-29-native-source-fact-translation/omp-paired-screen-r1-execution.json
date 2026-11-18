@@ -1,0 +1,17 @@
+{
+  "task_id": "PAIRED-SCREEN-R1",
+  "executor": "omp",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 26587,
+  "started_at": "2026-11-03T09:42:55.039023+00:00",
+  "execution_status": "delivered",
+  "acceptance_status": "accepted_for_offline_fixed_view_screening_scope",
+  "acceptance_review": "../../archive/papers/2026-11-03-native-paired-r1-review-final5/README.md",
+  "task": "docs/archive/papers/2026-11-03-native-source-task-release-20/paired-screen-r1.md",
+  "worktree": ".worktrees/native-paired-r1",
+  "stdout": "logs/2026-11-03-native-paired-r1-omp.stdout.jsonl",
+  "stderr": "logs/2026-11-03-native-paired-r1-omp.stderr.log",
+  "external_services_in_scope": false,
+  "research_requests_allowed": false,
+  "provider_calls_allowed": false
+}

@@ -1,0 +1,21 @@
+{
+  "task_id": "REMAINING-WORK-LEDGER-R5-REVIEW",
+  "executor": "omp",
+  "role": "post_delivery_review",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 3276254,
+  "started_at": "2026-11-11T09:32:32.987939+00:00",
+  "execution_status": "completed",
+  "acceptance_status": "accepted_for_offline_remaining_work_ledger_r5_scope",
+  "parent_task": "REMAINING-WORK-LEDGER-R5",
+  "delivery": "docs/archive/papers/2026-11-11-native-remaining-work-ledger-delivery/remaining-work-ledger-r5",
+  "task": "docs/archive/papers/2026-11-11-native-source-task-release-49/omp-review-after-delivery.md",
+  "review_dir": "docs/archive/papers/2026-11-11-native-remaining-work-ledger-r5-review",
+  "stdout": "logs/2026-11-11-remaining-work-ledger-r5-omp-review.stdout.jsonl",
+  "stderr": "logs/2026-11-11-remaining-work-ledger-r5-omp-review.stderr.log",
+  "delivery_seal_sha256": "3c0c977279c24adbb95b2296db26109a562a7033f9cef862c552824f207cf8aa",
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false,
+  "review_status": "completed",
+  "coordinator_acceptance": "docs/archive/papers/2026-11-12-native-remaining-work-ledger-r5-coordinator-acceptance"
+}

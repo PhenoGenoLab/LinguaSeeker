@@ -1,0 +1,22 @@
+{
+  "task_id": "SUBJECT-ID-EVIDENCE-R1-REVIEW",
+  "executor": "omp",
+  "role": "post_delivery_review",
+  "model": "commandcode/deepseek/deepseek-v4.1-flash",
+  "pid": 3957904,
+  "started_at": "2026-11-07T03:41:15.766968+00:00",
+  "execution_status": "delivered",
+  "acceptance_status": "accepted_for_offline_subject_id_evidence_probe_scope",
+  "parent_task": "SUBJECT-ID-EVIDENCE-R1",
+  "delivery": "docs/archive/papers/2026-11-07-native-subject-id-delivery/subject-id-evidence-r1",
+  "task": "docs/archive/papers/2026-11-07-native-source-task-release-28/omp-review-after-delivery.md",
+  "review_dir": "docs/archive/papers/2026-11-07-native-subject-id-r1-review",
+  "stdout": "logs/2026-11-07-subject-id-r1-omp-review.stdout.jsonl",
+  "stderr": "logs/2026-11-07-subject-id-r1-omp-review.stderr.log",
+  "delivery_seal_sha256": "a8446297da86afc02a8b76a24d6daaec42d1bfd6cb8b9c5c8840b945d9dbe27c",
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false,
+  "completed_at": "2026-11-07T03:46:36.882161+00:00",
+  "review": "docs/archive/papers/2026-11-07-native-subject-id-r1-review",
+  "coordinator_acceptance": "docs/archive/papers/2026-11-07-native-subject-id-r1-coordinator-acceptance"
+}

@@ -1,0 +1,15 @@
+{
+  "status": "implementation_delivered_pending_human_review",
+  "worktree": ".worktrees/native-display-norm-impl-r1",
+  "seed": ".worktrees/native-remaining-work-ledger-r5",
+  "baseline_tests": 486,
+  "baseline_network_attempts": 0,
+  "new_tests": 45,
+  "lint": "passed for contracts and new tests",
+  "pending_decision": null,
+  "implementation_accepted": false,
+  "merge_approved": false,
+  "full_tests": 531,
+  "rule_decision": "single-unescape; repeated projection of original EnglishView only",
+  "delivery": "docs/archive/papers/2026-11-12-native-display-norm-impl-delivery/display-norm-impl-r1"
+}

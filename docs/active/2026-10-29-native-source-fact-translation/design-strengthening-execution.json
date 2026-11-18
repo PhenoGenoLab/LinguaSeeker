@@ -1,0 +1,294 @@
+{
+  "task_id": "EXPERIMENT-DESIGN-STRENGTHENING-R1",
+  "status": "Rett_MECP2_provisional_English_candidate_baseline_prepared",
+  "release": "docs/archive/papers/2026-11-13-native-source-task-release-63",
+  "next_task": "Define and execute/record English retrieval query ledger or explicitly retain inventory-only scope; then real evidence and counterpart review",
+  "queued_tasks": 11,
+  "spawned_external_processes": 0,
+  "research_requests": 0,
+  "sota_completion_proven": false,
+  "goal_status": "active",
+  "latest_delivery": "docs/archive/papers/2026-11-13-native-rett-english-candidate-baseline-r1",
+  "baseline_evidence_rows": 11,
+  "comparison_spec_rows": 7,
+  "baseline_task_complete": false,
+  "public_literature_requests_only": true,
+  "paid_research_model_requests": 0,
+  "latest_release": "docs/archive/papers/2026-11-13-native-source-task-release-63",
+  "reference_audit": "multi_model_silver_no_human_adjudication; real blinded gold unproven",
+  "known_exposed_family_metadata_matches": 20,
+  "historical_hash_agreements": 0,
+  "source_lineage_summary": {
+    "status": "bounded_audit_completed_replay_partial",
+    "cases": 20,
+    "pdf_copy_matches": 20,
+    "frozen_text_integrity_matches": 20,
+    "markdown_stage1_matches": 19,
+    "markdown_drift_cases": [
+      "rett_085"
+    ],
+    "exact_replays": 1,
+    "pdf_replays_pending": 19,
+    "archived_prepare_sha256": "b68de87f193f0c5926c15eea5f5a804832eefef7bb0e43ba4d2622d92fc68193",
+    "archived_prepare_matches_current": false,
+    "unknown_28_bodies_opened": 0,
+    "network_requests": 0,
+    "gold_annotations_read": 0,
+    "sota_completion_proven": false
+  },
+  "paired_power_scenarios": 48,
+  "rett_085_mismatch_already_historically_recorded": true,
+  "acl_publisher_records_inspected": 3,
+  "knowcoder_license_evidence": "model custom noncommercial research; data CC-BY-NC4; README Apache statement requires scope reconciliation",
+  "knowcoder_x_backbone": "Baichuan2-7B-Base per arXiv section5.1; checkpoint pending",
+  "source_replay": {
+    "exact_matches": 20,
+    "pdf_text_layer_cases": 19,
+    "ocr_cases": 1,
+    "runtime": "PyMuPDF1.27.2.3/MuPDF1.27.2/Python3.12.13",
+    "historical_runtime_identity_proven": false
+  },
+  "baseline_implementation_worktree": ".worktrees/strong-prompt-boundary",
+  "baseline_boundary_commit": "f9c9a5536d2e1785b96871ff0da8d3327ef36078",
+  "matching_audit": {
+    "exhaustive_graphs": 689,
+    "root_maximum_matching_mismatches": 0,
+    "c5_synthetic_greedy_count": 1,
+    "c5_synthetic_optimal_count": 2,
+    "production_rules_changed": false
+  },
+  "matching_sensitivity": {
+    "interval_configurations": 10000,
+    "production_calls": 40000,
+    "base_cardinality_suboptimal": 1678,
+    "base_total_overlap_suboptimal": 478,
+    "base_lexicographic_suboptimal": 1734,
+    "id_renaming_changes_cardinality": 1256,
+    "id_renaming_changes_total_overlap": 1448
+  },
+  "context_request_binding": {
+    "schema": "strong-prompt-request-v1",
+    "focused_tests": 73,
+    "actual_http_body_bound": false
+  },
+  "chdgene_code_audit": {
+    "commit": "d934b42982847e5571d1f5624a77d0bb63138bfd",
+    "blob_verified": true,
+    "license_blob_verified": true,
+    "synthetic_parser_cases": 4,
+    "full_schema_admitted": false,
+    "model_alias": "gpt-5-chat-latest",
+    "input_gene_conditioned": true
+  },
+  "independent_unit_audit": {
+    "family_rows": 48,
+    "declared_alias_edges": 5,
+    "all_identifiers_including_aliases": 53,
+    "metadata_components": 48,
+    "unique_markdown_hashes_metadata": 48,
+    "silver_pdf_hashes_available": 20,
+    "unique_silver_pdf_hashes": 20,
+    "source_path_count": 48,
+    "exposure_counts": {
+      "unknown": 28,
+      "confirmed_development_exposure": 20
+    },
+    "language_counts": {
+      "en": 28,
+      "es": 1,
+      "fr": 1,
+      "ja": 3,
+      "ko": 2,
+      "pt": 1,
+      "ru": 3,
+      "tr": 1,
+      "zh": 8
+    },
+    "language_exposure_counts": {
+      "en": {
+        "unknown": 28
+      },
+      "es": {
+        "confirmed_development_exposure": 1
+      },
+      "fr": {
+        "confirmed_development_exposure": 1
+      },
+      "ja": {
+        "confirmed_development_exposure": 3
+      },
+      "ko": {
+        "confirmed_development_exposure": 2
+      },
+      "pt": {
+        "confirmed_development_exposure": 1
+      },
+      "ru": {
+        "confirmed_development_exposure": 3
+      },
+      "tr": {
+        "confirmed_development_exposure": 1
+      },
+      "zh": {
+        "confirmed_development_exposure": 8
+      }
+    },
+    "doi_fields_present_in_stage_rows": 0,
+    "independent_sample_size": null,
+    "admitted_independent_units": 0,
+    "metadata_components_are_independence_proof": false,
+    "source_or_annotation_bodies_read": 0,
+    "network_calls": 0,
+    "pairing_anchors_used_as_identity_links": false,
+    "sota_completion_proven": false
+  },
+  "cluster_inference_audit": {
+    "exact_ordered_draws": 27,
+    "quantile_checks": 15,
+    "seed_repeatability_draws": 1000,
+    "historical_entries": 150,
+    "historical_pdf_hash_groups": 144,
+    "formal_workflow_integration_tested": false,
+    "coverage_or_type1_error_validated": false
+  },
+  "bilingual_review_design": {
+    "dimensions": 10,
+    "synthetic_calibration_items": 12,
+    "actual_review_rows": 0,
+    "rubric_approved": false,
+    "clinical_usefulness_measured": false
+  },
+  "knowcoder_runtime_audit": {
+    "fixed_snapshot_syntax": "SyntaxError_line207",
+    "synthetic_middle_tokens_discarded": 6500,
+    "declared_input_plus_output": 4140,
+    "declared_context": 4096,
+    "string_cases_UnboundLocalError": 2,
+    "actual_model_tested": false,
+    "X_artifact_verified": false
+  },
+  "critical_path_blocker": {
+    "current_goal_objective": "\u6301\u7eed\u53d1\u5e03\u4efb\u52a1 \u76f4\u81f3\u6211\u4eec\u7684\u89c2\u70b9\u6210\u7acb",
+    "goal_status": "active",
+    "condition": "exploratory scope choice, actual source/equivalence reviewers and frozen English baseline absent",
+    "consecutive_observations": 0,
+    "observation_date": "2026-11-13",
+    "turn_classification": "progress_user_selected_Rett_MECP2_exploratory_scope",
+    "primary_direction_confirmed": true,
+    "scope_choice_received": true,
+    "actual_review_rows": 0,
+    "reviewer_assignments": 0,
+    "English_acquisition_snapshot_bindings": 0,
+    "experiment_process_handle": null,
+    "observed_input_sha256": {
+      "docs/active/2026-10-29-native-source-fact-translation/existing-candidate-review-handoff.md": "838ec5ec0b050bc6868a567c5bfbcc8d7e74b0e82f37ab25790220cb7e8dde4a",
+      "docs/active/2026-10-29-native-source-fact-translation/incremental-evidence-execution-plan.md": "4252a4e6e2a22bec805b06c136aaf9455354020c684ae266ca45ba24bb73d0ca",
+      "docs/archive/papers/2026-11-13-native-candidate-anchor-packets-r1/packets.json": "4004c858a2038a2191ea9daae5ba4c9bf88e74056d16a06eec3549f7ca89e083",
+      "docs/archive/papers/2026-11-13-native-candidate-anchor-packets-r1/review-record.template.csv": "30f36c4dc63e9b11d6182bc6dbbe995713e74fd7c574cf38058eef07cb9b4e63"
+    },
+    "next_action": "Receive scope choice; then begin corresponding acquisition/source review preparation. Real novelty claims still require actual review and frozen English evidence.",
+    "doc_organize": {
+      "skill": "doc-organize",
+      "follow_symlinks": true,
+      "markdown_scanned": 747,
+      "classification": "unresolved state remains active;completed sealed handoffs retained",
+      "moved": 0
+    },
+    "last_revalidation": "third consecutive observation: same four prerequisite hashes unchanged, no scope choice, actual reviewer assignments or English snapshot binding"
+  },
+  "primary_question": {
+    "confirmed_by_user": true,
+    "date": "2026-11-13",
+    "comparator": "frozen English retrieval evidence baseline",
+    "primary_direction": "novel validated deduplicated evidence count and rate from multilingual expansion",
+    "secondary": "previously uncovered relations within English baseline",
+    "rate_denominator": null,
+    "SESOI": null,
+    "actual_novel_evidence_verified": 0
+  },
+  "current_goal_objective": "\u6301\u7eed\u53d1\u5e03\u4efb\u52a1 \u76f4\u81f3\u6211\u4eec\u7684\u89c2\u70b9\u6210\u7acb",
+  "historical_goal_objective": "\u6301\u7eed\u53d1\u5e03\u4efb\u52a1 \u76f4\u81f3\u5b8c\u6210\u6240\u6709\u5b9e\u9a8c\u8bbe\u8ba1\u90fd\u8fbe\u5230sota\u6807\u51c6",
+  "viewpoint_established": false,
+  "existing_candidate_inventory": {
+    "table_rows": 18,
+    "registered_dev_source_files_opened": 16,
+    "unregistered_source_bodies_opened": 0,
+    "registered_source_hash_matches": 15,
+    "registered_kind_counts": {
+      "none": 5,
+      "same_pdf_bilingual": 6,
+      "missing_english_pivot": 5
+    },
+    "registered_same_pdf_bilingual_field_type_differences": 16,
+    "all_registered_field_type_differences": 47,
+    "field_anchor_checks": 145,
+    "exact_line_anchor_matches": 134,
+    "whitespace_collapsed_line_matches": 134,
+    "whitespace_removed_line_matches": 137,
+    "unregistered_rows_quarantined": 2,
+    "actual_English_acquisition_baseline_frozen": false,
+    "actual_validated_novel_evidence_count": null,
+    "scope": "same-PDF field-type visibility inventory, not acquired independent evidence",
+    "viewpoint_established": false
+  },
+  "candidate_packet_inventory": {
+    "source_documents": 6,
+    "source_line_packets": 7,
+    "exact_quote_locator_groups": 13,
+    "catalog_field_mappings": 16,
+    "actual_review_assignments": 0,
+    "actual_novel_evidence_count": null,
+    "packets_are_independent_evidence_units": false,
+    "viewpoint_established": false
+  },
+  "rett_exploratory_scope": {
+    "scope_id": "rett-mecp2-exploratory-r1",
+    "status": "scope_frozen_for_exploratory_review",
+    "disease": "Rett syndrome / MECP2 literature",
+    "unit": "source-document candidate plus reviewed evidence units; not independent patient count",
+    "source_pool": "existing Stage1/native evidence artifacts only",
+    "development_status": "retrospective development-exposed; not held-out confirmatory",
+    "languages": [
+      "en",
+      "zh",
+      "ko",
+      "ru",
+      "tr",
+      "es",
+      "pt",
+      "fr",
+      "ja"
+    ],
+    "english_baseline": "not yet retrieved or frozen; this scope decision does not imply baseline completeness",
+    "date_window": null,
+    "query_set": null,
+    "providers": null,
+    "eligibility": "source reports human Rett/MECP2 evidence with locatable gene/variant/disease/family or phenotype facts; exact catalog field eligibility to be approved before counting",
+    "exclusions": [
+      "translation or republication duplicate",
+      "same patient/family/cohort duplicate unless new detail is separately adjudicated",
+      "unresolved source hash/exposure/provenance",
+      "candidate without source locator or validity judgment"
+    ],
+    "primary_exploratory_question": "Among the existing Rett/MECP2 candidate materials, do non-English source layers contain valid evidence units not present in the frozen English acquisition baseline?",
+    "outcomes": [
+      "valid non-English evidence units absent from frozen E",
+      "English-visible/fulltext field differences as candidate locator only",
+      "relation-gap candidates",
+      "unresolved/duplicate/contradictory counts"
+    ],
+    "not_claimed": [
+      "language-exclusive evidence",
+      "general multilingual yield",
+      "independent patient-level effect",
+      "clinical utility",
+      "causal superiority"
+    ]
+  },
+  "rett_english_candidate_baseline": {
+    "rows": 16,
+    "status": "provisional_not_frozen",
+    "actual_searches": 0,
+    "validated_novel_evidence_count": null
+  }
+}

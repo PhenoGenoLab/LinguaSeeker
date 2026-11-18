@@ -1,0 +1,39 @@
+{
+  "task_id": "ATOMICITY-R1",
+  "executor": "omp",
+  "model": "sbs/deepSeek-v4.1-flash-1017",
+  "pid": 1905135,
+  "started_at": "2026-11-05T03:52:53.743974+00:00",
+  "execution_status": "sbs_provider_interrupted_before_final_packaging",
+  "acceptance_status": "accepted_for_offline_native_semicolon_validation_scope",
+  "priority": "P1",
+  "parent_gap": "G-02/C05",
+  "worktree": ".worktrees/native-atomicity-r1",
+  "task": "docs/archive/papers/2026-11-05-native-source-task-release-25/atomicity-r1.md",
+  "delivery": "docs/archive/papers/2026-11-05-native-atomicity-delivery/atomicity-r1",
+  "stdout": "logs/2026-11-05-atomicity-r1-sbs-omp.stdout.jsonl",
+  "stderr": "logs/2026-11-05-atomicity-r1-sbs-omp.stderr.log",
+  "research_requests_allowed": false,
+  "old_sealed_paths_writable": false,
+  "delivery_created": true,
+  "delivery_finalized_locally": true,
+  "last_attempt_tool_calls": "multiple; final provider request stopped before packaging",
+  "last_error": "403 token quota is not enough; SBS stopped before final packaging. Coordinator completed the package locally with uv offline.",
+  "reset_at": "2026-11-05T14:27:34+08:00",
+  "interruption_review": "docs/archive/papers/2026-11-05-native-atomicity-r1-interruption",
+  "resume_session": "logs/2026-11-05-atomicity-r1-omp-sessions/2026-11-05T03-25-42-993Z_01a1a9bd-aed1-75af-9b44-1adb788c68ea.jsonl",
+  "automatic_retry_scheduled": false,
+  "session_dir": "logs/2026-11-05-atomicity-r1-sbs-omp-sessions",
+  "attempts": [
+    {
+      "provider": "sbs",
+      "model": "sbs/deepSeek-v4.1-flash-1017",
+      "status": "interrupted_quota_before_final_packaging",
+      "stdout": "logs/2026-11-05-atomicity-r1-sbs-omp.stdout.jsonl",
+      "stderr": "logs/2026-11-05-atomicity-r1-sbs-omp.stderr.log"
+    }
+  ],
+  "provider": "sbs",
+  "provider_switch_authorized": true,
+  "previous_provider_attempt_preserved": true
+}

@@ -1,0 +1,44 @@
+{
+  "task_id": "SOURCE-ACCESS-R1-C1",
+  "executor": "omp",
+  "model": "volcengine-plan/deepseek-v4.1-flash",
+  "pid": 1082591,
+  "started_at": "2026-11-04T10:10:03.423007+00:00",
+  "execution_status": "delivered",
+  "acceptance_status": "accepted_for_offline_source_access_scope",
+  "parent_gap": "G-05",
+  "task": "docs/archive/papers/2026-11-04-native-source-access-r1-review/source-access-r1-c1.md",
+  "worktree": ".worktrees/native-source-access-r1",
+  "delivery": "docs/archive/papers/2026-11-04-native-source-access-delivery/source-access-r1-c1",
+  "stdout": "logs/2026-11-04-source-access-r1-c1-deepseek-omp.stdout.jsonl",
+  "stderr": "logs/2026-11-04-source-access-r1-c1-deepseek-omp.stderr.log",
+  "research_requests_allowed": false,
+  "review_seal_sha256": "f9a0344d9e05014ff576f7378eeca215a37ee362206ca6ce22bac86bbc48f2fa",
+  "interruption_review": "docs/archive/papers/2026-11-04-native-source-access-r1-c1-interruption",
+  "reset_utc": "2026-11-06T10:06:32.805Z",
+  "delivery_created": true,
+  "automatic_retry_scheduled": false,
+  "attempts": [
+    {
+      "pid": 1038711,
+      "started_at": "2026-11-04T09:20:21.201893+00:00",
+      "stdout": "logs/2026-11-04-source-access-r1-c1-omp.stdout.jsonl",
+      "stderr": "logs/2026-11-04-source-access-r1-c1-omp.stderr.log",
+      "execution_status": "interrupted_rate_limit"
+    },
+    {
+      "provider": "commandcode",
+      "model": "commandcode/deepseek/deepseek-v4.1-flash",
+      "status": "interrupted_rate_limit",
+      "stdout": "logs/2026-11-04-source-access-r1-c1-resume-omp.stdout.jsonl",
+      "stderr": "logs/2026-11-04-source-access-r1-c1-resume-omp.stderr.log"
+    }
+  ],
+  "quota_restored_by_user": true,
+  "last_attempt_tool_calls": 0,
+  "last_error": "429 weekly usage limit; reset 2026-11-06T10:06:32.805Z",
+  "provider": "volcengine-plan",
+  "session_dir": "logs/2026-11-04-source-access-r1-c1-deepseek-omp-sessions",
+  "review": "docs/archive/papers/2026-11-04-native-source-access-r1-c1-review",
+  "delivery_seal_entries": 64
+}
