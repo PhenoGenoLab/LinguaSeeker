@@ -56,6 +56,7 @@ docs/
 | 2026-11-18 | [Pipeline 阶段 3 迁移实施记录：Phase 3 全链路 agent 化](active/2026-11-18-pipeline-stage-3-phase3-agents-and-ingest-migration.md) | in-progress |
 | 2026-11-18 | [Pipeline 阶段 4a 迁移实施记录：ReMe 外部记忆服务](active/2026-11-18-pipeline-stage-4a-reme-memory.md) | in-progress |
 | 2026-11-18 | [Pipeline 阶段 4b 迁移实施记录：术语库迁移](active/2026-11-18-pipeline-stage-4b-terminology-migration.md) | in-progress |
+| 2026-11-18 | [Pipeline 迁移验收 Runbook（真实模型 / ReMe / 窗口并行）](active/2026-11-18-pipeline-shadow-acceptance-runbook.md) | active |
 | 2026-06-29 | [Evidence DB Field Model Implementation Plan](active/2026-06-29-evidence-db-field-model-plan.md) | in-progress |
 | 2026-06-15 | [ClinGen + ClinVar Fused Benchmark Dataset Plan](active/2026-06-15-clingen-clinvar-fused-benchmark-dataset-plan.md) | in-progress |
 | 2026-06-14 | [Traceability Metrics Guide](active/2026-06-14-traceability-metrics-guide.md) | reference |
