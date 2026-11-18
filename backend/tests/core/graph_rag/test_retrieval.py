@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from src.core.evidence_extraction.contracts import ExtractionTarget
-from src.core.graph_rag.core.retrieval import SubgraphRetriever
+from src.core.phases.evidence_extraction.contracts import ExtractionTarget
+from src.core.phases.graph_rag.core.retrieval import SubgraphRetriever
 from src.dao.neo4j.contracts import GraphEdge, GraphNode, SubgraphContext
 
 

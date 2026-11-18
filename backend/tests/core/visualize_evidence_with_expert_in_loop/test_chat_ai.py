@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.visualize_evidence_with_expert_in_loop.chat_service import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.chat_service import (
     ChatService,
 )
 

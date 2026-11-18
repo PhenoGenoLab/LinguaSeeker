@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 from uuid import uuid4
 
-from src.core.visualize_evidence_with_expert_in_loop.contracts import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import (
     DeltaEntry,
     EvidenceCardPayload,
     ReviewStatus,
@@ -143,7 +143,7 @@ class TestSourceSpanDict:
 
 def test_evidence_group_detail_contract_accepts_traceability_payload():
     """Evidence group detail response should carry distribution and trace spans."""
-    from src.core.visualize_evidence_with_expert_in_loop.contracts import (
+    from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import (
         EvidenceChainHighlight,
         EvidenceFieldDistribution,
         EvidenceGroupDetailResponse,
@@ -211,7 +211,7 @@ def test_evidence_group_detail_contract_accepts_traceability_payload():
 
 def test_evidence_track_trace_carries_value_anchors():
     """Evidence track traces expose original/translated extracted values."""
-    from src.core.visualize_evidence_with_expert_in_loop.contracts import (
+    from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import (
         EvidenceChainHighlight,
         EvidenceTrackTrace,
     )

@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceItem,
     EvidenceRole,
     EvidenceStatus,
     ExtractionTarget,
 )
-from src.core.evidence_extraction.stages.role_routing import (
+from src.core.phases.evidence_extraction.stages.role_routing import (
     EvidenceRoleRouter,
 )
 

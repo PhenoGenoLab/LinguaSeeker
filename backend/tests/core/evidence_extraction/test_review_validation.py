@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceItem,
     EvidenceStatus,
     SourceLocation,
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.stages.review_validation import (
+from src.core.phases.evidence_extraction.stages.review_validation import (
     EvidenceReviewDecision,
     EvidenceReviewResponse,
     EvidenceTriStateReviewDecision,

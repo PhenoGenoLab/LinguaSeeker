@@ -94,7 +94,7 @@ jobs:
           uvx --from mypy==2.4.1 mypy
           --ignore-missing-imports
           --follow-imports=silent
-          src/core/tools/fact_chain
+          src/core/shared/tools/fact_chain
           src/pipeline/skills/fact_chain
           src/pipeline/skills/runtime
           src/pipeline/graph/phases/phase_3.py
@@ -144,7 +144,7 @@ jobs:
           tests/api/test_wiring_config.py
           tests/core/visualize_evidence_with_expert_in_loop/test_search_service.py
           -q
-          --cov=src.core.tools.fact_chain
+          --cov=src.core.shared.tools.fact_chain
           --cov=src.pipeline.skills.fact_chain
           --cov=src.pipeline.skills.runtime
           --cov=src.pipeline.graph.phases.phase_3

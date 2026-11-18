@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from src.core.visualize_evidence_with_expert_in_loop.contracts import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import (
     EvidenceSearchResult,
     LiteratureProfileSummary,
 )

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceItem,
     EvidenceStatus,
     ExtractionTarget,
 )
-from src.core.evidence_extraction.core import (
+from src.core.phases.evidence_extraction.core import (
     TargetEntityGuard,
 )
 

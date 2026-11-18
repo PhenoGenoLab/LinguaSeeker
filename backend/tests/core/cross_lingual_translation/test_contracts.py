@@ -1,4 +1,4 @@
-from src.core.cross_lingual_translation.contracts import (
+from src.core.phases.cross_lingual_translation.contracts import (
     ContentBlock,
     PipelineState,
     SentenceRegion,
@@ -73,7 +73,7 @@ def test_saved_documents_fields():
     from pathlib import Path
     from datetime import datetime, timezone
 
-    from src.core.cross_lingual_translation.contracts import SavedDocuments
+    from src.core.phases.cross_lingual_translation.contracts import SavedDocuments
 
     saved = SavedDocuments(
         original_json_path=Path("/tmp/out/original.json"),
@@ -90,7 +90,7 @@ def test_saved_documents_fields():
 
 def test_cross_lingual_output_fields():
     """CrossLingualOutput is the downstream contract."""
-    from src.core.cross_lingual_translation.contracts import CrossLingualOutput
+    from src.core.phases.cross_lingual_translation.contracts import CrossLingualOutput
 
     out = CrossLingualOutput(
         formatted_original="原始文本",

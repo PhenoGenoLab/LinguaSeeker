@@ -9,11 +9,11 @@ Verifies that:
 
 from __future__ import annotations
 
-from src.core.evidence_extraction.domain.channel_contracts import (
+from src.core.phases.evidence_extraction.domain.channel_contracts import (
     DocumentChannelClassification,
     DocumentEvidenceChannel,
 )
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     DualEvidenceExtractionResult,
     EvidenceExtractionResult,
     EvidenceExtractionStatus,

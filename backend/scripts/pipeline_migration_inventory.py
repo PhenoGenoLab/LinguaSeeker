@@ -124,7 +124,7 @@ LAYER_SPECS: tuple[LayerSpec, ...] = (
         legacy_paths=("src/core/ingest_and_digitize_data/document_acquisition",),
         target_paths=("src/pipeline/tools/acquisition",),
         module_prefixes=(
-            "src.core.ingest_and_digitize_data.document_acquisition",
+            "src.core.phases.ingest_and_digitize_data.document_acquisition",
             "src.pipeline.tools.acquisition",
         ),
     ),
@@ -135,7 +135,7 @@ LAYER_SPECS: tuple[LayerSpec, ...] = (
         legacy_paths=("src/core/ingest_and_digitize_data/parse_document",),
         target_paths=("src/pipeline/tools/parsing",),
         module_prefixes=(
-            "src.core.ingest_and_digitize_data.parse_document",
+            "src.core.phases.ingest_and_digitize_data.parse_document",
             "src.pipeline.tools.parsing",
         ),
     ),

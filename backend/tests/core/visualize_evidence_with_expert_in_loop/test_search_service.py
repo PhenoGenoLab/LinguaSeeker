@@ -10,7 +10,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.core.visualize_evidence_with_expert_in_loop.search_service import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.search_service import (
     SearchService,
     _build_highlight,
     _coerce_str,

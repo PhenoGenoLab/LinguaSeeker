@@ -12,9 +12,9 @@ from starlette.requests import Request
 from src.api.auth import get_current_account
 from src.api.deps import get_neo4j_repository
 from src.api.rate_limit import limiter
-from src.core.auth.contracts import AuthContext
+from src.core.foundation.auth.contracts import AuthContext
 from src.core.config import get_config
-from src.core.graph_rag.contracts import (
+from src.core.phases.graph_rag.contracts import (
     GraphEntityType,
     GraphEdgeResponse,
     GraphNodeResponse,
@@ -22,7 +22,7 @@ from src.core.graph_rag.contracts import (
     GraphRagQueryResponse,
     GraphSubgraphResponse,
 )
-from src.core.graph_rag.core.qa_engine import GraphRagQaEngine, QaEngineConfig
+from src.core.phases.graph_rag.core.qa_engine import GraphRagQaEngine, QaEngineConfig
 from src.dao.neo4j.contracts import GraphNode, SubgraphContext
 from src.dao.neo4j.repository import Neo4jRepository
 

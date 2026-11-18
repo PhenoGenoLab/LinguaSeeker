@@ -1,10 +1,10 @@
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceItem,
     EvidenceStatus,
     SourceLocation,
     SpecialEvidenceRecord,
 )
-from src.core.evidence_extraction.core import (
+from src.core.phases.evidence_extraction.core import (
     EvidenceItemNormalizer,
     FieldValueNormalizer,
     RawSourceNormalizer,

@@ -24,7 +24,7 @@ from src.agents.contracts import (
 )
 
 if TYPE_CHECKING:
-    from src.core.ingest_and_digitize_data.parse_document.service import (
+    from src.core.phases.ingest_and_digitize_data.parse_document.service import (
         ParseDocumentService,
     )
 

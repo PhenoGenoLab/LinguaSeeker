@@ -1,14 +1,14 @@
-from src.core.evidence_extraction.domain.catalog import EVIDENCE_FIELD_SPECS
-from src.core.evidence_extraction.domain.channel_contracts import (
+from src.core.phases.evidence_extraction.domain.catalog import EVIDENCE_FIELD_SPECS
+from src.core.phases.evidence_extraction.domain.channel_contracts import (
     DocumentChannelClassification,
     DocumentEvidenceChannel,
 )
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.prompts import (
+from src.core.phases.evidence_extraction.prompts import (
     build_block_prompt_text,
     get_catalog_extraction_prompt,
     get_channel_strategy_guidance,
@@ -177,7 +177,7 @@ def test_catalog_prompt_uses_block_sources_without_offsets():
 
 
 def test_special_evidence_prompt_requires_verbatim_snippets():
-    from src.core.evidence_extraction.prompts import get_special_evidence_prompt
+    from src.core.phases.evidence_extraction.prompts import get_special_evidence_prompt
 
     prompt = get_special_evidence_prompt(
         document_id="doc-1",
@@ -315,7 +315,7 @@ def test_catalog_prompt_has_target_only_disease_boundary_guidance() -> None:
 
 
 def test_catalog_prompt_declares_target_and_strict_entity_rules() -> None:
-    from src.core.evidence_extraction.contracts import (
+    from src.core.phases.evidence_extraction.contracts import (
         ExtractionTarget,
     )
 

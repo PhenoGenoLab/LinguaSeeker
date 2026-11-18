@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.core.standardize_entities_and_align_knowledge.importers import (
+from src.core.phases.standardize_entities_and_align_knowledge.importers import (
     ImportBatch,
     _clinvar_review_stars,
     _collect_alias_values,

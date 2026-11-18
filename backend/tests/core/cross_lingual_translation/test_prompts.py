@@ -1,4 +1,4 @@
-from src.core.cross_lingual_translation.translate.prompts import (
+from src.core.phases.cross_lingual_translation.translate.prompts import (
     get_full_document_translate_prompt,
     get_terminology_prompt,
     get_translate_prompt,

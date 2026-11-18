@@ -10,19 +10,19 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.cross_lingual_translation.contracts import (
+from src.core.phases.cross_lingual_translation.contracts import (
     ContentBlock,
     FormattedDocument,
 )
-from src.core.cross_lingual_translation.translate.blocks import (
+from src.core.phases.cross_lingual_translation.translate.blocks import (
     _KW_MERGE_SEP,
     merge_short_keywords,
     split_merged_keywords,
 )
-from src.core.cross_lingual_translation.translate.exceptions import (
+from src.core.phases.cross_lingual_translation.translate.exceptions import (
     TranslationError,
 )
-from src.core.cross_lingual_translation.translate.postprocess import (
+from src.core.phases.cross_lingual_translation.translate.postprocess import (
     check_block_language,
     deduplicate_bilingual_blocks,
 )
@@ -317,7 +317,7 @@ class TestStrictRetryPrompt:
 
     def test_default_prompt_omits_strict_directive(self):
         """Default prompt should not contain the STRICT ENGLISH-ONLY block."""
-        from src.core.cross_lingual_translation.translate.prompts import (
+        from src.core.phases.cross_lingual_translation.translate.prompts import (
             get_full_document_translate_prompt,
         )
 
@@ -326,7 +326,7 @@ class TestStrictRetryPrompt:
 
     def test_strict_prompt_adds_directive(self):
         """Strict prompt must contain the STRICT ENGLISH-ONLY directive."""
-        from src.core.cross_lingual_translation.translate.prompts import (
+        from src.core.phases.cross_lingual_translation.translate.prompts import (
             get_full_document_translate_prompt,
         )
 
@@ -347,13 +347,13 @@ class TestPerBlockRetryBehavior:
     async def test_retry_called_when_per_block_check_fails(self, monkeypatch):
         """When check_block_language raises per_block_check, run_pipeline must be
         called again with strict=True and the result must be returned."""
-        from src.core.cross_lingual_translation.config_context import (
+        from src.core.phases.cross_lingual_translation.config_context import (
             TranslationConfigContext,
         )
-        from src.core.cross_lingual_translation.translate.translator import (
+        from src.core.phases.cross_lingual_translation.translate.translator import (
             MultiStageTranslator,
         )
-        from src.core.cross_lingual_translation.translate.exceptions import (
+        from src.core.phases.cross_lingual_translation.translate.exceptions import (
             TranslationError,
         )
 
@@ -402,7 +402,7 @@ class TestPerBlockRetryBehavior:
 
         monkeypatch.setattr(MultiStageTranslator, "run_pipeline", fake_run_pipeline)
         monkeypatch.setattr(
-            "src.core.cross_lingual_translation.translate.translator.check_block_language",
+            "src.core.phases.cross_lingual_translation.translate.translator.check_block_language",
             fake_check_block_language,
         )
         monkeypatch.setattr(MultiStageTranslator, "extract_terminology", fake_extract_terminology)
@@ -430,13 +430,13 @@ class TestPerBlockRetryBehavior:
     @pytest.mark.asyncio
     async def test_retry_exhausted_raises_translation_error(self, monkeypatch):
         """If the strict retry's per-block check also fails, TranslationError must propagate."""
-        from src.core.cross_lingual_translation.config_context import (
+        from src.core.phases.cross_lingual_translation.config_context import (
             TranslationConfigContext,
         )
-        from src.core.cross_lingual_translation.translate.translator import (
+        from src.core.phases.cross_lingual_translation.translate.translator import (
             MultiStageTranslator,
         )
-        from src.core.cross_lingual_translation.translate.exceptions import (
+        from src.core.phases.cross_lingual_translation.translate.exceptions import (
             TranslationError,
         )
 
@@ -474,7 +474,7 @@ class TestPerBlockRetryBehavior:
 
         monkeypatch.setattr(MultiStageTranslator, "run_pipeline", fake_run_pipeline)
         monkeypatch.setattr(
-            "src.core.cross_lingual_translation.translate.translator.check_block_language",
+            "src.core.phases.cross_lingual_translation.translate.translator.check_block_language",
             fake_check_block_language,
         )
         monkeypatch.setattr(MultiStageTranslator, "extract_terminology", fake_extract_terminology)
@@ -494,13 +494,13 @@ class TestPerBlockRetryBehavior:
     @pytest.mark.asyncio
     async def test_other_translation_errors_not_retried(self, monkeypatch):
         """TranslationErrors that are NOT per_block_check must NOT trigger retry."""
-        from src.core.cross_lingual_translation.config_context import (
+        from src.core.phases.cross_lingual_translation.config_context import (
             TranslationConfigContext,
         )
-        from src.core.cross_lingual_translation.translate.translator import (
+        from src.core.phases.cross_lingual_translation.translate.translator import (
             MultiStageTranslator,
         )
-        from src.core.cross_lingual_translation.translate.exceptions import (
+        from src.core.phases.cross_lingual_translation.translate.exceptions import (
             TranslationError,
         )
 
@@ -540,7 +540,7 @@ class TestPerBlockRetryBehavior:
 
         monkeypatch.setattr(MultiStageTranslator, "run_pipeline", fake_run_pipeline)
         monkeypatch.setattr(
-            "src.core.cross_lingual_translation.translate.translator.check_block_language",
+            "src.core.phases.cross_lingual_translation.translate.translator.check_block_language",
             fake_check_block_language,
         )
         monkeypatch.setattr(MultiStageTranslator, "extract_terminology", fake_extract_terminology)

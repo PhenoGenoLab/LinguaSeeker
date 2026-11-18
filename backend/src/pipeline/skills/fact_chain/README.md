@@ -1,9 +1,9 @@
 # fact_chain — 原文事实链（Phase 3）
 
-> 实现分两层：确定性能力在 `src/core/tools/fact_chain`（契约、校验、窗口、投影），
+> 实现分两层：确定性能力在 `src/core/shared/tools/fact_chain`（契约、校验、窗口、投影），
 > prompt、阶段编排与服务门面在本目录 `src/pipeline/skills/fact_chain`。`tools`/`contracts`
-> 原属 `src/pipeline/*`，已下沉到 `src/core`；旧路径 `src.core.source_fact_chain` 的
-> re-export shim 已删除。
+> 原属 `src/pipeline/*`，已下沉到 `src/core/shared/`；旧路径 `src.core.source_fact_chain`
+> 的 re-export shim 已删除。
 >
 > 把解析后的原文按窗口切分，只从原文抽取事实，先核验再只翻译展示字段，最终产出
 > 双语事实行和 Phase 4 可消费的双轨投影。全流程不再翻译整篇文档，也不再从译文
@@ -145,5 +145,5 @@ CI 的 `backend-test` 作业通过 `[dependency-groups] ci` 安装最小依赖�
 | `pydantic` | 强类型契约 |
 | `loguru` | 运行日志 |
 | `langchain-core` / `langchain-openai`（默认 provider） | 模型调用 |
-| `src.core.evidence_extraction.*` | Phase 4 证据契约、字段目录、分组规则 |
+| `src.core.phases.evidence_extraction.*` | Phase 4 证据契约、字段目录、分组规则 |
 | `src.utils.llm_adapter` | 多 key LLM 客户端池 |

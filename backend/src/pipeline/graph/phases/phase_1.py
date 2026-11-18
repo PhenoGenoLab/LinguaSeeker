@@ -21,13 +21,13 @@ from src.agents.contracts import (
     build_retryable_errors,
     classify_phase_error,
 )
-from src.core.ingest_and_digitize_data.document_acquisition.contracts import (
+from src.core.phases.ingest_and_digitize_data.document_acquisition.contracts import (
     AcquisitionSource,
     DocumentAcquisitionRequest,
 )
 
 if TYPE_CHECKING:
-    from src.core.ingest_and_digitize_data.document_acquisition.service import (
+    from src.core.phases.ingest_and_digitize_data.document_acquisition.service import (
         DocumentAcquisitionService,
     )
 

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     DocumentEvidenceMap,
     EvidenceItem,
@@ -16,13 +16,13 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.prompts import (
+from src.core.phases.evidence_extraction.prompts import (
     get_clinical_context_prompt,
 )
-from src.core.evidence_extraction.providers import (
+from src.core.phases.evidence_extraction.providers import (
     EvidenceModelTier,
 )
-from src.core.evidence_extraction.stages.clinical_context import (
+from src.core.phases.evidence_extraction.stages.clinical_context import (
     ClinicalContextStage,
     CLINICAL_CONTEXT_FIELDS,
 )

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceItem,
     EvidenceStatus,
 )
-from src.core.standardize_entities_and_align_knowledge.acmg_projection import AcmgReadyProjector
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.core.phases.standardize_entities_and_align_knowledge.acmg_projection import AcmgReadyProjector
+from src.core.phases.standardize_entities_and_align_knowledge.contracts import (
     BindingRole,
     EntityMatch,
     EntityType,

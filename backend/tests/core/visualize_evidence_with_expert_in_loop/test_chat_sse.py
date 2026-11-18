@@ -8,12 +8,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.visualize_evidence_with_expert_in_loop.chat_service import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.chat_service import (
     CHAT_AGENT_CAPABILITIES_PROMPT,
     ChatService,
 )
-from src.core.visualize_evidence_with_expert_in_loop.contracts import ChatAction
-from src.core.visualize_evidence_with_expert_in_loop.providers import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import ChatAction
+from src.core.phases.visualize_evidence_with_expert_in_loop.providers import (
     _parse_delimited,
     _try_parse_action,
 )

@@ -4,19 +4,19 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.cross_lingual_translation.contracts import (
+from src.core.phases.cross_lingual_translation.contracts import (
     TranslationAlignmentChunk,
     TranslationSegment,
     TranslationSpanPair,
 )
-from src.core.cross_lingual_translation.config_context import TranslationConfigContext
-from src.core.cross_lingual_translation.translate.alignment import (
+from src.core.phases.cross_lingual_translation.config_context import TranslationConfigContext
+from src.core.phases.cross_lingual_translation.translate.alignment import (
     RawAlignmentPair,
     build_fallback_span_pairs,
     generate_chunk_span_pairs,
     validate_span_pairs,
 )
-from src.core.cross_lingual_translation.translate.translator import (
+from src.core.phases.cross_lingual_translation.translate.translator import (
     MultiStageTranslator,
 )
 
@@ -183,7 +183,7 @@ async def test_generate_chunk_span_pairs_uses_semantic_json(monkeypatch) -> None
         )
 
     monkeypatch.setattr(
-        "src.core.cross_lingual_translation.translate.alignment.invoke_json_with_retry",
+        "src.core.phases.cross_lingual_translation.translate.alignment.invoke_json_with_retry",
         fake_invoke_json,
     )
 
@@ -210,7 +210,7 @@ async def test_generate_chunk_span_pairs_falls_back_on_invalid_json(monkeypatch)
         return '{"pairs": "not-a-list"}'
 
     monkeypatch.setattr(
-        "src.core.cross_lingual_translation.translate.alignment.invoke_json_with_retry",
+        "src.core.phases.cross_lingual_translation.translate.alignment.invoke_json_with_retry",
         fake_invoke_json,
     )
 
@@ -236,7 +236,7 @@ async def test_generate_chunk_span_pairs_falls_back_on_provider_error(monkeypatc
         raise RuntimeError("provider unavailable")
 
     monkeypatch.setattr(
-        "src.core.cross_lingual_translation.translate.alignment.invoke_json_with_retry",
+        "src.core.phases.cross_lingual_translation.translate.alignment.invoke_json_with_retry",
         fake_invoke_json,
     )
 
@@ -280,7 +280,7 @@ async def test_translator_attaches_span_pairs_to_segments(monkeypatch) -> None:
         return [expected_pair]
 
     monkeypatch.setattr(
-        "src.core.cross_lingual_translation.translate.translator.generate_chunk_span_pairs",
+        "src.core.phases.cross_lingual_translation.translate.translator.generate_chunk_span_pairs",
         fake_generate,
     )
 

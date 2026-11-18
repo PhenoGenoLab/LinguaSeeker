@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from src.core.cross_lingual_translation.contracts import (
+from src.core.phases.cross_lingual_translation.contracts import (
     TranslationAlignmentChunk,
     TranslationSpanPair,
 )
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     PageSpan,
     SourceLocation,
@@ -14,7 +14,7 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.postprocess.translation_traceback import (
+from src.core.phases.evidence_extraction.postprocess.translation_traceback import (
     _map_source_to_original,
 )
 

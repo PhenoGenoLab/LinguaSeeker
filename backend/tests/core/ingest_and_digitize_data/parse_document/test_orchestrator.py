@@ -7,17 +7,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from src.core.ingest_and_digitize_data.parse_document.base import ParserStrategy
-from src.core.ingest_and_digitize_data.parse_document.contracts import (
+from src.core.phases.ingest_and_digitize_data.parse_document.base import ParserStrategy
+from src.core.phases.ingest_and_digitize_data.parse_document.contracts import (
     DocumentMetadata,
     PageContent,
     ParseResult,
 )
-from src.core.ingest_and_digitize_data.parse_document.exceptions import (
+from src.core.phases.ingest_and_digitize_data.parse_document.exceptions import (
     MinerUAPIError,
     ParserExhaustedError,
 )
-from src.core.ingest_and_digitize_data.parse_document.orchestrator import (
+from src.core.phases.ingest_and_digitize_data.parse_document.orchestrator import (
     DocumentParseOrchestrator,
 )
 from src.utils.ssrf import validate_url_safe as _validate_url_safe
@@ -106,7 +106,7 @@ async def test_orchestrator_name(mock_remote, mock_local):
 @pytest.mark.asyncio
 async def test_parse_local_files_delegates_to_remote(mock_remote, mock_local):
     """Regression: factory-created orchestrator.parse_local_files() works."""
-    from src.core.ingest_and_digitize_data.parse_document.contracts import (
+    from src.core.phases.ingest_and_digitize_data.parse_document.contracts import (
         MinerUBatchStatus,
         MinerULocalBatchParseResult,
     )
@@ -187,7 +187,7 @@ async def test_url_fallback_downloads_to_temp_and_cleans_up(mock_remote, mock_lo
     orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
 
     with (
-        patch("src.core.ingest_and_digitize_data.parse_document.orchestrator.httpx.AsyncClient") as mock_cls,
+        patch("src.core.phases.ingest_and_digitize_data.parse_document.orchestrator.httpx.AsyncClient") as mock_cls,
         patch("src.utils.ssrf.validate_url_safe"),
     ):
         mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
@@ -213,7 +213,7 @@ async def test_url_fallback_rejects_non_pdf_content_type(mock_remote, mock_local
     orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
 
     with (
-        patch("src.core.ingest_and_digitize_data.parse_document.orchestrator.httpx.AsyncClient") as mock_cls,
+        patch("src.core.phases.ingest_and_digitize_data.parse_document.orchestrator.httpx.AsyncClient") as mock_cls,
         patch("src.utils.ssrf.validate_url_safe"),
     ):
         mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
@@ -236,7 +236,7 @@ async def test_url_fallback_rejects_non_pdf_signature(mock_remote, mock_local):
     orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
 
     with (
-        patch("src.core.ingest_and_digitize_data.parse_document.orchestrator.httpx.AsyncClient") as mock_cls,
+        patch("src.core.phases.ingest_and_digitize_data.parse_document.orchestrator.httpx.AsyncClient") as mock_cls,
         patch("src.utils.ssrf.validate_url_safe"),
     ):
         mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
@@ -268,7 +268,7 @@ async def test_url_fallback_rejects_http_error(mock_remote, mock_local):
     orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
 
     with (
-        patch("src.core.ingest_and_digitize_data.parse_document.orchestrator.httpx.AsyncClient") as mock_cls,
+        patch("src.core.phases.ingest_and_digitize_data.parse_document.orchestrator.httpx.AsyncClient") as mock_cls,
         patch("src.utils.ssrf.validate_url_safe"),
     ):
         mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)

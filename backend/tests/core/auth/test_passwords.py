@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.core.auth.passwords import hash_password, verify_password
+from src.core.foundation.auth.passwords import hash_password, verify_password
 
 
 def test_password_hash_verifies_original_password() -> None:

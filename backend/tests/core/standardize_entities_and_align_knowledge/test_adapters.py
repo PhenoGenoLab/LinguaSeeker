@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     DualEvidenceExtractionResult,
     EvidenceChain,
     EvidenceExtractionResult,
@@ -11,8 +11,8 @@ from src.core.evidence_extraction.contracts import (
     EvidenceStatus,
     Track,
 )
-from src.core.standardize_entities_and_align_knowledge.adapters import DualResultAdapter
-from src.core.standardize_entities_and_align_knowledge.contracts import EntityType
+from src.core.phases.standardize_entities_and_align_knowledge.adapters import DualResultAdapter
+from src.core.phases.standardize_entities_and_align_knowledge.contracts import EntityType
 
 
 def test_dual_result_adapter_extracts_chain_candidates() -> None:
@@ -310,7 +310,7 @@ def test_dual_result_adapter_splits_english_comma_phenotypes() -> None:
 
 
 def test_dual_result_adapter_carries_target_and_phenotype_evidence() -> None:
-    from src.core.evidence_extraction.contracts import (
+    from src.core.phases.evidence_extraction.contracts import (
         DualEvidenceExtractionResult,
         EvidenceExtractionResult,
         EvidenceExtractionStatus,

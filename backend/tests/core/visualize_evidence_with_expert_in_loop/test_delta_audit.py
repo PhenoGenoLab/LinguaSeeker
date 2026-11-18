@@ -7,13 +7,13 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.visualize_evidence_with_expert_in_loop.contracts import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import (
     DeltaEntry,
     EvidenceCardPayload,
     ReviewStatus,
     TargetType,
 )
-from src.core.visualize_evidence_with_expert_in_loop.delta_audit_service import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.delta_audit_service import (
     DeltaAuditService,
 )
 from src.dao.postgresql.models import CanonicalEvidenceItem, SourceDocument

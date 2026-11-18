@@ -3,8 +3,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.core.cross_lingual_translation.translate.translator import MultiStageTranslator
-from src.core.cross_lingual_translation.contracts import FormattedDocument
+from src.core.phases.cross_lingual_translation.translate.translator import MultiStageTranslator
+from src.core.phases.cross_lingual_translation.contracts import FormattedDocument
 
 
 @pytest.fixture
@@ -28,15 +28,15 @@ def mock_translator():
 
     with (
         patch(
-            "src.core.cross_lingual_translation.translate.providers.create_llm_client",
+            "src.core.phases.cross_lingual_translation.translate.providers.create_llm_client",
             return_value=MagicMock(),
         ),
         patch(
-            "src.core.cross_lingual_translation.translate.translator.create_llm",
+            "src.core.phases.cross_lingual_translation.translate.translator.create_llm",
             return_value=MagicMock(),
         ),
         patch(
-            "src.core.cross_lingual_translation.translate.translator.create_json_llm",
+            "src.core.phases.cross_lingual_translation.translate.translator.create_json_llm",
             return_value=MagicMock(),
         ),
     ):
@@ -62,11 +62,11 @@ def mock_translator():
     mock_json_invoke = AsyncMock(side_effect=_async_json_invoke)
 
     patcher_invoke = patch(
-        "src.core.cross_lingual_translation.translate.translator.invoke_with_retry",
+        "src.core.phases.cross_lingual_translation.translate.translator.invoke_with_retry",
         mock_invoke,
     )
     patcher_json = patch(
-        "src.core.cross_lingual_translation.translate.translator.invoke_json_with_retry",
+        "src.core.phases.cross_lingual_translation.translate.translator.invoke_json_with_retry",
         mock_json_invoke,
     )
     patcher_invoke.start()

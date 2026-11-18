@@ -6,7 +6,7 @@ version suffix carried by every verification and English view.
 
 from __future__ import annotations
 
-from src.core.tools.fact_chain.contracts import (
+from src.core.shared.tools.fact_chain.contracts import (
     ALLOWED_FIELD_IDS,
     FIELD_MODES,
     PromptVersions,

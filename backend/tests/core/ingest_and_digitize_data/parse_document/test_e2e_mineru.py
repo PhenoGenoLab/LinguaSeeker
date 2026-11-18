@@ -25,16 +25,16 @@ import httpx
 import pytest
 from loguru import logger
 
-from src.core.ingest_and_digitize_data.parse_document.contracts import (
+from src.core.phases.ingest_and_digitize_data.parse_document.contracts import (
     DocumentMetadata,
     PageContent,
     ParseResult,
 )
-from src.core.ingest_and_digitize_data.parse_document.exceptions import MinerUAPIError
-from src.core.ingest_and_digitize_data.parse_document.local.parser import (
+from src.core.phases.ingest_and_digitize_data.parse_document.exceptions import MinerUAPIError
+from src.core.phases.ingest_and_digitize_data.parse_document.local.parser import (
     MinerULocalParser,
 )
-from src.core.ingest_and_digitize_data.parse_document.remote.parser import (
+from src.core.phases.ingest_and_digitize_data.parse_document.remote.parser import (
     MinerURemoteParser,
 )
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.core.standardize_entities_and_align_knowledge.normalizers import (
+from src.core.phases.standardize_entities_and_align_knowledge.normalizers import (
     make_entity_scope_hash,
     make_target_scope_bindings,
     normalize_disease_lookup_text,
@@ -97,7 +97,7 @@ def test_normalize_disease_lookup_text_passes_through_unknown_chinese() -> None:
 
 
 def test_target_scope_bindings_change_entity_scope_hash() -> None:
-    from src.core.evidence_extraction.contracts import (
+    from src.core.phases.evidence_extraction.contracts import (
         ExtractionTarget,
     )
 

@@ -1,11 +1,11 @@
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceItem,
     EvidenceStatus,
     SourceLocation,
     SourcePrecision,
     SpecialEvidenceRecord,
 )
-from src.core.evidence_extraction.core import EvidenceChainBuilder
+from src.core.phases.evidence_extraction.core import EvidenceChainBuilder
 
 
 def _found(field_id: str, value: str, group_id: str) -> EvidenceItem:

@@ -2,21 +2,21 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.core.cross_lingual_translation.contracts import (
+from src.core.phases.cross_lingual_translation.contracts import (
     ContentBlock,
     FormattedDocument,
     TranslationSegment,
 )
-from src.core.cross_lingual_translation.config_context import TranslationConfigContext
-from src.core.cross_lingual_translation.translate.blocks import _BLOCK_SEP
-from src.core.cross_lingual_translation.translate.providers import (
+from src.core.phases.cross_lingual_translation.config_context import TranslationConfigContext
+from src.core.phases.cross_lingual_translation.translate.blocks import _BLOCK_SEP
+from src.core.phases.cross_lingual_translation.translate.providers import (
     LocalFirstTranslationAdapter,
     LocalTranslateGemmaClient,
     _to_text,
     invoke_json_with_retry,
     invoke_with_retry,
 )
-from src.core.cross_lingual_translation.translate.postprocess import (
+from src.core.phases.cross_lingual_translation.translate.postprocess import (
     build_translated_blocks,
     check_block_coverage,
     check_block_language,
@@ -24,8 +24,8 @@ from src.core.cross_lingual_translation.translate.postprocess import (
     flag_quality_issues,
     trim_repetitive_content,
 )
-from src.core.cross_lingual_translation.translate.exceptions import TranslationError
-from src.core.cross_lingual_translation.translate.translator import MultiStageTranslator
+from src.core.phases.cross_lingual_translation.translate.exceptions import TranslationError
+from src.core.phases.cross_lingual_translation.translate.translator import MultiStageTranslator
 
 
 @pytest.fixture
@@ -113,11 +113,11 @@ async def test_translate_one_segment_uses_completeness_retry_prompt(mock_ctx, mo
         return full_translation
 
     monkeypatch.setattr(
-        "src.core.cross_lingual_translation.translate.translator.invoke_json_with_retry",
+        "src.core.phases.cross_lingual_translation.translate.translator.invoke_json_with_retry",
         fake_json_invoke,
     )
     monkeypatch.setattr(
-        "src.core.cross_lingual_translation.translate.translator.invoke_with_retry",
+        "src.core.phases.cross_lingual_translation.translate.translator.invoke_with_retry",
         fake_invoke,
     )
 
@@ -128,14 +128,14 @@ async def test_translate_one_segment_uses_completeness_retry_prompt(mock_ctx, mo
 
 
 def test_providers_create_llm():
-    from src.core.cross_lingual_translation.translate.providers import create_llm
+    from src.core.phases.cross_lingual_translation.translate.providers import create_llm
 
     llm = create_llm(model="test-model", api_key="test-key", base_url="http://localhost:8001/v1", temperature=0.0)
     assert llm is not None
 
 
 def test_providers_create_json_llm():
-    from src.core.cross_lingual_translation.translate.providers import create_json_llm
+    from src.core.phases.cross_lingual_translation.translate.providers import create_json_llm
 
     llm = create_json_llm(model="test-model", api_key="test-key", base_url="http://localhost:8001/v1", temperature=0.0)
     assert llm is not None
@@ -465,7 +465,7 @@ async def test_translate_one_segment_accepts_json_translation_list(mock_ctx):
     raw_json = '{"translation": ["This is translated.", {"type": "text", "text": "It is English."}]}'
 
     with patch(
-        "src.core.cross_lingual_translation.translate.translator.invoke_json_with_retry",
+        "src.core.phases.cross_lingual_translation.translate.translator.invoke_json_with_retry",
         new_callable=AsyncMock,
         return_value=raw_json,
     ):
@@ -486,12 +486,12 @@ async def test_translate_one_segment_falls_back_when_json_mode_truncates(mock_ct
 
     with (
         patch(
-            "src.core.cross_lingual_translation.translate.translator.invoke_json_with_retry",
+            "src.core.phases.cross_lingual_translation.translate.translator.invoke_json_with_retry",
             new_callable=AsyncMock,
             side_effect=ValueError("Could not parse response content as the length limit was reached"),
         ) as mock_json,
         patch(
-            "src.core.cross_lingual_translation.translate.translator.invoke_with_retry",
+            "src.core.phases.cross_lingual_translation.translate.translator.invoke_with_retry",
             new_callable=AsyncMock,
             return_value="This text was translated successfully.",
         ) as mock_plain,
@@ -515,12 +515,12 @@ async def test_translate_one_segment_falls_back_when_json_provider_raises(mock_c
 
     with (
         patch(
-            "src.core.cross_lingual_translation.translate.translator.invoke_json_with_retry",
+            "src.core.phases.cross_lingual_translation.translate.translator.invoke_json_with_retry",
             new_callable=AsyncMock,
             side_effect=RuntimeError("Could not parse response content as the length limit was reached"),
         ) as mock_json,
         patch(
-            "src.core.cross_lingual_translation.translate.translator.invoke_with_retry",
+            "src.core.phases.cross_lingual_translation.translate.translator.invoke_with_retry",
             new_callable=AsyncMock,
             return_value="This text was translated successfully.",
         ) as mock_plain,
@@ -686,7 +686,7 @@ def test_translate_segments_includes_doi_footer_blocks():
     Replicates the filtering logic at translator.py:483 to verify that
     DOI footer blocks pass the filter while page-only footers are excluded.
     """
-    from src.core.cross_lingual_translation.translate.postprocess import _DOI_RE
+    from src.core.phases.cross_lingual_translation.translate.postprocess import _DOI_RE
 
     blocks = [
         ContentBlock(type="title", text="Example Paper", page_idx=0),

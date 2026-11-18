@@ -53,7 +53,7 @@ def _test_db_session(client: AsyncClient) -> AsyncMock:
 @pytest.mark.asyncio
 async def test_create_session(async_client: AsyncClient):
     """POST /api/v1/chat/sessions creates a session."""
-    from src.core.visualize_evidence_with_expert_in_loop.contracts import ChatSessionResponse
+    from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import ChatSessionResponse
 
     run_id = uuid4()
     session_id = uuid4()
@@ -82,7 +82,7 @@ async def test_create_session(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_create_standalone_session_api(async_client: AsyncClient):
     """POST /api/v1/chat/sessions accepts an empty body for standalone chat."""
-    from src.core.visualize_evidence_with_expert_in_loop.contracts import ChatSessionResponse
+    from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import ChatSessionResponse
 
     session_id = uuid4()
     mock_response = ChatSessionResponse(
@@ -113,7 +113,7 @@ async def test_create_standalone_session_api(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_session_details(async_client: AsyncClient):
     """GET /api/v1/chat/session-details/{id} returns one session with title."""
-    from src.core.visualize_evidence_with_expert_in_loop.contracts import ChatSessionResponse
+    from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import ChatSessionResponse
 
     session_id = uuid4()
     mock_response = ChatSessionResponse(
@@ -143,7 +143,7 @@ async def test_get_session_details(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_append_message(async_client: AsyncClient):
     """POST /api/v1/chat/sessions/{id}/messages appends a message."""
-    from src.core.visualize_evidence_with_expert_in_loop.contracts import ChatMessageResponse
+    from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import ChatMessageResponse
 
     session_id = uuid4()
     msg_id = uuid4()
@@ -190,7 +190,7 @@ async def test_append_message_does_not_generate_reply_by_default(
     async_client: AsyncClient,
 ):
     """Message append is persist-only unless auto_reply is explicitly requested."""
-    from src.core.visualize_evidence_with_expert_in_loop.contracts import ChatMessageResponse
+    from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import ChatMessageResponse
 
     session_id = uuid4()
     msg_id = uuid4()
@@ -224,7 +224,7 @@ async def test_append_message_can_generate_reply_when_requested(
     async_client: AsyncClient,
 ):
     """Legacy non-streaming callers can opt into generated assistant replies."""
-    from src.core.visualize_evidence_with_expert_in_loop.contracts import ChatMessageResponse
+    from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import ChatMessageResponse
 
     session_id = uuid4()
     user_msg_id = uuid4()

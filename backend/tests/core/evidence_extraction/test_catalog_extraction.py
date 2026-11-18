@@ -11,14 +11,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.core.evidence_extraction.domain.catalog import (
+from src.core.phases.evidence_extraction.domain.catalog import (
     EVIDENCE_FIELD_SPECS,
 )
-from src.core.evidence_extraction.domain.channel_contracts import (
+from src.core.phases.evidence_extraction.domain.channel_contracts import (
     DocumentChannelClassification,
     DocumentEvidenceChannel,
 )
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     DocumentEvidenceMap,
     ExtractionTarget,
@@ -26,7 +26,7 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.stages.catalog_extraction import (
+from src.core.phases.evidence_extraction.stages.catalog_extraction import (
     CatalogExtractionStage,
 )
 
@@ -326,7 +326,7 @@ async def test_run_async_passes_channel_classification_into_prompt():
     stage = CatalogExtractionStage(provider)
 
     with patch(
-        "src.core.evidence_extraction.stages.catalog_extraction.build_block_prompt_chunks",
+        "src.core.phases.evidence_extraction.stages.catalog_extraction.build_block_prompt_chunks",
         return_value=[MagicMock(index=1, total=1, text="GLA variant", total_tokens=100)],
     ):
         await stage.run_async(

@@ -1,10 +1,10 @@
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     ExtractionTarget,
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.stages.block_selection import (
+from src.core.phases.evidence_extraction.stages.block_selection import (
     select_recall_first_blocks,
 )
 

@@ -1,4 +1,4 @@
-from src.core.evidence_extraction.infrastructure.chunking import (
+from src.core.phases.evidence_extraction.infrastructure.chunking import (
     DEFAULT_INPUT_BUDGET_TOKENS,
     build_block_prompt_chunks,
     build_text_prompt_chunks,
@@ -6,7 +6,7 @@ from src.core.evidence_extraction.infrastructure.chunking import (
     merge_sparse_evidence_items,
     merge_special_evidence_records,
 )
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     DocumentEvidenceMap,
     EvidenceItem,

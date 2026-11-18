@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-from src.core.ingest_and_digitize_data.parse_document.remote.parser import MinerURemoteParser
+from src.core.phases.ingest_and_digitize_data.parse_document.remote.parser import MinerURemoteParser
 
 
 def test_mineru_remote_parser_name():

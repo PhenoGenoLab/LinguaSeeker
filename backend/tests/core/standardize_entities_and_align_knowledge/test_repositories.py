@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.core.phases.standardize_entities_and_align_knowledge.contracts import (
     BindingRole,
     EntityMatch,
     EntityType,
@@ -17,13 +17,13 @@ from src.core.standardize_entities_and_align_knowledge.contracts import (
     StandardizationCandidate,
     StandardizationInput,
 )
-from src.core.standardize_entities_and_align_knowledge.importers import (
+from src.core.phases.standardize_entities_and_align_knowledge.importers import (
     ImportAlias,
     ImportBatch,
     ImportEntry,
     ImportRelationship,
 )
-from src.core.standardize_entities_and_align_knowledge.repositories import (
+from src.core.phases.standardize_entities_and_align_knowledge.repositories import (
     StandardizationRepository,
 )
 
@@ -1185,7 +1185,7 @@ async def test_upsert_canonical_evidence_matches_existing_uuid_document_id() -> 
 
 
 def test_context_contamination_is_not_canonical_eligible() -> None:
-    from src.core.standardize_entities_and_align_knowledge.repositories import (
+    from src.core.phases.standardize_entities_and_align_knowledge.repositories import (
         CANONICAL_ELIGIBLE_STATUSES,
     )
 

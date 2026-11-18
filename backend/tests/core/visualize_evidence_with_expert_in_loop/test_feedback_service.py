@@ -7,12 +7,12 @@ import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.visualize_evidence_with_expert_in_loop.contracts import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import (
     EvidenceCardPayload,
     EvidencePatchRequest,
     ReviewStatus,
 )
-from src.core.visualize_evidence_with_expert_in_loop.feedback_service import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.feedback_service import (
     FeedbackService,
 )
 

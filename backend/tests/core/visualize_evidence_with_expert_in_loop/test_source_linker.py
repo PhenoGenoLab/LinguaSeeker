@@ -11,7 +11,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_get_track_span_loads_canonical_then_fetches_run() -> None:
     """SourceLinker.get_track_span loads canonical item first, then fetches the best run via current_best_run_evidence_id."""
-    from src.core.visualize_evidence_with_expert_in_loop.source_linker import SourceLinker
+    from src.core.phases.visualize_evidence_with_expert_in_loop.source_linker import SourceLinker
 
     session = MagicMock()
     canonical_id = uuid4()
@@ -43,7 +43,7 @@ async def test_get_track_span_loads_canonical_then_fetches_run() -> None:
 @pytest.mark.asyncio
 async def test_get_track_span_returns_none_when_canonical_not_found() -> None:
     """SourceLinker.get_track_span returns None when canonical item doesn't exist."""
-    from src.core.visualize_evidence_with_expert_in_loop.source_linker import SourceLinker
+    from src.core.phases.visualize_evidence_with_expert_in_loop.source_linker import SourceLinker
 
     session = MagicMock()
     canonical_result = MagicMock()
@@ -60,7 +60,7 @@ async def test_get_track_span_returns_none_when_canonical_not_found() -> None:
 @pytest.mark.asyncio
 async def test_get_track_span_falls_back_when_best_track_mismatches() -> None:
     """When best run is 'original' but track='translated' is requested, must fall back to identity-tuple lookup."""
-    from src.core.visualize_evidence_with_expert_in_loop.source_linker import SourceLinker
+    from src.core.phases.visualize_evidence_with_expert_in_loop.source_linker import SourceLinker
 
     session = MagicMock()
     canonical_id = uuid4()
@@ -105,7 +105,7 @@ async def test_get_track_span_falls_back_when_best_track_mismatches() -> None:
 @pytest.mark.asyncio
 async def test_get_bilingual_span_returns_different_tracks() -> None:
     """get_bilingual_span must return different run items for original vs translated."""
-    from src.core.visualize_evidence_with_expert_in_loop.source_linker import SourceLinker
+    from src.core.phases.visualize_evidence_with_expert_in_loop.source_linker import SourceLinker
 
     session = MagicMock()
     canonical_id = uuid4()

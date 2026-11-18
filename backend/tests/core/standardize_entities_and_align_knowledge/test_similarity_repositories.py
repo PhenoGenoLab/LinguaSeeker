@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.standardize_entities_and_align_knowledge.contracts import EntityType
-from src.core.standardize_entities_and_align_knowledge.similarity_match.repositories import (
+from src.core.phases.standardize_entities_and_align_knowledge.contracts import EntityType
+from src.core.phases.standardize_entities_and_align_knowledge.similarity_match.repositories import (
     PgvectorTerminologyRepository,
 )
 

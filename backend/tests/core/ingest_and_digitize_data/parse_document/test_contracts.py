@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from src.core.ingest_and_digitize_data.parse_document.contracts import (
+from src.core.phases.ingest_and_digitize_data.parse_document.contracts import (
     DocumentMetadata,
     FigurePosition,
     MinerUBatchExtractProgress,

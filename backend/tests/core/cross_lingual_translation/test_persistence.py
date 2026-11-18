@@ -5,14 +5,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from src.core.cross_lingual_translation.contracts import (
+from src.core.phases.cross_lingual_translation.contracts import (
     ContentBlock,
     SentenceRegion,
     TranslationResult,
     TranslationSegment,
     TranslationSpanPair,
 )
-from src.core.cross_lingual_translation.persistence import (
+from src.core.phases.cross_lingual_translation.persistence import (
     DocumentPersistenceService,
 )
 

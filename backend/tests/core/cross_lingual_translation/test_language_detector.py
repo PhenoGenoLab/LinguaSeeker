@@ -1,4 +1,4 @@
-from src.core.cross_lingual_translation.translate.language_detector import (
+from src.core.phases.cross_lingual_translation.translate.language_detector import (
     detect_language,
     should_skip_translation,
 )

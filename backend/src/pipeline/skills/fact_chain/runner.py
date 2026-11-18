@@ -14,7 +14,7 @@ from typing import Any
 
 from loguru import logger
 
-from src.core.tools.fact_chain.contracts import (
+from src.core.shared.tools.fact_chain.contracts import (
     FIELD_MODES,
     STAGE_NAMES,
     ChainConfig,
@@ -37,12 +37,12 @@ from src.core.tools.fact_chain.contracts import (
     canonical_json,
     sha256_text,
 )
-from src.core.tools.fact_chain.core import (
+from src.core.shared.tools.fact_chain.core import (
     candidate_to_fact,
     reconcile,
     validate_reply_schema,
 )
-from src.core.tools.fact_chain.windowing import chunk_document
+from src.core.shared.tools.fact_chain.windowing import chunk_document
 from src.pipeline.skills.fact_chain.prompts import (
     EXTRACT_PROMPT,
     EXTRACT_PROMPT_VERSION,

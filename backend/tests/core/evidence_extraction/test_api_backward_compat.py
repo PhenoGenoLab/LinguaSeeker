@@ -1,10 +1,10 @@
 import json
 
-from src.core.evidence_extraction.infrastructure.document_parsing import (
+from src.core.phases.evidence_extraction.infrastructure.document_parsing import (
     _block_text,
     _build_track_document_from_json,
 )
-from src.core.evidence_extraction.contracts import Track
+from src.core.phases.evidence_extraction.contracts import Track
 
 
 def test_build_track_document_preserves_blocks(tmp_path):

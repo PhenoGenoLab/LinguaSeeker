@@ -1,4 +1,4 @@
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     ContentBlock,
     EvidenceChain,
     EvidenceItem,
@@ -8,7 +8,7 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.infrastructure.document_parsing import (
+from src.core.phases.evidence_extraction.infrastructure.document_parsing import (
     _filter_evidence_blocks,
     _is_section_heading,
 )
@@ -153,10 +153,10 @@ def test_filter_evidence_blocks_skips_consecutive_non_evidence_sections_until_ev
 
 
 def test_build_dual_documents_accepts_extraction_target(tmp_path) -> None:
-    from src.core.evidence_extraction.api import (
+    from src.core.phases.evidence_extraction.api import (
         EvidenceExtractionService,
     )
-    from src.core.evidence_extraction.contracts import (
+    from src.core.phases.evidence_extraction.contracts import (
         ExtractionTarget,
     )
 
@@ -176,7 +176,7 @@ def test_build_dual_documents_accepts_extraction_target(tmp_path) -> None:
 
 
 def test_build_dual_documents_loads_translation_alignment(tmp_path) -> None:
-    from src.core.evidence_extraction.api import (
+    from src.core.phases.evidence_extraction.api import (
         EvidenceExtractionService,
     )
 
@@ -220,7 +220,7 @@ def test_build_dual_documents_loads_translation_alignment(tmp_path) -> None:
 
 
 def test_build_dual_documents_target_optional(tmp_path) -> None:
-    from src.core.evidence_extraction.api import (
+    from src.core.phases.evidence_extraction.api import (
         EvidenceExtractionService,
     )
 
@@ -239,7 +239,7 @@ def test_build_dual_documents_target_optional(tmp_path) -> None:
 
 
 def test_build_dual_documents_skips_non_evidence_sections(tmp_path) -> None:
-    from src.core.evidence_extraction.api import (
+    from src.core.phases.evidence_extraction.api import (
         EvidenceExtractionService,
     )
 
@@ -271,7 +271,7 @@ def test_build_dual_documents_skips_non_evidence_sections(tmp_path) -> None:
 
 
 def test_build_dual_documents_skips_non_evidence_sections_in_formatted_text(tmp_path) -> None:
-    from src.core.evidence_extraction.api import (
+    from src.core.phases.evidence_extraction.api import (
         EvidenceExtractionService,
     )
 

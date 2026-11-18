@@ -1,6 +1,6 @@
 from collections import Counter
 
-from src.core.evidence_extraction.domain.catalog import (
+from src.core.phases.evidence_extraction.domain.catalog import (
     EVIDENCE_FIELD_SPECS,
     get_field_spec,
 )
@@ -38,10 +38,10 @@ def test_catalog_lookup_returns_spec():
 def test_catalog_extraction_stage_excludes_curation_group():
     from unittest.mock import MagicMock
 
-    from src.core.evidence_extraction.domain.catalog import (
+    from src.core.phases.evidence_extraction.domain.catalog import (
         CATALOG_GROUPS,
     )
-    from src.core.evidence_extraction.stages.catalog_extraction import (
+    from src.core.phases.evidence_extraction.stages.catalog_extraction import (
         CatalogExtractionStage,
     )
 

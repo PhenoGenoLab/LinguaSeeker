@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceAlignmentLabel,
     EvidenceAlignmentRecord,
     EvidenceExtractionResult,
@@ -13,7 +13,7 @@ from src.core.evidence_extraction.contracts import (
     SourceLocation,
     Track,
 )
-from src.core.evidence_extraction.reconcile.alignment import (
+from src.core.phases.evidence_extraction.reconcile.alignment import (
     build_alignment_records,
     is_alignment_acceptable,
 )

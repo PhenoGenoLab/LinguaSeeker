@@ -12,8 +12,8 @@ from uuid import UUID, uuid5
 
 import pytest
 
-from src.core.visualize_evidence_with_expert_in_loop.contracts import EvidenceSearchResult
-from src.core.visualize_evidence_with_expert_in_loop.variant_aggregation import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import EvidenceSearchResult
+from src.core.phases.visualize_evidence_with_expert_in_loop.variant_aggregation import (
     VariantIndexFilters,
     aggregate_variants,
     build_variant_group_document_pairs,

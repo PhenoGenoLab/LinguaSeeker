@@ -1,7 +1,7 @@
 """Tests for Phase 4 LLM providers."""
 
 import pytest
-from src.core.visualize_evidence_with_expert_in_loop.providers import (
+from src.core.phases.visualize_evidence_with_expert_in_loop.providers import (
     ReasoningLLMProvider,
 )
 
@@ -25,14 +25,14 @@ async def test_reasoning_llm_provider_reuses_httpx_client():
     """ReasoningLLMProvider should reuse a single httpx.AsyncClient across calls."""
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    with patch("src.core.visualize_evidence_with_expert_in_loop.providers.get_config") as mock_cfg:
+    with patch("src.core.phases.visualize_evidence_with_expert_in_loop.providers.get_config") as mock_cfg:
         mock_cfg.return_value.reasoning = MagicMock(
             api_key="test-key",
             model="test-model",
             base_url="http://localhost:8001",
             timeout=30,
         )
-        from src.core.visualize_evidence_with_expert_in_loop.providers import (
+        from src.core.phases.visualize_evidence_with_expert_in_loop.providers import (
             ReasoningLLMProvider,
         )
 
@@ -61,7 +61,7 @@ async def test_reasoning_llm_provider_reuses_httpx_client():
 async def test_chat_service_uses_injected_provider():
     """ChatService should use an injected provider, not create a new one per call."""
     from unittest.mock import AsyncMock, MagicMock, patch
-    from src.core.visualize_evidence_with_expert_in_loop.chat_service import ChatService
+    from src.core.phases.visualize_evidence_with_expert_in_loop.chat_service import ChatService
 
     mock_session = AsyncMock()
     mock_provider = MagicMock()

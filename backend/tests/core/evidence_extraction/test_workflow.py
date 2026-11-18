@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from src.core.evidence_extraction.api import EvidenceExtractionService
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.api import EvidenceExtractionService
+from src.core.phases.evidence_extraction.contracts import (
     DocumentEvidenceMap,
     EvidenceExtractionState,
     EvidenceExtractionStatus,
@@ -15,14 +15,14 @@ from src.core.evidence_extraction.contracts import (
     TrackDocument,
     ExtractionTarget,
 )
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     EvidenceNormalizationIssueType,
 )
-from src.core.evidence_extraction.core import EvidenceChainBuilder
-from src.core.evidence_extraction.domain.normalization import (
+from src.core.phases.evidence_extraction.core import EvidenceChainBuilder
+from src.core.phases.evidence_extraction.domain.normalization import (
     AcmgEvidenceValueNormalizer,
 )
-from src.core.evidence_extraction.workflow import EvidenceExtractionWorkflow
+from src.core.phases.evidence_extraction.workflow import EvidenceExtractionWorkflow
 
 
 @pytest.fixture
@@ -230,7 +230,7 @@ def test_workflow_target_span_recovery_node_adds_missing_high_signal_field() -> 
 
 def test_catalog_backfill_node_expands_to_full_catalog():
     """Unit test for the backfill node — no LLM, no graph compile."""
-    from src.core.evidence_extraction.domain.catalog import (
+    from src.core.phases.evidence_extraction.domain.catalog import (
         EVIDENCE_FIELD_SPECS,
     )
 
@@ -337,12 +337,12 @@ def test_service_source_grounding_override_uses_fresh_workflow(mock_config):
 
 def test_workflow_disable_source_grounding_skips_graph_node(mock_config):
     """enable_source_grounding=False routes target_span_recovery directly to chain_assembly."""
-    from src.core.evidence_extraction.contracts import (
+    from src.core.phases.evidence_extraction.contracts import (
         EvidenceExtractionState,
         Track,
         TrackDocument,
     )
-    from src.core.evidence_extraction.workflow import (
+    from src.core.phases.evidence_extraction.workflow import (
         EvidenceExtractionWorkflow,
     )
 
@@ -380,21 +380,21 @@ def test_workflow_disable_source_grounding_skips_graph_node(mock_config):
 
 def test_backward_compat_alias_b8_to_broad(mock_config):
     """extraction_mode='b8' (old name) resolves to 'broad'."""
-    from src.core.evidence_extraction.workflow import resolve_extraction_mode
+    from src.core.phases.evidence_extraction.workflow import resolve_extraction_mode
 
     assert resolve_extraction_mode("b8") == "broad"
 
 
 def test_backward_compat_alias_legacy_to_catalog(mock_config):
     """extraction_mode='legacy' (old name) resolves to 'catalog'."""
-    from src.core.evidence_extraction.workflow import resolve_extraction_mode
+    from src.core.phases.evidence_extraction.workflow import resolve_extraction_mode
 
     assert resolve_extraction_mode("legacy") == "catalog"
 
 
 def test_resolve_extraction_mode_unknown_raises():
     """Unknown mode string raises ValueError."""
-    from src.core.evidence_extraction.workflow import resolve_extraction_mode
+    from src.core.phases.evidence_extraction.workflow import resolve_extraction_mode
 
     with pytest.raises(ValueError, match="Unknown extraction_mode"):
         resolve_extraction_mode("unknown")

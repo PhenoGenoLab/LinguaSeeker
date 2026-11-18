@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from src.core.standardize_entities_and_align_knowledge import api as api_module
-from src.core.standardize_entities_and_align_knowledge.contracts import EntityType
-from src.core.standardize_entities_and_align_knowledge.importers import (
+from src.core.phases.standardize_entities_and_align_knowledge import api as api_module
+from src.core.phases.standardize_entities_and_align_knowledge.contracts import EntityType
+from src.core.phases.standardize_entities_and_align_knowledge.importers import (
     ImportAlias,
     ImportBatch,
     ImportEntry,
@@ -19,7 +19,7 @@ from src.core.standardize_entities_and_align_knowledge.importers import (
 
 def test_api_exposes_standardization_service_class() -> None:
     """The public facade exports the entity standardization service."""
-    from src.core.standardize_entities_and_align_knowledge.api import EntityStandardizationService
+    from src.core.phases.standardize_entities_and_align_knowledge.api import EntityStandardizationService
 
     assert EntityStandardizationService is not None
 
@@ -247,7 +247,7 @@ def test_describe_batch_source_prefers_entries_then_aliases_then_relationships()
 
 def test_matches_json_serialization() -> None:
     """EntityMatch list serializes to auditable matches.json format."""
-    from src.core.standardize_entities_and_align_knowledge.contracts import (
+    from src.core.phases.standardize_entities_and_align_knowledge.contracts import (
         BindingRole,
         EntityMatch,
         EntityType,
@@ -330,7 +330,7 @@ async def test_build_terminology_embeddings_passes_scope_filters(monkeypatch) ->
     monkeypatch.setattr(api_module, "async_session_factory", lambda engine: "factory")
     monkeypatch.setattr(api_module, "get_async_session", fake_get_async_session)
     monkeypatch.setattr(
-        "src.core.standardize_entities_and_align_knowledge.similarity_match.indexer.TerminologyEmbeddingIndexer",
+        "src.core.phases.standardize_entities_and_align_knowledge.similarity_match.indexer.TerminologyEmbeddingIndexer",
         FakeIndexer,
     )
 

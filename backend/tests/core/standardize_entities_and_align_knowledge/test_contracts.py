@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.core.standardize_entities_and_align_knowledge.contracts import (
+from src.core.phases.standardize_entities_and_align_knowledge.contracts import (
     AcmgReadyEvidenceItem,
     AcmgReadyEvidenceSet,
     BindingRole,
@@ -191,7 +191,7 @@ def test_acmg_ready_contracts_capture_hpo_ids_and_normalized_values() -> None:
 
 
 def test_standardization_input_carries_extraction_target() -> None:
-    from src.core.evidence_extraction.contracts import (
+    from src.core.phases.evidence_extraction.contracts import (
         ExtractionTarget,
     )
 

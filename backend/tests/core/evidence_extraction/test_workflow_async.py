@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.core.evidence_extraction.contracts import (
+from src.core.phases.evidence_extraction.contracts import (
     DocumentEvidenceMap,
     EvidenceItem,
     EvidenceExtractionStatus,
@@ -17,7 +17,7 @@ from src.core.evidence_extraction.contracts import (
     Track,
     TrackDocument,
 )
-from src.core.evidence_extraction.workflow import (
+from src.core.phases.evidence_extraction.workflow import (
     EvidenceExtractionWorkflow,
 )
 
@@ -153,7 +153,7 @@ async def test_workflow_run_async_is_faster_than_sequential() -> None:
     ]
 
     with patch(
-        "src.core.evidence_extraction.stages.evidence_map.build_text_prompt_chunks",
+        "src.core.phases.evidence_extraction.stages.evidence_map.build_text_prompt_chunks",
         return_value=chunks,
     ):
         start = time.monotonic()

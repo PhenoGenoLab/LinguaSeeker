@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_db_session
 from src.core.config import get_config
-from src.core.auth.contracts import AuthContext, PUBLIC_AUTH_CONTEXT, SessionClaims
+from src.core.foundation.auth.contracts import AuthContext, PUBLIC_AUTH_CONTEXT, SessionClaims
 from src.dao.postgresql.models import User
 
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)

@@ -2,7 +2,7 @@
 
 import json
 
-from src.core.cross_lingual_translation.contracts import (
+from src.core.phases.cross_lingual_translation.contracts import (
     OriginalLayoutReport,
     SegmentDrift,
     SentenceDrift,
@@ -11,10 +11,10 @@ from src.core.cross_lingual_translation.contracts import (
     TranslationResult,
     TranslationSegment,
 )
-from src.core.cross_lingual_translation.format.formatter import (
+from src.core.phases.cross_lingual_translation.format.formatter import (
     compute_format_drift,
 )
-from src.core.cross_lingual_translation.translate.postprocess import (
+from src.core.phases.cross_lingual_translation.translate.postprocess import (
     compute_translation_drift,
 )
 
@@ -213,7 +213,7 @@ class TestPersistenceSavesLayoutJson:
 
     def test_save_creates_original_json(self, tmp_path):
         """save() should create original.json with structured blocks."""
-        from src.core.cross_lingual_translation.persistence import (
+        from src.core.phases.cross_lingual_translation.persistence import (
             DocumentPersistenceService,
         )
 
@@ -242,7 +242,7 @@ class TestPersistenceSavesLayoutJson:
 
     def test_save_creates_translated_json(self, tmp_path):
         """save() should create translated.json with structured blocks."""
-        from src.core.cross_lingual_translation.persistence import (
+        from src.core.phases.cross_lingual_translation.persistence import (
             DocumentPersistenceService,
         )
 
@@ -275,7 +275,7 @@ class TestPersistenceSavesLayoutJson:
 
     def test_save_metadata_includes_block_counts(self, tmp_path):
         """save() should include block counts in metadata.json."""
-        from src.core.cross_lingual_translation.persistence import (
+        from src.core.phases.cross_lingual_translation.persistence import (
             DocumentPersistenceService,
         )
 

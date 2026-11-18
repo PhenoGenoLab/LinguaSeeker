@@ -51,16 +51,16 @@ from sqlalchemy import select
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.core.config import get_config
-from src.core.cross_lingual_translation.api import TranslationService
-from src.core.ingest_and_digitize_data.parse_document.remote.parser import MinerURemoteParser
-from src.core.visualize_evidence_with_expert_in_loop.chat_service import ChatService
-from src.core.visualize_evidence_with_expert_in_loop.contracts import (
+from src.core.phases.cross_lingual_translation.api import TranslationService
+from src.core.phases.ingest_and_digitize_data.parse_document.remote.parser import MinerURemoteParser
+from src.core.phases.visualize_evidence_with_expert_in_loop.chat_service import ChatService
+from src.core.phases.visualize_evidence_with_expert_in_loop.contracts import (
     EvidencePatchRequest,
     ReviewStatus,
 )
-from src.core.visualize_evidence_with_expert_in_loop.delta_audit_service import DeltaAuditService
-from src.core.visualize_evidence_with_expert_in_loop.feedback_service import FeedbackService
-from src.core.visualize_evidence_with_expert_in_loop.source_linker import SourceLinker
+from src.core.phases.visualize_evidence_with_expert_in_loop.delta_audit_service import DeltaAuditService
+from src.core.phases.visualize_evidence_with_expert_in_loop.feedback_service import FeedbackService
+from src.core.phases.visualize_evidence_with_expert_in_loop.source_linker import SourceLinker
 from src.dao.postgresql.connection import async_session_factory, build_async_engine, get_async_session
 from src.dao.postgresql.models import CanonicalEvidenceItem, ProcessingRun
 
