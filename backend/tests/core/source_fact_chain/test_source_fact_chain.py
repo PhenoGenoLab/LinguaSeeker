@@ -6,17 +6,17 @@ import json
 
 import pytest
 
-from src.core.source_fact_chain.contracts import (
+from src.pipeline.tools.fact_chain.contracts import (
     ChainConfig,
     ChainRun,
     SourceDocument,
     SourceHashMismatch,
     sha256_text,
 )
-from src.core.source_fact_chain.projection import project_dual_result
-from src.core.source_fact_chain.providers import ProviderError
-from src.core.source_fact_chain.runner import BudgetExhausted, ChainRunner
-from src.core.source_fact_chain.windowing import chunk_document
+from src.pipeline.tools.fact_chain.projection import project_dual_result
+from src.pipeline.tools.fact_chain.windowing import chunk_document
+from src.pipeline.skills.fact_chain.runner import BudgetExhausted, ChainRunner
+from src.pipeline.skills.runtime.llm import ProviderError
 
 
 def make_config(**overrides: object) -> ChainConfig:
@@ -483,8 +483,8 @@ def test_non_atomic_value_cannot_hide_entity_semicolons() -> None:
 
 
 def test_candidate_rejections_name_each_contract() -> None:
-    from src.core.source_fact_chain.contracts import ChainContractError, DocumentWindow
-    from src.core.source_fact_chain.core import candidate_to_fact
+    from src.pipeline.tools.fact_chain.contracts import ChainContractError, DocumentWindow
+    from src.pipeline.tools.fact_chain.core import candidate_to_fact
 
     text = "The patient had severe hypotonia."
     document = make_document(text, language="en")
@@ -546,7 +546,7 @@ def test_budget_exhaustion_stops_before_the_next_provider_call() -> None:
 def test_langchain_provider_routes_tiers_and_rejects_empty_replies(monkeypatch: pytest.MonkeyPatch) -> None:
     from types import SimpleNamespace
 
-    from src.core.source_fact_chain import providers as provider_module
+    from src.pipeline.skills.runtime import llm as provider_module
 
     created: list[dict[str, object]] = []
 

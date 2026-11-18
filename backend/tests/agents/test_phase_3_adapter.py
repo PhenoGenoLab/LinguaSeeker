@@ -22,8 +22,8 @@ from src.core.evidence_extraction.contracts import (
     DualEvidenceExtractionResult,
     ExtractionTarget,
 )
-from src.core.source_fact_chain.api import SourceFactChainService
-from src.core.source_fact_chain.providers import ProviderError
+from src.pipeline.skills.fact_chain.service import SourceFactChainService
+from src.pipeline.skills.runtime.llm import ProviderError
 
 GENE_QUOTE = "先证者携带BRCA1变异。"
 PHENOTYPE_QUOTE = "患者表现为严重肌张力低下。"

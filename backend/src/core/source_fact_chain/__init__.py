@@ -1,7 +1,12 @@
-"""Source-grounded fact chain: windows -> extract -> verify -> fact English -> bilingual rows."""
+"""Transitional re-export shim package for :mod:`src.pipeline.{tools,skills}.fact_chain`.
 
-from .api import ChainArtifacts, SourceFactChainService
-from .contracts import (
+The implementation moved in stage 2. Importers should use
+``src.pipeline.tools.fact_chain`` (deterministic helpers) and
+``src.pipeline.skills.fact_chain`` (prompts, stage runner, service facade).
+This package only re-exports for one release cycle.
+"""
+
+from src.pipeline.tools.fact_chain.contracts import (
     ChainConfig,
     ChainRun,
     EnglishView,
@@ -9,8 +14,9 @@ from .contracts import (
     SourceFact,
     Verification,
 )
-from .projection import project_dual_result, supported_facts
-from .runner import ChainRunner
+from src.pipeline.tools.fact_chain.projection import project_dual_result, supported_facts
+from src.pipeline.skills.fact_chain.runner import ChainRunner
+from src.pipeline.skills.fact_chain.service import ChainArtifacts, SourceFactChainService
 
 __all__ = [
     "ChainArtifacts",
