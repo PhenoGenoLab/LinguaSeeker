@@ -13,8 +13,15 @@ core/
 ├── __init__.py                  # 空包标识
 ├── config.py                    # 全局配置（Settings 单例、Provider 配置模型）
 ├── config_loader.py             # 向后兼容 shim，委托给 acmg_config_loader
+├── tools/                       # 确定性能力（无 agent 决策）；被 pipeline 调用
+├── mcp/                         # 外部服务协议适配（如 ReMe）；只依赖 contracts
+├── contracts/                   # 跨层 DTO（SkillRequest/SkillResult 等）
 └── ingest_and_digitize_data/    # 阶段 1：文献采集与解析
 ```
+
+> 依赖方向：`src.pipeline`（LangGraph 编排 + AgentScope agents）单向依赖
+> `src.core`；`src/core` 不得 import `src.pipeline`，由
+> `tests/pipeline/test_import_boundaries.py` 断言。
 
 ## 核心组件
 
@@ -33,11 +40,16 @@ core/
 | 子模块 | 说明 |
 |--------|------|
 | `ingest_and_digitize_data/` | 阶段 1/2 — 文献采集（本地上传/在线获取）与文档解析（MinerU） |
-| `source_fact_chain/` | 阶段 3 — 原文分窗→事实抽取→核验→事实英译→双语行 |
+| `tools/` | 确定性能力（含 `tools/fact_chain/` 契约、校验、窗口、投影）；无 agent 决策 |
+| `mcp/` | 外部服务协议适配（ReMe 等），占位待契约落地 |
+| `contracts/` | 跨层 DTO，如 `contracts/skill_io.py` 的 `SkillRequest`/`SkillResult` |
 | `cross_lingual_translation/` | 翻译基础设施（术语映射、句级对齐）；Phase 3 主流程不再整篇翻译 |
 | `evidence_extraction/` | ACMG 字段目录、证据契约、分组规则；供事实链投影与离线基准使用 |
 | `standardize_entities_and_align_knowledge/` | 阶段 4 — 实体标准化与知识对齐 |
 | `visualize_evidence_with_expert_in_loop/` | 阶段 5 — 证据可视化与专家审核 |
+
+> 阶段 3（原文事实链）的编排与服务门面在 `src/pipeline/skills/fact_chain/`，确定性部分在
+> `src/core/tools/fact_chain/`；原 `src/core/source_fact_chain/` 已废弃删除。
 
 ## 数据流
 

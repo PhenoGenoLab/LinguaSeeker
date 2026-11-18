@@ -1,0 +1,7 @@
+"""Deterministic domain tools.
+
+Import boundary: tools must not import ``agentscope`` (no agent decisions) and
+must not import ``src.pipeline`` (skills and graph call tools, never the
+reverse).  The same functions are callable directly by domain code and tests,
+and can be exposed to agents as tools without changing their behaviour.
+"""
