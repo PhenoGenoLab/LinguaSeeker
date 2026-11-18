@@ -4,9 +4,10 @@
 # Only the lines added by the given range are inspected, so existing test
 # fixtures and placeholder strings never need re-baselining. Two shapes are
 # flagged:
-#   1. assignment of a quoted literal of >=8 chars: api_key = "sk-live-..."
-#      An unquoted right-hand side is an expression (`token = normalize(x)`),
-#      not a literal, and is deliberately not flagged.
+#   1. an assignment whose right-hand side is a quoted literal of 8+ chars,
+#      e.g. `api_key` bound to a `"sk-live-..."` string. An unquoted right-hand
+#      side is an expression (`token = normalize(x)`), not a literal, and is
+#      deliberately not flagged.
 #   2. unquoted provider tokens identified by their prefix: ghp_, github_pat_,
 #      sk-, AKIA..., xox[baprs]-.
 #

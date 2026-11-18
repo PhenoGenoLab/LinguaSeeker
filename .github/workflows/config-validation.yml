@@ -46,15 +46,22 @@ jobs:
           done
 
       - name: Validate Ansible playbooks (syntax check)
+        # deploy/ansible/ansible.cfg sets roles_path and inventory relative to
+        # itself, so ansible must run from that directory; from the repo root
+        # it resolves roles against playbooks/roles and fails with
+        # "The role 'common' was not found".
+        working-directory: deploy/ansible
+        env:
+          # ansible.cfg logs to /var/log/ansible, which does not exist on the runner.
+          ANSIBLE_LOG_PATH: /tmp/ansible-syntax-check.log
         run: |
           set -euo pipefail
           pip install ansible-core --quiet
-          for inv in deploy/ansible/inventories/*/hosts.yml; do
-            env=$(basename $(dirname "$inv"))
+          for inv in inventories/*/hosts.yml; do
+            env=$(basename "$(dirname "$inv")")
             echo "--- Checking $env inventory ---"
-            ansible-playbook --syntax-check \
-              deploy/ansible/playbooks/site.yml \
-              -i "$inv" 2>&1 || { echo "FAIL: $env"; exit 1; }
+            ansible-playbook --syntax-check playbooks/site.yml -i "$inv" \
+              || { echo "FAIL: $env"; exit 1; }
           done
 
       - name: Check environment config completeness
