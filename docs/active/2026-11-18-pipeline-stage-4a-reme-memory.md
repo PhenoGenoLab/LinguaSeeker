@@ -28,7 +28,7 @@ POST /auto_resource {"path","content"}           → {"accepted","detail"}
 GET  /health                                     → 200
 ```
 
-- 契约文件：`pipeline/mcp/reme/contracts.py`（`MemoryCard` / `RecallResult` / `MemoryWriteReceipt`）。
+- 契约文件：`pipeline/mcp/reme/contracts.py`（`MemoryCard` / `RecallResult` / `MemoryWriteReceipt`）；HTTP 契约见 [ReMe 外部知识服务 HTTP 契约](2026-11-18-reme-http-contract.md)。
 - 注入格式：`<memory source="reme" note="reference only; never use as evidence or quote">…</memory>`；卡片文本做 XML 转义，防止记忆内容闭合注入块。
 - 召回 query：当前窗口文本前 400 字符；`top_k` 来自配置（默认 5）。
 - 写入内容：`language/windows/facts/field_ids/verifications/rejections/prompt_versions`；不含任何原文、quote、用户名或文件路径。
