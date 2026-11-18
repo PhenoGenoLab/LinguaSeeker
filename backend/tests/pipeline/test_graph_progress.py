@@ -61,6 +61,13 @@ def test_record_node_appends_multiple_entries() -> None:
     assert [node["status"] for node in status.summary["nodes"]] == ["completed", "completed"]
 
 
+def test_failed_node_tolerates_malformed_started_at() -> None:
+    node = NodeProgress.failed("phase_1", started_at="not-a-timestamp", detail="PermanentPhaseError")
+
+    assert node.duration_seconds is None
+    assert node.completed_at is not None
+
+
 @pytest.mark.asyncio
 async def test_successful_phase_records_completed_node() -> None:
     result = _state()

@@ -44,7 +44,11 @@ class NodeProgress:
         completed_at = datetime.now().isoformat()
         duration = None
         if started_at:
-            duration = (datetime.fromisoformat(completed_at) - datetime.fromisoformat(started_at)).total_seconds()
+            try:
+                duration = (datetime.fromisoformat(completed_at) - datetime.fromisoformat(started_at)).total_seconds()
+            except (TypeError, ValueError):
+                # A malformed persisted timestamp must not mask the phase error.
+                duration = None
         return cls(
             node=node,
             status="failed",

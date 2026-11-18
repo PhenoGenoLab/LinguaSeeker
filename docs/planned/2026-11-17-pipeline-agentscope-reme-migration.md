@@ -960,7 +960,7 @@ mcp==2.3.0            ➕ 新增
 | 阶段 | 状态 | 交付 | 验证（CI 等价环境） |
 |---|---|---|---|
 | 0 | 完成 | 骨架、import 基线、边界测试、inventory 脚本 | 边界测试通过 |
-| 1 | **部分完成** | `graph/` 目录迁移、orchestrator + 4 adapter 迁入、节点级进度写入 `summary.nodes`（`graph/progress.py`）；窗口 `Send` fan-out 与 `graph/nodes.py` **未实现** | 202→380 相关测试通过 |
+| 1 | **部分完成** | `graph/` 目录迁移、orchestrator + 4 adapter 迁入、节点级进度写入 `summary.nodes`（`graph/progress.py`）；窗口 `Send` fan-out 与 `graph/nodes.py` **未实现** | 202→381 相关测试通过 |
 | 2 | 完成（代码） | fact_chain 迁移、AgentScope extract、`legacy/shadow/agentscope` 开关、多 key 轮换 | 288 passed / 88.15% |
 | 3 | 完成（代码） | acquisition/parsing 迁移、verify/translate skill、`SkillError→ProviderError` | 294 passed / 88.55%；ingest 154 |
 | 4a | 完成（代码） | ReMe HTTP 客户端/registry、记忆注入、counts-only 摘要、默认关闭 | 308 passed / 88.84% |
