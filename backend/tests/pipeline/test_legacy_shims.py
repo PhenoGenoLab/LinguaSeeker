@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import importlib
+import pkgutil
+
+import pytest
+
 from src.agents import (
     orchestrator as legacy_orchestrator,
     phase_1_adapter as legacy_phase_1,
@@ -56,3 +61,33 @@ def test_legacy_terminology_shims_reexport_new_implementation() -> None:
         legacy_context_pack.build_context_pack_from_runtime_target
         is shared_context_pack.build_context_pack_from_runtime_target
     )
+
+
+_LEGACY_GRAPH_MODULES = (
+    "src.agents.orchestrator",
+    "src.agents.phase_1_adapter",
+    "src.agents.phase_2_adapter",
+    "src.agents.phase_3_adapter",
+    "src.agents.phase_4_adapter",
+)
+_LEGACY_PACKAGES = (
+    "src.core.source_fact_chain",
+    "src.core.ingest_and_digitize_data.document_acquisition",
+    "src.core.ingest_and_digitize_data.parse_document",
+    "src.core.standardize_entities_and_align_knowledge",
+)
+
+
+def _legacy_module_names() -> list[str]:
+    """Every module importable only through a legacy shim path."""
+    names = set(_LEGACY_GRAPH_MODULES)
+    for package in _LEGACY_PACKAGES:
+        module = importlib.import_module(package)
+        names.add(package)
+        names.update(info.name for info in pkgutil.walk_packages(module.__path__, prefix=package + "."))
+    return sorted(names)
+
+
+@pytest.mark.parametrize("module_name", _legacy_module_names())
+def test_every_legacy_shim_module_imports(module_name: str) -> None:
+    importlib.import_module(module_name)
