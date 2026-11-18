@@ -1,17 +1,3 @@
-"""Document acquisition module — unified interface for local upload and online acquisition."""
+"""Transitional re-export shim for :mod:`src.pipeline.tools.acquisition`."""
 
-from .service import DocumentAcquisitionService
-from .contracts import (
-    AcquisitionSource,
-    DocumentAcquisitionRequest,
-    DocumentAcquisitionResult,
-    DocumentDownloadEntry,
-)
-
-__all__ = [
-    "DocumentAcquisitionService",
-    "DocumentAcquisitionRequest",
-    "DocumentAcquisitionResult",
-    "DocumentDownloadEntry",
-    "AcquisitionSource",
-]
+from src.pipeline.tools.acquisition import *  # noqa: F403

@@ -9,12 +9,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.core.ingest_and_digitize_data.parse_document.contracts import ParseResult
-from src.core.ingest_and_digitize_data.parse_document.exceptions import (
+from src.pipeline.tools.parsing.contracts import ParseResult
+from src.pipeline.tools.parsing.exceptions import (
     MinerUAPIError,
     MinerUTimeoutError,
 )
-from src.core.ingest_and_digitize_data.parse_document.remote.parser import MinerURemoteParser
+from src.pipeline.tools.parsing.remote.parser import MinerURemoteParser
 
 
 class TestMinerURemoteParser:

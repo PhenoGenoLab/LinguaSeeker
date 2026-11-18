@@ -5,7 +5,7 @@ from __future__ import annotations
 
 def test_html_table_to_markdown():
     """Test HTML table to markdown conversion."""
-    from src.core.ingest_and_digitize_data.parse_document.common.converters import html_table_to_markdown
+    from src.pipeline.tools.parsing.common.converters import html_table_to_markdown
 
     html = "<table><tr><th>Name</th><th>Age</th></tr><tr><td>Alice</td><td>30</td></tr></table>"
     result = html_table_to_markdown(html)
@@ -16,7 +16,7 @@ def test_html_table_to_markdown():
 
 def test_html_table_to_structured():
     """Test HTML table to structured extraction."""
-    from src.core.ingest_and_digitize_data.parse_document.common.converters import html_table_to_structured
+    from src.pipeline.tools.parsing.common.converters import html_table_to_structured
 
     html = "<table><tr><th>Name</th><th>Age</th></tr><tr><td>Alice</td><td>30</td></tr></table>"
     headers, rows = html_table_to_structured(html)
@@ -26,7 +26,7 @@ def test_html_table_to_structured():
 
 def test_block_to_markdown_text():
     """Test text block to markdown conversion."""
-    from src.core.ingest_and_digitize_data.parse_document.common.converters import block_to_markdown
+    from src.pipeline.tools.parsing.common.converters import block_to_markdown
 
     block = {"type": "text", "text": "Hello World", "text_level": 2}
     result = block_to_markdown(block)
@@ -35,7 +35,7 @@ def test_block_to_markdown_text():
 
 def test_block_to_markdown_image():
     """Test image block to markdown conversion."""
-    from src.core.ingest_and_digitize_data.parse_document.common.converters import block_to_markdown
+    from src.pipeline.tools.parsing.common.converters import block_to_markdown
 
     block = {
         "type": "image",
@@ -50,7 +50,7 @@ def test_block_to_markdown_image():
 
 def test_block_to_markdown_table():
     """Test table block to markdown conversion."""
-    from src.core.ingest_and_digitize_data.parse_document.common.converters import block_to_markdown
+    from src.pipeline.tools.parsing.common.converters import block_to_markdown
 
     block = {
         "type": "table",

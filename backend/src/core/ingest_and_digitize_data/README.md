@@ -1,6 +1,10 @@
 # Ingest and Digitize Data 文献采集与数字化
 
 > 阶段 1 流水线：从多种来源采集文献 PDF 并解析为结构化 Markdown。
+>
+> **已迁移（阶段 3）**：实现位于 `src/pipeline/tools/acquisition`（采集）与
+> `src/pipeline/tools/parsing`（解析）。本目录下的同名包仅保留一个发布周期的
+> re-export shim；新代码请勿再引用 `src.core.ingest_and_digitize_data.*`。
 
 ## 概述
 
@@ -9,13 +13,12 @@
 ## 结构
 
 ```
-ingest_and_digitize_data/
-├── README.md
-├── document_acquisition/     # 文档采集子模块
+src/pipeline/tools/
+├── acquisition/              # 文档采集子模块（原 document_acquisition/）
 │   ├── contracts.py          # 统一数据类型（AcquisitionSource、Request/Result）
 │   ├── service.py            # 统一门面服务 DocumentAcquisitionService
 │   └── local_upload/         # 本地文件上传（在线获取委托 lit-acquisition SDK）
-└── parse_document/           # 文档解析子模块
+└── parsing/                  # 文档解析子模块（原 parse_document/）
     ├── contracts.py          # 解析结果数据类型（ParseResult、PageContent 等）
     ├── base.py               # 解析器抽象基类 ParserStrategy
     ├── service.py            # 解析服务 ParseDocumentService

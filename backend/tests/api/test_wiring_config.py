@@ -8,16 +8,16 @@ from unittest.mock import MagicMock, patch
 from src.core.config import ParseDocumentConfig
 
 # Source module paths for classes imported inside wire_dependencies()
-_REMOTE_PARSER_MOD = "src.core.ingest_and_digitize_data.parse_document.remote.parser.MinerURemoteParser"
-_LOCAL_PARSER_MOD = "src.core.ingest_and_digitize_data.parse_document.local.parser.MinerULocalParser"
+_REMOTE_PARSER_MOD = "src.pipeline.tools.parsing.remote.parser.MinerURemoteParser"
+_LOCAL_PARSER_MOD = "src.pipeline.tools.parsing.local.parser.MinerULocalParser"
 
 
 def _patch_wire_deps(stack: ExitStack):
     """Patch all dependencies wired inside wire_dependencies()."""
     for mod_path in [
-        "src.core.ingest_and_digitize_data.document_acquisition.service.DocumentAcquisitionService",
-        "src.core.ingest_and_digitize_data.parse_document.orchestrator.DocumentParseOrchestrator",
-        "src.core.ingest_and_digitize_data.parse_document.service.ParseDocumentService",
+        "src.pipeline.tools.acquisition.service.DocumentAcquisitionService",
+        "src.pipeline.tools.parsing.orchestrator.DocumentParseOrchestrator",
+        "src.pipeline.tools.parsing.service.ParseDocumentService",
         "src.core.source_fact_chain.api.SourceFactChainService",
         "src.core.standardize_entities_and_align_knowledge.api.EntityStandardizationService",
         "src.agents.orchestrator.PipelineOrchestrator",
@@ -140,9 +140,9 @@ def test_wire_dependencies_initializes_session_factory_before_use():
 
     with ExitStack() as stack:
         for mod_path in [
-            "src.core.ingest_and_digitize_data.document_acquisition.service.DocumentAcquisitionService",
-            "src.core.ingest_and_digitize_data.parse_document.orchestrator.DocumentParseOrchestrator",
-            "src.core.ingest_and_digitize_data.parse_document.service.ParseDocumentService",
+            "src.pipeline.tools.acquisition.service.DocumentAcquisitionService",
+            "src.pipeline.tools.parsing.orchestrator.DocumentParseOrchestrator",
+            "src.pipeline.tools.parsing.service.ParseDocumentService",
             "src.core.cross_lingual_translation.api.TranslationService",
             "src.core.evidence_extraction.api.EvidenceExtractionService",
             "src.core.standardize_entities_and_align_knowledge.api.EntityStandardizationService",

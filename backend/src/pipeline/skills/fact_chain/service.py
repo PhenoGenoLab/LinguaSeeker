@@ -52,9 +52,13 @@ def _build_provider(cfg: Any) -> Provider:
         if mode != "legacy":
             logger.warning("unknown pipeline.agent_runtime={!r}; using legacy provider", mode)
         return legacy
-    from src.pipeline.skills.fact_chain.extract import ExtractSkill, StageRouterProvider
+    from src.pipeline.skills.fact_chain.extract import ExtractSkill
+    from src.pipeline.skills.fact_chain.router import StageRouterProvider
+    from src.pipeline.skills.fact_chain.translate import TranslateSkill
+    from src.pipeline.skills.fact_chain.verify import VerifySkill
 
-    return StageRouterProvider(legacy=legacy, extract=ExtractSkill(cfg), mode=mode)
+    skills = {skill.stage: skill for skill in (ExtractSkill(cfg), VerifySkill(cfg), TranslateSkill(cfg))}
+    return StageRouterProvider(legacy=legacy, skills=skills, mode=mode)
 
 
 class SourceFactChainService:
