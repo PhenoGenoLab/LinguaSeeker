@@ -60,6 +60,8 @@ CI 等价环境（`uv export --frozen --only-group ci` + PyPI 安装）：
 | 清单 | `scripts/pipeline_migration_inventory.py` | terminology 27/27 shim；`src/pipeline` 77 files / 11,145 lines |
 
 > 注意：`test_pipeline_api.py` 与 graph/evidence 套件同进程运行会因既有全局 mock 泄漏失败，CI 已按独立进程执行；本次沿用该隔离方式验证。
+>
+> Mypy 未覆盖 `pipeline/tools/terminology` 与 `pipeline/tools/parsing`：迁移前即存在 11 + 7 处类型错误（变量复用、TypedDict 键、可选值等），不属本次布局迁移；已记录为独立技术债。`graph/topology.py`、`graph/progress.py`、`contracts/skill_io.py` 已纳入类型检查（29 files）。
 
 ## 5. 回滚
 
