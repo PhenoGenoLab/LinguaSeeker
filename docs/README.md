@@ -52,7 +52,7 @@ docs/
 - [2026-11-15 RPS6KA3中英摘要—正文事实筛查 R1](archive/papers/2026-11-15-rps6ka3-abstract-body-fact-screen-r1/README.md) — 盲态独立复核后登记19条有段落定位的原文候选/综述项，并对摘要覆盖差异作源文仲裁；全英文全文对应与患者去重未完成，主终点计数仍为0。
 - [2026-11-15 多语种遗传病例候选初筛 R1](archive/papers/2026-11-15-multilingual-case-candidate-triage-r1/README.md) — 初筛7篇中/西/法/俄文全文；均有英文题名或摘要，不计来源/患者/变异增量；正文细节候选待英文对应仲裁。
 
-- [2026-11-15 多语种遗传病例候选综合 R2](active/2026-11-15-multilingual-current-candidate-synthesis-r2.md) — 汇总 EIF2B5 转录本冲突、FZD2 正文/摘要信息差及葡语三变异双语控制；当前确认的语言独占患者/变异增量仍为0，不作总体推断。
+- [2026-11-15 多语种遗传病例候选综合 R2](archive/papers/2026-11-15-multilingual-current-candidate-synthesis-r2/README.md) — 汇总 EIF2B5 转录本冲突、FZD2 正文/摘要信息差及葡语三变异双语控制；当前确认的语言独占患者/变异增量仍为0，不作总体推断。
 
 ### 基准测试与数据
 
