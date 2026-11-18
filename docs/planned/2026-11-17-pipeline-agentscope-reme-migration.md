@@ -960,11 +960,11 @@ mcp==2.3.0            ➕ 新增
 | 阶段 | 状态 | 交付 | 验证（CI 等价环境） |
 |---|---|---|---|
 | 0 | 完成 | 骨架、import 基线、边界测试、inventory 脚本 | 边界测试通过 |
-| 1 | **部分完成** | `graph/` 目录迁移、orchestrator + 4 adapter 迁入、节点级进度写入 `summary.nodes`（`graph/progress.py`）；窗口 `Send` fan-out 与 `graph/nodes.py` **未实现** | 202→384 相关测试通过 |
+| 1 | **部分完成** | `graph/` 目录迁移、orchestrator + 4 adapter 迁入、节点级进度写入 `summary.nodes`（`graph/progress.py`）；窗口 `Send` fan-out 与 `graph/nodes.py` **未实现** | CI 1225 passed / 88.15% |
 | 2 | 完成（代码） | fact_chain 迁移、AgentScope extract、`legacy/shadow/agentscope` 开关、多 key 轮换 | 288 passed / 88.15% |
 | 3 | 完成（代码） | acquisition/parsing 迁移、verify/translate skill、`SkillError→ProviderError` | 294 passed / 88.55%；ingest 154 |
 | 4a | 完成（代码） | ReMe HTTP 客户端/registry、记忆注入、counts-only 摘要、默认关闭 | 308 passed / 88.84% |
-| 4b | 完成（代码） | `terminology_shared` + terminology 迁移（27 files） | 376 passed / 89.34%；术语+graph_rag+evidence 841 |
+| 4b | 完成（代码） | `terminology_shared` + terminology 迁移（27 files） | 1225 passed / 88.15%；术语+graph_rag+evidence 841 |
 | 5 | 未做（可选） | — | — |
 
 实施记录：`docs/active/2026-11-17-pipeline-stage-0-1-migration.md`、`2026-11-18-pipeline-stage-2-agentscope-runtime.md`、`2026-11-18-pipeline-stage-3-phase3-agents-and-ingest-migration.md`、`2026-11-18-pipeline-stage-4a-reme-memory.md`、`2026-11-18-pipeline-stage-4b-terminology-migration.md`。

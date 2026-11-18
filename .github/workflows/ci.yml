@@ -140,12 +140,17 @@ jobs:
         run: >-
           .venv/bin/python -m pytest
           tests/core/source_fact_chain
+          tests/core/standardize_entities_and_align_knowledge
+          tests/core/graph_rag
+          tests/core/evidence_extraction
           tests/agents
           tests/pipeline
           tests/api/test_wiring_config.py
           tests/core/visualize_evidence_with_expert_in_loop/test_search_service.py
           -q
           --cov=src.pipeline.tools.fact_chain
+          --cov=src.pipeline.tools.terminology
+          --cov=src.core.terminology_shared
           --cov=src.pipeline.skills.fact_chain
           --cov=src.pipeline.skills.runtime
           --cov=src.pipeline.mcp
