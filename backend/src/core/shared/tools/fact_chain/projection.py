@@ -8,7 +8,7 @@ translated twice and English text never becomes an extraction input.
 
 from __future__ import annotations
 
-from src.core.phases.evidence_extraction.contracts import (
+from src.core.agents.extraction.contracts import (
     DocumentEvidenceMap,
     DualEvidenceExtractionResult,
     EvidenceChain,
@@ -22,8 +22,8 @@ from src.core.phases.evidence_extraction.contracts import (
     SourcePrecision,
     Track,
 )
-from src.core.phases.evidence_extraction.core.grouping import make_group_id, normalize_group_token
-from src.core.phases.evidence_extraction.domain.catalog import get_field_spec
+from src.core.agents.extraction.core.grouping import make_group_id, normalize_group_token
+from src.core.agents.extraction.domain.catalog import get_field_spec
 
 from .contracts import (
     EVIDENCE_LABELS,

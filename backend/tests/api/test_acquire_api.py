@@ -9,13 +9,13 @@ from dataclasses import dataclass
 import pytest
 from httpx import AsyncClient
 
-from src.core.phases.ingest_and_digitize_data.document_acquisition.contracts import (
+from src.core.agents.acquisition.contracts import (
     AcquisitionSource,
     DocumentAcquisitionResult,
     DocumentDownloadEntry,
 )
 
-_SERVICE_MOD = "src.core.phases.ingest_and_digitize_data.document_acquisition.service.DocumentAcquisitionService.acquire"
+_SERVICE_MOD = "src.core.agents.acquisition.service.DocumentAcquisitionService.acquire"
 
 
 @dataclass

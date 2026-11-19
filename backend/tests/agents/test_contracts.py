@@ -171,7 +171,7 @@ def test_phase_status_detail():
 
 
 def test_pipeline_graph_state_carries_extraction_target() -> None:
-    from src.core.phases.evidence_extraction.contracts import (
+    from src.core.agents.extraction.contracts import (
         ExtractionTarget,
     )
 

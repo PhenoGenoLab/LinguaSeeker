@@ -12,7 +12,7 @@ from typing import Any, NoReturn
 
 from pydantic import BaseModel, Field
 
-from src.core.phases.evidence_extraction.contracts import (
+from src.core.agents.extraction.contracts import (
     ExtractionTarget,
 )
 
@@ -290,7 +290,7 @@ def build_retryable_errors() -> tuple[type, ...]:
         pass
 
     try:
-        from src.core.phases.ingest_and_digitize_data.parse_document.exceptions import (
+        from src.core.agents.parsing.exceptions import (
             MinerUTimeoutError,
         )
 

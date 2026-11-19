@@ -24,12 +24,12 @@ from src.agents.contracts import (
     build_retryable_errors,
     classify_phase_error,
 )
-from src.core.phases.evidence_extraction.contracts import (
+from src.core.agents.extraction.contracts import (
     DualEvidenceExtractionResult,
 )
 
 if TYPE_CHECKING:
-    from src.core.phases.standardize_entities_and_align_knowledge.api import (
+    from src.core.agents.standardization.api import (
         EntityStandardizationService,
     )
 

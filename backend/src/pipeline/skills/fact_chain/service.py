@@ -15,7 +15,7 @@ from typing import Any
 
 from loguru import logger
 
-from src.core.phases.evidence_extraction.contracts import DualEvidenceExtractionResult
+from src.core.agents.extraction.contracts import DualEvidenceExtractionResult
 
 from src.core.shared.tools.fact_chain.contracts import (
     ChainConfig,

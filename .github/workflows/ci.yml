@@ -142,7 +142,7 @@ jobs:
           tests/agents
           tests/pipeline
           tests/api/test_wiring_config.py
-          tests/core/visualize_evidence_with_expert_in_loop/test_search_service.py
+          tests/core/agents/review/test_search_service.py
           -q
           --cov=src.core.shared.tools.fact_chain
           --cov=src.pipeline.skills.fact_chain
