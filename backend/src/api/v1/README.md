@@ -157,6 +157,6 @@ curl -H "X-API-Key: your-key" \
 | `src.api.auth` | 认证依赖 |
 | `src.api.deps` | 数据库会话和 Phase4 工厂 |
 | `src.api.rate_limit` | 限流装饰器 |
-| `src.agents.*` | 管线运行器和作业队列 |
+| `src.runs.*` | 管线运行器和作业队列 |
 | `src.dao.postgresql.*` | 数据库仓储 |
 | `src.core.*` | 业务逻辑服务 |

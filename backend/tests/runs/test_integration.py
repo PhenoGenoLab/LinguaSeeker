@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from src.agents.contracts import (
+from src.runs.contracts import (
     PipelineGraphState,
     PipelineMode,
     SourceType,
@@ -14,7 +14,7 @@ from src.agents.contracts import (
     SkipPhase4Reason,
 )
 from src.pipeline.graph.topology import PipelineOrchestrator
-from src.agents.concurrency import RetryablePhaseExecutor
+from src.runs.concurrency import RetryablePhaseExecutor
 
 
 def _make_adapters(**returns) -> dict:

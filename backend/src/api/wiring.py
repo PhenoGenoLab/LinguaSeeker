@@ -17,7 +17,7 @@ from src.dao.redis.connection import build_redis_client
 
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
-    from src.agents.dispatcher import SingleJobDispatcher
+    from src.runs.dispatcher import SingleJobDispatcher
     from src.core.agents.parsing.local.parser import (
         MinerULocalParser,
     )
@@ -134,10 +134,10 @@ def wire_dependencies() -> None:
     Called once from lifespan startup.  Creates the full service graph:
     engine → session_factory → adapters → orchestrator → runner → factory.
     """
-    from src.agents.concurrency import PipelineSemaphore, RetryablePhaseExecutor
-    from src.agents.phase_5_factory import Phase5ServiceFactory
-    from src.agents.runner import PipelineRunner
-    from src.agents.state_persistence import SessionBoundStatePersistence
+    from src.runs.concurrency import PipelineSemaphore, RetryablePhaseExecutor
+    from src.runs.phase_5_factory import Phase5ServiceFactory
+    from src.runs.runner import PipelineRunner
+    from src.runs.state_persistence import SessionBoundStatePersistence
     from src.api.deps import set_neo4j_repository, set_phase5_factory
     from src.api.v1.pipeline import set_pipeline_runner
     from src.core.agents.graph_retrieval.api import GraphRagService
@@ -191,7 +191,7 @@ def wire_dependencies() -> None:
         )
 
     # ── Document processing cache (L1 Redis + L2 PostgreSQL) ──────────
-    from src.agents.processing_cache import DocumentProcessingCacheService
+    from src.runs.processing_cache import DocumentProcessingCacheService
 
     processing_cache = DocumentProcessingCacheService(
         redis_client=_redis_client,
@@ -266,7 +266,7 @@ def wire_dependencies() -> None:
 
     # ── Job queue + dispatcher ──
 
-    from src.agents.dispatcher import SingleJobDispatcher
+    from src.runs.dispatcher import SingleJobDispatcher
     from src.api.v1.pipeline import set_job_queue
 
     job_queue = JobQueueRepository(session_factory)

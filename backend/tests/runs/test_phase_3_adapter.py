@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from src.agents.contracts import (
+from src.runs.contracts import (
     ParseOutput,
     PhaseStatus,
     PhaseStatusDetail,

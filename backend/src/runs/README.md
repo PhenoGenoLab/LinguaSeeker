@@ -1,15 +1,17 @@
-# Agents
+# Runs
 
-> 后台运行与任务调度层——任务执行、状态持久化和作业队列。LangGraph 拓扑与 phase 适配器位于 `src/pipeline/graph/`。
+> 一次 pipeline run 的运行时外壳——作业队列、后台执行、状态契约与持久化、两级缓存。LangGraph 拓扑与 phase 适配器在 `src/pipeline/graph/`；agent 能力实现在 `src/core/agents/`。
+>
+> 本目录 2026-11-19 由 `src/agents/` 改名而来：旧名暗示这里放 agent，实际放的是 run。
 
 ## Overview
 
-`agents/` 实现 Lingua Seeker 管线的**外层运行时**：后台运行器、作业调度器、PostgreSQL 状态持久化和作业队列。4 阶段有向图（Phase 1 文献获取 → Phase 2 文档解析 → Phase 3 翻译+证据提取 → Phase 4 实体标准化）的拓扑与各 Phase 适配器已在阶段 1 目录迁移中移到 `src/pipeline/graph/`；本目录不再包含编排器实现。Phase 5 不是图节点——它是独立的请求-响应式交互服务（证据审核、对话、审计），通过 `Phase5ServiceFactory` 在 API 层创建。
+`runs/` 实现 Lingua Seeker 管线的**外层运行时**：后台运行器、作业调度器、PostgreSQL 状态持久化和作业队列。4 阶段有向图（Phase 1 文献获取 → Phase 2 文档解析 → Phase 3 翻译+证据提取 → Phase 4 实体标准化）的拓扑与各 Phase 适配器已在阶段 1 目录迁移中移到 `src/pipeline/graph/`；本目录不再包含编排器实现。Phase 5 不是图节点——它是独立的请求-响应式交互服务（证据审核、对话、审计），通过 `Phase5ServiceFactory` 在 API 层创建。
 
 ## Structure
 
 ```
-agents/
+runs/
 ├── runner.py                # 后台管线运行器（asyncio task + DB fallback）
 ├── dispatcher.py            # 单任务作业调度器（轮询 pipeline_jobs 表）
 ├── contracts.py             # 状态模型、枚举、错误层次、状态转换守卫

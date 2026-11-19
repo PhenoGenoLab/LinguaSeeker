@@ -15,7 +15,7 @@ from typing import Any
 
 from loguru import logger
 
-from src.agents.contracts import (
+from src.runs.contracts import (
     PipelineGraphState,
     PipelineStatus,
 )

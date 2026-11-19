@@ -38,7 +38,7 @@ Modern tools only. System-level installs are prohibited.
 
 New modules should prefer **Orchestrated Vertical Slice Architecture**:
 
-- `src/agents/` is the orchestrator: LangGraph topology, global Pydantic state, router decisions, node telemetry.
+- `src/runs/` owns the run lifecycle: global Pydantic graph state, runner, dispatcher, state persistence, node telemetry. LangGraph topology lives in `src/pipeline/graph/`.
 - `src/core/<feature>/` contains vertical feature slices. A non-trivial slice should expose an `api.py` node adapter, keep pure domain behavior in `core.py`, wrap LLM/DB/Rust/external dependencies in `providers.py`, and define feature-local contracts in `contracts.py` or `schema.py`.
 - `src/utils/`, `src/dao/`, Rust crates, and shared clients are infrastructure. Business core code must not depend directly on SDK clients when a provider boundary is practical.
 - Workflow code wires nodes and edges only; feature packages own the biomedical, translation, standardization, feedback, and report-generation decisions.

@@ -4,13 +4,13 @@ import asyncio
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from src.agents.contracts import (
+from src.runs.contracts import (
     PipelineGraphState,
     PipelineMode,
     SourceType,
     PipelineStatus,
 )
-from src.agents.runner import PipelineRunner
+from src.runs.runner import PipelineRunner
 
 
 def test_runner_evicts_oldest_states_beyond_limit():
@@ -313,7 +313,7 @@ async def test_cancelled_task_preserves_current_phase(sample_state, mock_semapho
     async def _hang(state: object) -> None:
         # Simulate the orchestrator having progressed to phase 2 by
         # updating the cached state before hanging.
-        from src.agents.contracts import PipelineGraphState
+        from src.runs.contracts import PipelineGraphState
 
         if isinstance(state, PipelineGraphState):
             state.error_phase = 2
@@ -572,7 +572,7 @@ async def test_get_last_state_does_not_fail_active_db_run_from_another_worker(
 @pytest.mark.asyncio
 async def test_runner_error_state_preserves_latest_phase_outputs(sample_state, mock_semaphore, mock_persistence):
     """Error state must use the latest cached state as model_copy base, not initial_state."""
-    from src.agents.contracts import AcquisitionOutput, PhaseStatus, PhaseStatusDetail
+    from src.runs.contracts import AcquisitionOutput, PhaseStatus, PhaseStatusDetail
 
     latest = sample_state.model_copy(deep=True)
     latest.phase_1_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)

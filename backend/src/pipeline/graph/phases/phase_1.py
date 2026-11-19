@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 import aiofiles
 from loguru import logger
 
-from src.agents.contracts import (
+from src.runs.contracts import (
     AcquisitionOutput,
     PhaseStatus,
     PhaseStatusDetail,

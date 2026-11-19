@@ -4,7 +4,7 @@
 
 ## Overview
 
-`src/` 是 Lingua Seeker 后端的核心代码包，按职责分为 6 个子包：配置管理（`core/`）、pipeline 领域层（`pipeline/`）、后台运行与调度（`agents/`）、HTTP API（`api/`）、数据访问（`dao/`）和通用工具（`utils/`）。
+`src/` 是 Lingua Seeker 后端的核心代码包，按职责分为 6 个子包：配置管理（`core/`）、pipeline 编排层（`pipeline/`）、运行生命周期（`runs/`）、HTTP API（`api/`）、数据访问（`dao/`）和通用工具（`utils/`）。
 
 ## Structure
 
@@ -23,7 +23,7 @@ src/
 │   ├── tools/                   # 确定性能力（事实链校验、窗口、投影）
 │   ├── mcp/                     # 外部协议适配
 │   └── contracts/               # 跨层 DTO
-├── agents/              # 后台运行与任务调度（外层）
+├── runs/                # 一次 run 的生命周期（runner、dispatcher、状态持久化）
 │   ├── runner.py                # 后台管线运行器
 │   ├── dispatcher.py            # 单任务作业调度器
 │   ├── contracts.py             # 状态模型、错误层次、状态转换守卫
@@ -59,7 +59,7 @@ src/
 ### 依赖关系图
 
 ```
-app.main → src.api.wiring → src.agents.* → src.core.*
+app.main → src.api.wiring → src.runs.* → src.core.*
                 ↓
            src.dao.* (PostgreSQL / Redis)
                 ↓
@@ -75,7 +75,7 @@ app.main → src.api.wiring → src.agents.* → src.core.*
 | Phase 3 | `core/standardize_entities_and_align_knowledge/` | 实体标准化 + 术语知识对齐 |
 | Phase 4 | `core/visualize_evidence_with_expert_in_loop/` | 专家审核、聊天、审计、溯源 |
 
-Phase 1-3 由 `agents/orchestrator.py`（LangGraph）编排为有向图，Phase 4 是独立的请求-响应式交互服务。
+Phase 1-4 由 `pipeline/graph/topology.py`（LangGraph）编排为有向图；Phase 5 是独立的请求-响应式交互服务（`core/agents/review/` + `runs/phase_5_factory.py`）。
 
 ## Usage / Patterns
 

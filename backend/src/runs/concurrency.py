@@ -7,7 +7,7 @@ from typing import Any, Awaitable, Callable
 
 from loguru import logger
 
-from src.agents.contracts import PermanentPhaseError, RetryablePhaseError
+from src.runs.contracts import PermanentPhaseError, RetryablePhaseError
 
 
 class PipelineSemaphore:

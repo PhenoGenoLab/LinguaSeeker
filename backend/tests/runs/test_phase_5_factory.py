@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.agents.phase_5_factory import Phase5ServiceFactory
+from src.runs.phase_5_factory import Phase5ServiceFactory
 from src.core.agents.review.chat_service import ChatService
 from src.core.agents.review.delta_audit_service import (
     DeltaAuditService,

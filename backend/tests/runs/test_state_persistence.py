@@ -56,8 +56,8 @@ async def test_pipeline_run_state_update(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_direct_state_persistence_save_sets_pipeline_status(db_session):
     """DirectStatePersistence.save() sets the pipeline_status column."""
-    from src.agents.contracts import PipelineGraphState, PipelineMode, PipelineStatus, SourceType
-    from src.agents.state_persistence import DirectStatePersistence
+    from src.runs.contracts import PipelineGraphState, PipelineMode, PipelineStatus, SourceType
+    from src.runs.state_persistence import DirectStatePersistence
 
     persistence = DirectStatePersistence(db_session)
     state = PipelineGraphState(

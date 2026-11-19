@@ -14,7 +14,7 @@ import aiofiles
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.agents.contracts import (
+from src.runs.contracts import (
     StandardizationOutput,
     PhaseStatus,
     PhaseStatusDetail,

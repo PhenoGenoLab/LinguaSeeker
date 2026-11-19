@@ -26,7 +26,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.agents.contracts import PipelineGraphState
+from src.runs.contracts import PipelineGraphState
 from src.dao.postgresql.models import DocumentProcessingCache
 
 

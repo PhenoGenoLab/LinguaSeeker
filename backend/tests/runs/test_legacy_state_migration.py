@@ -13,14 +13,14 @@ import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.agents.contracts import (
+from src.runs.contracts import (
     PipelineGraphState,
     PipelineMode,
     PipelineStatus,
     SourceType,
     validate_all_phase_transitions,
 )
-from src.agents.state_persistence import DirectStatePersistence
+from src.runs.state_persistence import DirectStatePersistence
 
 
 def _legacy_state_dict() -> dict:

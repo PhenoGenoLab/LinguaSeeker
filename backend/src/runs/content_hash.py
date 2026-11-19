@@ -17,7 +17,7 @@ from pathlib import Path
 
 import aiofiles
 
-from src.agents.contracts import PipelineGraphState
+from src.runs.contracts import PipelineGraphState
 from src.core.agents.extraction.workflow import (
     DEFAULT_EXTRACTION_WORKFLOW_MODE,
 )

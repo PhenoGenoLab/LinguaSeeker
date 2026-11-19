@@ -5,7 +5,7 @@ import pytest
 
 def test_permanent_os_errors_are_excluded_from_retryable():
     """Verify _PERMANENT_OS_ERRORS are NOT accidentally caught by _RETRYABLE_ERRORS in the except chain."""
-    from src.agents.contracts import build_retryable_errors
+    from src.runs.contracts import build_retryable_errors
 
     build_retryable_errors()  # verify it builds without error
     # The real fix: _PERMANENT_OS_ERRORS must be listed BEFORE _RETRYABLE_ERRORS
@@ -19,7 +19,7 @@ def test_permanent_os_errors_are_excluded_from_retryable():
 
 def test_os_error_is_retryable():
     """Generic OSError should still be retryable (network errors, etc.)."""
-    from src.agents.contracts import build_retryable_errors
+    from src.runs.contracts import build_retryable_errors
 
     retryable = build_retryable_errors()
     assert OSError in retryable
@@ -28,7 +28,7 @@ def test_os_error_is_retryable():
 @pytest.mark.asyncio
 async def test_file_not_found_is_not_retried_by_executor():
     """FileNotFoundError should fail immediately, not retry."""
-    from src.agents.concurrency import RetryablePhaseExecutor
+    from src.runs.concurrency import RetryablePhaseExecutor
 
     executor = RetryablePhaseExecutor(max_retries=2, backoff_base=0.01)
     call_count = 0
@@ -53,6 +53,6 @@ async def test_file_not_found_is_not_retried_by_executor():
 
 def test_phase2_adapter_classifies_file_not_found_as_permanent():
     """Phase2Adapter should classify FileNotFoundError as PermanentPhaseError."""
-    from src.agents.contracts import PERMANENT_OS_ERRORS
+    from src.runs.contracts import PERMANENT_OS_ERRORS
 
     assert issubclass(FileNotFoundError, PERMANENT_OS_ERRORS)

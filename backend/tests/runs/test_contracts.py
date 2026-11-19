@@ -1,6 +1,6 @@
 """Tests for pipeline orchestrator contracts."""
 
-from src.agents.contracts import (
+from src.runs.contracts import (
     PipelineGraphState,
     PhaseStatus,
     PipelineMode,

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.agents.contracts import (
+from src.runs.contracts import (
     ParseOutput,
     TranslationExtractionOutput,
     PipelineGraphState,
@@ -18,7 +18,7 @@ from src.agents.contracts import (
     PhaseStatusDetail,
     PhaseErrorDetail,
 )
-from src.agents.state_persistence import DirectStatePersistence, SessionBoundStatePersistence
+from src.runs.state_persistence import DirectStatePersistence, SessionBoundStatePersistence
 
 
 def _make_session_factory(session: AsyncSession):
@@ -245,7 +245,7 @@ async def test_recover_orphaned_runs_fails_stale_heartbeat(db_session: AsyncSess
 async def test_build_raw_metadata_extracts_title(tmp_path):
     """_build_raw_metadata reads title/authors/journal from Phase 2 metadata.json."""
     import json
-    from src.agents.state_persistence import _build_raw_metadata
+    from src.runs.state_persistence import _build_raw_metadata
 
     meta_path = tmp_path / "metadata.json"
     meta_path.write_text(
@@ -274,7 +274,7 @@ async def test_build_raw_metadata_extracts_title(tmp_path):
 @pytest.mark.asyncio
 async def test_build_raw_metadata_handles_missing_file(tmp_path):
     """Missing metadata file is handled gracefully — returns empty dict."""
-    from src.agents.state_persistence import _build_raw_metadata
+    from src.runs.state_persistence import _build_raw_metadata
 
     state = PipelineGraphState(
         processing_run_id=str(uuid.uuid4()),
@@ -294,7 +294,7 @@ async def test_build_raw_metadata_handles_missing_file(tmp_path):
 @pytest.mark.asyncio
 async def test_build_raw_metadata_no_phase_2_output():
     """When Phase 2 has not run, raw_metadata is empty (no crash)."""
-    from src.agents.state_persistence import _build_raw_metadata
+    from src.runs.state_persistence import _build_raw_metadata
 
     state = PipelineGraphState(
         processing_run_id=str(uuid.uuid4()),

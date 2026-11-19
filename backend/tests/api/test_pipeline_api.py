@@ -3,7 +3,7 @@
 import pytest
 from httpx import AsyncClient
 from unittest.mock import AsyncMock, MagicMock, patch
-from src.agents.contracts import (
+from src.runs.contracts import (
     PipelineGraphState,
     AcquisitionOutput,
     ParseOutput,

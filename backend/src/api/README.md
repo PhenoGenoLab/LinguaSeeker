@@ -130,6 +130,6 @@ async def handler(session: AsyncSession = Depends(get_db_session)):
 | slowapi | 限流 |
 | Starlette | ASGI 中间件 |
 | SQLAlchemy | 数据库会话 |
-| `src.agents.*` | 管线运行器、调度器、服务工厂 |
+| `src.runs.*` | 管线运行器、调度器、服务工厂 |
 | `src.dao.*` | 数据访问 |
 | `src.core.config` | 配置 |

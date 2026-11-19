@@ -4,7 +4,7 @@ import json
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from src.agents.contracts import (
+from src.runs.contracts import (
     PipelineGraphState,
     PhaseStatus,
     PipelineMode,

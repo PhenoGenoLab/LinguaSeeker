@@ -23,7 +23,7 @@ from pathlib import Path
 import aiofiles
 from loguru import logger
 
-from src.agents.contracts import (
+from src.runs.contracts import (
     PermanentPhaseError,
     PhaseStatus,
     PhaseStatusDetail,

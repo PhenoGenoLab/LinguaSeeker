@@ -13,13 +13,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from src.agents.contracts import (
+from src.runs.contracts import (
     PipelineGraphState,
     PipelineMode,
     PipelineStatus,
     SourceType,
 )
-from src.agents.dispatcher import SingleJobDispatcher
+from src.runs.dispatcher import SingleJobDispatcher
 from src.dao.postgresql.job_queue import JobQueueRepository, JobRow
 from src.dao.postgresql.models import PipelineJob, PipelineRunState, SourceDocument
 
@@ -315,7 +315,7 @@ async def test_dispatcher_cleans_up_temp_file(mock_runner, mock_job_queue):
     )
     dispatcher._stopping = False
 
-    with patch("src.agents.dispatcher.Path") as mock_path_cls:
+    with patch("src.runs.dispatcher.Path") as mock_path_cls:
         mock_path = MagicMock()
         mock_path_cls.return_value = mock_path
         loop_task = asyncio.create_task(dispatcher._loop())
@@ -361,7 +361,7 @@ async def test_dispatcher_keeps_temp_file_when_job_fails(mock_runner, mock_job_q
     )
     dispatcher._stopping = False
 
-    with patch("src.agents.dispatcher.Path") as mock_path_cls:
+    with patch("src.runs.dispatcher.Path") as mock_path_cls:
         mock_path = MagicMock()
         mock_path_cls.return_value = mock_path
         loop_task = asyncio.create_task(dispatcher._loop())

@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.agents.phase_5_factory import Phase5ServiceFactory
+from src.runs.phase_5_factory import Phase5ServiceFactory
 from src.api.wiring import get_session_factory
 from src.dao.neo4j.repository import Neo4jRepository
 

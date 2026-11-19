@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.agents.contracts import (
+from src.runs.contracts import (
     InvalidStateTransitionError,
     PhaseStatus,
     PhaseStatusDetail,
@@ -24,7 +24,7 @@ from src.agents.contracts import (
     validate_phase_status_transition,
     validate_pipeline_status_transition,
 )
-from src.agents.state_persistence import (
+from src.runs.state_persistence import (
     DirectStatePersistence,
     SessionBoundStatePersistence,
 )

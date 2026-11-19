@@ -19,7 +19,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.agents.contracts import (
+from src.runs.contracts import (
     PipelineMode,
     PhaseStatus,
     PipelineGraphState,

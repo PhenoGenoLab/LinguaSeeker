@@ -3,8 +3,8 @@
 import pytest
 import asyncio
 from unittest.mock import MagicMock
-from src.agents.concurrency import PipelineSemaphore, RetryablePhaseExecutor
-from src.agents.contracts import RetryablePhaseError, PermanentPhaseError, PhaseError
+from src.runs.concurrency import PipelineSemaphore, RetryablePhaseExecutor
+from src.runs.contracts import RetryablePhaseError, PermanentPhaseError, PhaseError
 
 
 @pytest.mark.asyncio

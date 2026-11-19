@@ -15,19 +15,19 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.agents.contracts import (
+from src.runs.contracts import (
     PipelineGraphState,
     PipelineMode,
     PipelineStatus,
     SourceType,
 )
-from src.agents.content_hash import (
+from src.runs.content_hash import (
     compute_content_hash,
     compute_hash_from_bytes,
     compute_hash_from_file,
     compute_hash_from_text,
 )
-from src.agents.processing_cache import (
+from src.runs.processing_cache import (
     CacheLookupResult,
     DocumentProcessingCacheService,
 )
@@ -464,7 +464,7 @@ class TestRunnerCacheIntegration:
     @pytest.mark.asyncio
     async def test_check_processing_cache_returns_none_when_no_cache(self, sample_state):
         """Runner with no processing_cache returns None."""
-        from src.agents.runner import PipelineRunner
+        from src.runs.runner import PipelineRunner
 
         runner = PipelineRunner(
             orchestrator=MagicMock(),
@@ -478,7 +478,7 @@ class TestRunnerCacheIntegration:
     @pytest.mark.asyncio
     async def test_check_processing_cache_returns_none_for_empty_hash(self, sample_state):
         """Runner returns None for empty content hash."""
-        from src.agents.runner import PipelineRunner
+        from src.runs.runner import PipelineRunner
 
         mock_cache = MagicMock()
         mock_cache.get_cached_result = AsyncMock()
@@ -496,7 +496,7 @@ class TestRunnerCacheIntegration:
     @pytest.mark.asyncio
     async def test_check_processing_cache_returns_none_when_disabled(self, sample_state):
         """Runner does not query processing cache when the switch is disabled."""
-        from src.agents.runner import PipelineRunner
+        from src.runs.runner import PipelineRunner
 
         mock_cache = MagicMock()
         mock_cache.get_cached_result = AsyncMock()
@@ -515,7 +515,7 @@ class TestRunnerCacheIntegration:
     @pytest.mark.asyncio
     async def test_check_processing_cache_returns_state_on_hit(self, sample_state):
         """Runner returns cached state on hit."""
-        from src.agents.runner import PipelineRunner
+        from src.runs.runner import PipelineRunner
 
         mock_cache = MagicMock()
         mock_cache.get_cached_result = AsyncMock(return_value=CacheLookupResult(state=sample_state, source="l1_redis"))

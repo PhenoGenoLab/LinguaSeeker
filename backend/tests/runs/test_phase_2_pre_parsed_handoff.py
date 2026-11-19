@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.agents.contracts import PhaseStatus, PipelineGraphState, PipelineMode, SourceType
+from src.runs.contracts import PhaseStatus, PipelineGraphState, PipelineMode, SourceType
 from src.pipeline.graph.phases.phase_1 import Phase1Adapter
 from src.pipeline.graph.phases.phase_2 import Phase2Adapter
 

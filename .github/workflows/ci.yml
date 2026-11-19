@@ -98,7 +98,7 @@ jobs:
           src/pipeline/skills/fact_chain
           src/pipeline/skills/runtime
           src/pipeline/graph/phases/phase_3.py
-          src/agents/contracts.py
+          src/runs/contracts.py
 
   backend-test:
     name: backend unit tests
@@ -139,7 +139,7 @@ jobs:
         run: >-
           .venv/bin/python -m pytest
           tests/core/source_fact_chain
-          tests/agents
+          tests/runs
           tests/pipeline
           tests/api/test_wiring_config.py
           tests/core/agents/review/test_search_service.py

@@ -38,7 +38,7 @@ from src.core.agents.acquisition.contracts import (
     DocumentAcquisitionRequest,
 )
 
-from src.agents.contracts import (
+from src.runs.contracts import (
     PhaseStatus,
     PhaseStatusDetail,
     PipelineGraphState,
@@ -46,7 +46,7 @@ from src.agents.contracts import (
     PipelineStatus,
     SourceType,
 )
-from src.agents.content_hash import normalize_identifier
+from src.runs.content_hash import normalize_identifier
 from src.dao.postgresql.job_queue import JobQueueRepository
 
 router = APIRouter()

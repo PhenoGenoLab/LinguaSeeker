@@ -14,6 +14,7 @@ BACKEND_ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = BACKEND_ROOT / "src"
 PIPELINE_ROOT = SRC_ROOT / "pipeline"
 CORE_ROOT = SRC_ROOT / "core"
+RUNS_ROOT = SRC_ROOT / "runs"
 
 # Modules replaced by the pipeline directory migration.  Their transitional
 # re-export shims were removed, so importing an old path is a hard failure; the
@@ -45,6 +46,8 @@ REMOVED_LEGACY_MODULES = (
     # Third move: phase-numbered packaging replaced by agent packages.
     "src.core.phases",
     "src.core.agents.ingest_and_digitize_data",
+    # Fourth move: src/agents was renamed to src/runs (it never held agents).
+    "src.agents",
 )
 
 
@@ -183,6 +186,14 @@ def test_mcp_does_not_import_pipeline_or_tools() -> None:
         CORE_ROOT / "adapters" / "mcp",
         ("src.pipeline", "src.core.shared.tools"),
         "core/adapters/mcp must not import pipeline or tools (external adapters stay isolated)",
+    )
+
+
+def test_runs_do_not_import_pipeline() -> None:
+    _assert_no_imports(
+        RUNS_ROOT,
+        ("src.pipeline",),
+        "src/runs owns run lifecycle and state; the graph calls into it, never the reverse",
     )
 
 
