@@ -87,3 +87,35 @@
 ## 7. 命名决定（已由用户确认）
 
 `src/runs`；测试目录镜像为 `tests/runs`。
+
+## 8. 修订记录（批准后）
+
+**r2 — 2026-11-19（AC3 与负向约束冲突，实现前发现）**：AC3 要求字符串 `"src.agents…"` 计数为 0，
+但 `src.agents.orchestrator` 与 `src.agents.phase_1..4_adapter` 是**早已删除的模块名**，
+它们作为"禁止再引入"的黑名单出现在 `tests/pipeline/test_import_boundaries.py` 的
+`REMOVED_LEGACY_MODULES` 与 `scripts/pipeline_migration_inventory.py` 的历史表里（共 10 处）。
+把它们改成 `src.runs.*` 会让黑名单失去意义。修订 AC3 为两条：
+- AC3a：`"src.agents.{concurrency,dispatcher,phase_5_factory,processing_cache,runner,state_persistence}.*"`
+  形式的功能模块字面量计数为 **0**（这些必须随包改名）；
+- AC3b：`"src.agents.{orchestrator,phase_[1-4]_adapter}"` 形式的黑名单字面量计数保持 **10**（不得减少、不得改名）。
+其余场景不变。
+
+**r3 — 2026-11-19（AC6 会把历史记录改成假话）**：`docs/active/` 里既有"现行文档"也有带日期的
+**历史记录**。例如 `2026-11-17-pipeline-stage-0-1-migration.md` 写 `src/agents/phase_1_adapter.py`
+是当时正确的路径，改成 `src/runs/...` 会让历史记录撒谎。修订 AC6 为两档：
+- AC6a（必须为 0）：**现行文档** `AGENTS.md`、`backend/AGENTS.md`、`docs/README.md`、
+  `docs/active/{APP_FLOW,BACKEND_STRUCTURE,IMPLEMENTATION_PLAN,TECH_STACK}.md`、
+  `backend/src/**/README.md`；
+- AC6b（允许保留旧路径）：带日期的历史记录（`docs/active/2026-*`）、本 SPEC、EVIDENCE、
+  以及 `docs/archive|planned|codereview`。
+判定改为按文件清单检查，不再对整个 `docs/active` 目录一刀切。
+
+**r4 — 2026-11-19（AC6a 文件清单要收窄，否则要制造新的假引用）**：`docs/active/` 的
+`IMPLEMENTATION_PLAN.md`、`TECH_STACK.md`、`BACKEND_STRUCTURE.md`、`APP_FLOW.md` 里出现的
+`src/agents/supervisor.py`、`src/agents/extraction/node.py`、`src/agents/state.py`、
+`src/agents/parsing/translation_tool.py` 等路径**在 `src/agents/` 里从未存在过**（它们来自更早
+的规划稿）。把它们机械改成 `src/runs/...` 只会用新的假路径替换旧的假路径。修订：
+- AC6a（必须 0 处）仅覆盖**导航性文档**：`AGENTS.md`、`backend/AGENTS.md`、`docs/README.md`、
+  `backend/src/README.md`、`backend/src/api/README.md`、`backend/src/api/v1/README.md`；
+- AC6b（允许保留）：`docs/active/` 下其余规划记录、带日期的历史记录、本 SPEC、EVIDENCE、
+  `docs/archive|planned|codereview`。
