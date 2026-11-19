@@ -1,9 +1,17 @@
 """Inventory the pipeline migration scope and its inbound imports.
 
-The migration plan (``docs/planned/2026-11-17-pipeline-agentscope-reme-migration.md``)
-requires a fresh inventory at the start and end of every stage.  This script
-walks the backend tree with the standard library only and reports, per target
-layer:
+Status: historical (2026-11-19).  The migration this script measures was
+superseded: ``tools`` / ``mcp`` / ``contracts`` now live under ``src/core``
+(``shared/tools``, ``adapters/mcp``, ``shared/contracts``) and the core
+packages are named after agents rather than phases.  The ``LAYER_SPECS`` table
+below still describes the 2026-11-17 plan on purpose, so the numbers it prints
+are a record of that plan, not of the current tree.  Current layout:
+``src/core/README.md``, enforced by ``tests/core/test_layer_boundaries.py``.
+
+The original purpose: the migration plan
+(``docs/planned/2026-11-17-pipeline-agentscope-reme-migration.md``) required a
+fresh inventory at the start and end of every stage.  This script walks the
+backend tree with the standard library only and reports, per target layer:
 
 * legacy-path files/lines and how many of them are transitional shims;
 * target-path files/lines (empty until that layer is migrated);
