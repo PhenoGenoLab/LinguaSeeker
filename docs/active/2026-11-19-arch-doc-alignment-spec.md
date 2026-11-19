@@ -91,3 +91,31 @@ docstring 内出现 `Status: historical` 与 `2026-11-19`，并说明现行布�
 - 本地无法运行 `ruff` 与全量 pytest：EVIDENCE 中这些层以 CI run 结果为准，并注明“本地不可用”。
 - 本次改动为文档/注释，mutation testing 无适用目标（没有可变异的行为分支）——按“记录跳过原因”处理。
 - AC3 只保证三处**已知**旧主张被标记；文档其余叙述性文字仍描述旧计划，属有意保留的历史内容。
+
+## 7. 修订记录（批准后）
+
+**r2 — 2026-11-19（环境变化，非需求变化）**：批准后、实现前，用户把工作树切到分支
+`fix/parsing-p0`（其 base commit 与 `dev` 相同：`1762c58a7`）。SPEC §0 中"Source state"
+的 commit 未变，但**落地分支从 `dev` 变为 `fix/parsing-p0`**；SPEC 文件本身（提交
+`6f334f844`）也落在该分支。按"仓库异动属用户"处理，不改需求、不改验收标准，仅在此
+显式记录，避免后续把分支差异误当成 spec 漂移。
+
+**r3 — 2026-11-19（SPEC 缺陷，RED 阶段发现）**：AC2 写的正则是 `^\*\*Status:\*\*`，但文档中
+该行实际带 Markdown 引用前缀（`> **Status:** planned`），该正则永远匹配 0 行 —— 修好后
+"0 处 planned" 与"1 处 superseded"会同时成立或同时不成立，等于一个恒真的空断言。修订：
+AC2 改为 `grep -c '^> \*\*Status:\*\* superseded' == 1` 且 `grep -c 'Status:\*\* planned' == 0`。
+其余场景不变。
+
+**r4 — 2026-11-19（AC4 无法在"不改写历史"前提下满足）**：旧布局串除了"适用对象"行，还出现在
+§0.4 工作量估算表的第 64 行（`目录迁移与 import 改写（r2 新增：src/pipeline/{graph,skills,tools,mcp}）`）。
+那是历史工时数字，改写它会篡改记录，与负向约束"保留历史"冲突。修订 AC4 为：
+① 适用对象行必须使用现行布局，计数 1；
+② 旧布局串的所有出现都必须带 `（原计划）` 标注——验证方式为
+`grep -c '<旧串>'` 与 `grep -c '<旧串>（原计划）'` 相等且为 1。
+
+**r5 — 2026-11-19（AC4 校验命令写得不精确）**：文档里旧串带 Markdown 代码跨度，
+实际文本是 `` `src/pipeline/{graph,skills,tools,mcp}`（原计划） ``，因此"`<旧串>（原计划）`"
+直接相邻匹配不到（中间有一个反引号）。AC4 第二条的验证命令改为：
+`grep -c 'src/pipeline/{graph,skills,tools,mcp}`（原计划）' <doc>` == `1`，
+并与 `grep -c 'src/pipeline/{graph,skills,tools,mcp}' <doc>` 相等。判定意图不变：所有旧串
+出现都必须标注"原计划"。
