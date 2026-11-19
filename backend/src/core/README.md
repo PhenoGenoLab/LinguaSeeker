@@ -20,22 +20,26 @@ core/
 │   └── contracts/skill_io.py    #   跨层 DTO（SkillRequest/SkillResult）
 ├── adapters/                    # L3 外部协议适配
 │   └── mcp/                     #   ReMe 等（占位，只依赖 shared.contracts）
-└── phases/                      # L4 阶段业务实现（同级互引）
-    ├── ingest_and_digitize_data/              # 阶段 1/2 采集与解析
-    ├── cross_lingual_translation/             # 翻译基础设施
-    ├── evidence_extraction/                   # 证据抽取（含字段目录、离线基准）
-    ├── standardize_entities_and_align_knowledge/  # 阶段 4 标准化
-    ├── visualize_evidence_with_expert_in_loop/    # 阶段 5 审核
-    └── graph_rag/                             # 图谱检索
+└── agents/                      # L4 agent 实现（同级互引）
+    ├── acquisition/             #   文献采集（本地上传 / 在线获取）
+    ├── parsing/                 #   文档解析（MinerU remote / local）
+    ├── translation/             #   翻译（术语映射、句级对齐、校验）
+    ├── extraction/              #   证据抽取（字段目录、双轨抽取、离线基准）
+    ├── standardization/         #   实体标准化与知识对齐
+    ├── review/                  #   证据可视化、专家反馈、问答
+    └── graph_retrieval/         #   图谱构建与检索问答
 ```
 
-> 依赖方向：`foundation ← shared ← phases`，`adapters` 只依赖 `shared.contracts`；
-> `src.pipeline`（LangGraph 编排 + AgentScope agents）单向依赖 `src.core`。
+> 本目录**不表达阶段编号**：阶段由 `src/pipeline/graph/` 的 LangGraph 拓扑编排，
+> core 只回答"这个 agent 能做什么"。
+>
+> 依赖方向：`foundation ← shared ← agents`，`adapters` 只依赖 `shared.contracts`；
+> `src.pipeline`（LangGraph 编排 + AgentScope skills）单向依赖 `src.core`。
 > 反向依赖、以及跨层回指由 `tests/core/test_layer_boundaries.py` 与
 > `tests/pipeline/test_import_boundaries.py` 断言。
 >
-> 已知的一处有意放宽：`shared/tools/fact_chain` 只读引用 `phases/evidence_extraction`
-> 的字段目录与分组规则（phase 契约），因此 `shared → phases` 的方向被允许但仅限该处。
+> 已知的一处有意放宽：`shared/tools/fact_chain` 只读引用 `agents/extraction`
+> 的字段目录与分组规则，因此 `shared → agents` 的方向被允许但仅限该处。
 
 ## 核心组件
 
@@ -49,21 +53,24 @@ core/
 - **`get_config()`**：`@lru_cache` 单例访问器，返回全局 `Settings` 实例
 - **`load_backend_config_into_env()`**：模块导入时自动从 YAML 加载配置到环境变量
 
-### 业务阶段子模块
+### Agent 与分层子模块
 
 | 子模块 | 说明 |
 |--------|------|
-| `ingest_and_digitize_data/` | 阶段 1/2 — 文献采集（本地上传/在线获取）与文档解析（MinerU） |
+| `foundation/auth/` | 认证契约与口令哈希 |
 | `shared/tools/` | 确定性能力（含 `tools/fact_chain/` 契约、校验、窗口、投影）；无 agent 决策 |
-| `adapters/mcp/` | 外部服务协议适配（ReMe 等），占位待契约落地 |
 | `shared/contracts/` | 跨层 DTO，如 `contracts/skill_io.py` 的 `SkillRequest`/`SkillResult` |
-| `cross_lingual_translation/` | 翻译基础设施（术语映射、句级对齐）；Phase 3 主流程不再整篇翻译 |
-| `evidence_extraction/` | ACMG 字段目录、证据契约、分组规则；供事实链投影与离线基准使用 |
-| `standardize_entities_and_align_knowledge/` | 阶段 4 — 实体标准化与知识对齐 |
-| `visualize_evidence_with_expert_in_loop/` | 阶段 5 — 证据可视化与专家审核 |
+| `adapters/mcp/` | 外部服务协议适配（ReMe 等），占位待契约落地 |
+| `agents/acquisition/` | 采集 agent：本地上传、在线获取、SDK 适配 |
+| `agents/parsing/` | 解析 agent：MinerU remote/local、产物落盘 |
+| `agents/translation/` | 翻译 agent：术语映射、句级对齐、语言校验 |
+| `agents/extraction/` | 抽取 agent：ACMG 字段目录、双轨证据、分组规则 |
+| `agents/standardization/` | 标准化 agent：精确/语义匹配、术语持久化、ACMG 投影 |
+| `agents/review/` | 审核 agent：证据可视化、专家反馈、问答 |
+| `agents/graph_retrieval/` | 图谱 agent：证据图构建与检索问答 |
 
-> 阶段 3（原文事实链）的编排与服务门面在 `src/pipeline/skills/fact_chain/`，确定性部分在
-> `src/core/tools/fact_chain/`；原 `src/core/source_fact_chain/` 已废弃删除。
+> 原文事实链的编排与服务门面在 `src/pipeline/skills/fact_chain/`，确定性部分在
+> `src/core/shared/tools/fact_chain/`；原 `src/core/source_fact_chain/` 已废弃删除。
 
 ## 数据流
 

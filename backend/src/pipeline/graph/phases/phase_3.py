@@ -33,7 +33,7 @@ from src.agents.contracts import (
     build_retryable_errors,
     classify_phase_error,
 )
-from src.core.phases.cross_lingual_translation.translate.language_detector import detect_language
+from src.core.agents.translation.translate.language_detector import detect_language
 from src.pipeline.skills.fact_chain.service import SourceFactChainService
 from src.core.shared.tools.fact_chain.contracts import ChainRun, sha256_text
 from src.core.shared.tools.fact_chain.projection import project_dual_result

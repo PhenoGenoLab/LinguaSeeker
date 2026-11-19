@@ -8,18 +8,18 @@ from unittest.mock import MagicMock, patch
 from src.core.config import ParseDocumentConfig
 
 # Source module paths for classes imported inside wire_dependencies()
-_REMOTE_PARSER_MOD = "src.core.phases.ingest_and_digitize_data.parse_document.remote.parser.MinerURemoteParser"
-_LOCAL_PARSER_MOD = "src.core.phases.ingest_and_digitize_data.parse_document.local.parser.MinerULocalParser"
+_REMOTE_PARSER_MOD = "src.core.agents.parsing.remote.parser.MinerURemoteParser"
+_LOCAL_PARSER_MOD = "src.core.agents.parsing.local.parser.MinerULocalParser"
 
 
 def _patch_wire_deps(stack: ExitStack):
     """Patch all dependencies wired inside wire_dependencies()."""
     for mod_path in [
-        "src.core.phases.ingest_and_digitize_data.document_acquisition.service.DocumentAcquisitionService",
-        "src.core.phases.ingest_and_digitize_data.parse_document.orchestrator.DocumentParseOrchestrator",
-        "src.core.phases.ingest_and_digitize_data.parse_document.service.ParseDocumentService",
+        "src.core.agents.acquisition.service.DocumentAcquisitionService",
+        "src.core.agents.parsing.orchestrator.DocumentParseOrchestrator",
+        "src.core.agents.parsing.service.ParseDocumentService",
         "src.pipeline.skills.fact_chain.service.SourceFactChainService",
-        "src.core.phases.standardize_entities_and_align_knowledge.api.EntityStandardizationService",
+        "src.core.agents.standardization.api.EntityStandardizationService",
         "src.pipeline.graph.topology.PipelineOrchestrator",
         "src.agents.concurrency.PipelineSemaphore",
         "src.agents.concurrency.RetryablePhaseExecutor",
@@ -140,12 +140,12 @@ def test_wire_dependencies_initializes_session_factory_before_use():
 
     with ExitStack() as stack:
         for mod_path in [
-            "src.core.phases.ingest_and_digitize_data.document_acquisition.service.DocumentAcquisitionService",
-            "src.core.phases.ingest_and_digitize_data.parse_document.orchestrator.DocumentParseOrchestrator",
-            "src.core.phases.ingest_and_digitize_data.parse_document.service.ParseDocumentService",
-            "src.core.phases.cross_lingual_translation.api.TranslationService",
-            "src.core.phases.evidence_extraction.api.EvidenceExtractionService",
-            "src.core.phases.standardize_entities_and_align_knowledge.api.EntityStandardizationService",
+            "src.core.agents.acquisition.service.DocumentAcquisitionService",
+            "src.core.agents.parsing.orchestrator.DocumentParseOrchestrator",
+            "src.core.agents.parsing.service.ParseDocumentService",
+            "src.core.agents.translation.api.TranslationService",
+            "src.core.agents.extraction.api.EvidenceExtractionService",
+            "src.core.agents.standardization.api.EntityStandardizationService",
             "src.pipeline.graph.topology.PipelineOrchestrator",
             "src.agents.concurrency.PipelineSemaphore",
             "src.agents.concurrency.RetryablePhaseExecutor",

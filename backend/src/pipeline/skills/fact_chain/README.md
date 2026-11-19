@@ -145,5 +145,5 @@ CI 的 `backend-test` 作业通过 `[dependency-groups] ci` 安装最小依赖�
 | `pydantic` | 强类型契约 |
 | `loguru` | 运行日志 |
 | `langchain-core` / `langchain-openai`（默认 provider） | 模型调用 |
-| `src.core.phases.evidence_extraction.*` | Phase 4 证据契约、字段目录、分组规则 |
+| `src.core.agents.extraction.*` | Phase 4 证据契约、字段目录、分组规则 |
 | `src.utils.llm_adapter` | 多 key LLM 客户端池 |

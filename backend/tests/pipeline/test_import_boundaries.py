@@ -42,6 +42,9 @@ REMOVED_LEGACY_MODULES = (
     "src.core.standardize_entities_and_align_knowledge",
     "src.core.visualize_evidence_with_expert_in_loop",
     "src.core.graph_rag",
+    # Third move: phase-numbered packaging replaced by agent packages.
+    "src.core.phases",
+    "src.core.agents.ingest_and_digitize_data",
 )
 
 

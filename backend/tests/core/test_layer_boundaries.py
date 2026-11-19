@@ -1,8 +1,9 @@
 """Layer-boundary checks for ``src.core``.
 
-``src.core`` is split into four strata:
+``src.core`` is split into four strata.  Phase numbering is *not* a core concept —
+the phases live in ``src.pipeline.graph``; core holds the agents each phase calls.
 
-    foundation  ← shared ← phases
+    foundation  ← shared ← agents
                     ↑
                  adapters
 
@@ -23,7 +24,7 @@ CORE_ROOT = SRC_ROOT / "core"
 FOUNDATION = CORE_ROOT / "foundation"
 SHARED = CORE_ROOT / "shared"
 ADAPTERS = CORE_ROOT / "adapters"
-PHASES = CORE_ROOT / "phases"
+AGENTS = CORE_ROOT / "agents"
 
 
 def _iter_python_files(root: Path) -> list[Path]:
@@ -35,7 +36,7 @@ def _iter_python_files(root: Path) -> list[Path]:
 def _imported_modules(path: Path) -> set[str]:
     """Return absolute ``src.*`` modules imported by ``path``, relative ones resolved."""
     parts = path.relative_to(SRC_ROOT).with_suffix("").parts
-    package = list(parts[:-1]) if parts[-1] != "__init__" else list(parts[:-1])
+    package = list(parts[:-1])
     modules: set[str] = set()
     for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
         if isinstance(node, ast.Import):
@@ -59,25 +60,23 @@ def _violations(root: Path, prefixes: tuple[str, ...]) -> list[str]:
 
 
 def test_foundation_depends_on_nothing_but_config() -> None:
-    violations = _violations(FOUNDATION, ("src.core.shared", "src.core.adapters", "src.core.phases", "src.pipeline"))
+    violations = _violations(FOUNDATION, ("src.core.shared", "src.core.adapters", "src.core.agents", "src.pipeline"))
     assert not violations, "foundation/ must stay at the bottom of the core layering:\n" + "\n".join(violations)
 
 
 def test_shared_does_not_reach_downstream_layers() -> None:
     violations = _violations(SHARED, ("src.core.adapters", "src.pipeline"))
-    assert not violations, "shared/ may use foundation and read-only phase contracts:\n" + "\n".join(violations)
+    assert not violations, "shared/ may use foundation and read-only agent contracts:\n" + "\n".join(violations)
 
 
 def test_adapters_stay_isolated() -> None:
-    violations = _violations(ADAPTERS, ("src.core.shared.tools", "src.core.phases", "src.pipeline"))
-    assert not violations, "adapters/ must not depend on tools, phases or the pipeline:\n" + "\n".join(violations)
+    violations = _violations(ADAPTERS, ("src.core.shared.tools", "src.core.agents", "src.pipeline"))
+    assert not violations, "adapters/ must not depend on tools, agents or the pipeline:\n" + "\n".join(violations)
 
 
-def test_phases_do_not_import_pipeline_or_shared_tools() -> None:
-    violations = _violations(PHASES, ("src.pipeline", "src.core.shared"))
-    assert not violations, "phases/ own their business logic; they must not call the pipeline:\n" + "\n".join(
-        violations
-    )
+def test_agents_do_not_import_pipeline_or_shared_tools() -> None:
+    violations = _violations(AGENTS, ("src.pipeline", "src.core.shared"))
+    assert not violations, "agents/ own their business logic; they must not call the pipeline:\n" + "\n".join(violations)
 
 
 def test_core_root_modules_stay_dependency_free() -> None:
@@ -87,6 +86,6 @@ def test_core_root_modules_stay_dependency_free() -> None:
         f"{path.name} imports {module}"
         for path in root_modules
         for module in sorted(_imported_modules(path))
-        if module.startswith(("src.core.shared", "src.core.adapters", "src.core.phases", "src.pipeline"))
+        if module.startswith(("src.core.shared", "src.core.adapters", "src.core.agents", "src.pipeline"))
     ]
     assert not found, "core root modules must not depend on a stratum:\n" + "\n".join(found)
