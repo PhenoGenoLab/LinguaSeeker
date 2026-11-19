@@ -180,11 +180,11 @@ SkillError(permanent)  -> PERMANENT
 
 #### P1-5 CI 不跑 parsing/acquisition 测试
 
-**证据**：CI 的确定性套件只跑 `tests/core/source_fact_chain`、`tests/agents`、`tests/pipeline`、`test_wiring_config.py` 和 review search（`.github/workflows/ci.yml:138-153`）；`tests/core/agents/parsing`（约 2,969 行）和 acquisition 测试不在其中。mypy 也只覆盖 fact_chain/phase_3（`ci.yml:90-101`）。
+**证据**：CI 的确定性套件只跑 `tests/core/source_fact_chain`、`tests/agents`、`tests/pipeline`、`test_wiring_config.py` 和 review search（`.github/workflows/ci.yml:138-153`）。`tests/agents` 里有 phase adapter / phase2 retry 测试，但 `tests/core/agents/parsing`（16 个测试文件，约 2,969 行）和 acquisition service 测试不在其中。mypy 覆盖 fact_chain、skills/runtime、phase_3、agents/contracts（`ci.yml:90-101`）。
 
-**影响**：Phase 1/2 的解析回归不会被 PR 门禁发现；本次评审中 Phase 2 的失败语义问题就没有测试兜底。
+**影响**：phase adapter 的异常分类有门禁，但 parser 内部（poll/zip/content_list、page 构建）和 acquisition 文件校验的回归不会被 PR 发现；本次评审中 Phase 2 的失败语义问题就没有直接测试兜底。
 
-**最小改法**：新增一个 parsing 单元测试 job（mock `rust_io.net`，不依赖真实 MinerU），至少覆盖 remote parser 的 poll/zip/content_list、local parser 的 page 构建、Phase 2 adapter 的异常分类。**成本**：1 人日。
+**最小改法**：新增一个 parsing/acquisition 单元测试 job（mock `rust_io.net`，不依赖真实 MinerU），覆盖 remote parser 的 poll/zip/content_list、local parser 的 page 构建、acquisition 的扩展名/PDF magic/大小校验；保留现有 phase adapter 测试。**成本**：1 人日。
 
 #### P1-6 表格保真不足，且表格来源在 Phase 3 丢失
 
