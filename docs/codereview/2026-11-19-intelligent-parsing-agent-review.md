@@ -14,7 +14,7 @@
 
 但“智能”部分目前有三类会直接影响证据正确性的问题：
 
-1. **部分窗口抽取失败会被当成成功**：运行仍标记 COMPLETED，失败窗口不重试，且结果会被持久化复用。
+1. **部分窗口抽取失败会被当成成功**：运行仍标记 COMPLETED，失败窗口不会触发阶段重试，且结果会被持久化复用。
 2. **AgentScope 的 `SkillError` 被分类为永久失败**：新运行时的瞬时故障没有重试，反而比 legacy 更脆弱。
 3. **没有章节门控**：参考文献、致谢、补充材料等全文进入抽取；核验只校验“窗口内可定位”，会把引用文献中的描述当成该病例的证据。
 
@@ -147,11 +147,11 @@ SkillError(permanent)  -> PERMANENT
 
 #### P1-1 MinerU API 错误全部按永久失败处理
 
-**证据**：所有 transport/API 错误都被包成 `MinerUAPIError`（`remote/parser.py:185-186,220-221,309-310,334-335`）；Phase 2 用 `classify_phase_error` 分类（`phase_2.py:112-113`），但可重试元组不含 `MinerUAPIError`（`contracts.py:270-301`），最终是 `PermanentPhaseError`。
+**证据**：主要 transport/API 错误被包成 `MinerUAPIError`（`remote/parser.py:185-186,220-221,309-310,334-335`）；Phase 2 用 `classify_phase_error` 分类（`phase_2.py:112-113`），但可重试元组不含 `MinerUAPIError`（`contracts.py:270-301`），最终是 `PermanentPhaseError`。
 
 **影响**：MinerU 的 429/5xx/短暂网络错误会直接让 Phase 2 失败，外层 2 次重试不会发生。
 
-**最小改法**：区分 HTTP 状态/错误类型；4xx（参数、页数限制）永久，429/5xx/transport 可重试；或让 `MinerUAPIError` 带 `retryable` 标志。补 429、500 两个用例。**成本**：0.5 人日。
+**最小改法**：`MinerUAPIError` 已有 `status_code` 字段但未用于分类；按状态码区分 4xx（参数、页数限制）永久、429/5xx/transport 可重试，或给异常加 `retryable` 标志。补 429、500 两个用例。**成本**：0.5 人日。
 
 #### P1-2 重试没有退避/限流
 
@@ -215,7 +215,7 @@ rowspan 表：第二行只剩 “ovarian cancer | ”，基因列为空
 
 #### P1-8 节点级进度没有暴露到 API
 
-**证据**：API 已有 `PhaseNodeResponse`/`nodes` 字段（`api/v1/contracts.py:97-104`），但 Phase 3 summary 只有 windows/facts/provider_calls（`phase_3.py:218-228`），没有把 `ChainRun.stage_progress` 映射成 nodes；事件没有时间戳，也没有 trace id。
+**证据**：API 已有 `PhaseNodeResponse`/`nodes` 字段（`api/v1/contracts.py:97-104`），但 Phase 3 summary 只有计数类字段（windows/facts/provider_calls/source_language，`phase_3.py:218-228`），没有把 `ChainRun.stage_progress` 映射成 nodes；事件没有时间戳，也没有 trace id。
 
 **影响**：出问题时只能翻 `chain_run.json` 或 loguru 日志，无法从状态接口看出“第几个窗口、哪个 stage 失败”。
 
