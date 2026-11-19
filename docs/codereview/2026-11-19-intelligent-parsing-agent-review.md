@@ -18,7 +18,7 @@
 2. **AgentScope 的 `SkillError` 被分类为永久失败**：新运行时的瞬时故障没有重试，反而比 legacy 更脆弱。
 3. **没有章节门控**：参考文献、致谢、补充材料等全文进入抽取；核验只校验“窗口内可定位”，会把引用文献中的描述当成该病例的证据。
 
-另外，成本/超时/CI 覆盖也存在明显缺口。建议先修 3 个 P0（约 3–4 人日），再补 P1 的失败语义与可观测性，最后再评估 ReMe 接入。
+另外，成本/超时/CI 覆盖也存在明显缺口；节点进度和 ReMe 各有一版实现停在未合并分支。建议先修 3 个 P0（约 3–4 人日），再补 P1 的失败语义与可观测性，最后评审并合入 ReMe 分支。
 
 ---
 
@@ -52,7 +52,8 @@ POST /pipeline
 - **默认运行时是 legacy**：`PipelineConfig.agent_runtime = "legacy"`（`backend/src/core/config.py:221`），`SourceFactChainService._build_provider` 只在 `shadow`/`agentscope` 时加载 AgentScope（`backend/src/pipeline/skills/fact_chain/service.py:47-57`）。因此线上默认并没有跑 AgentScope。
 - **AgentScope 只覆盖 extract**，verify/translate 仍是 legacy（`service.py:47-57`、`extract.py:196-235`）。这是有意的“有界子智能体”，不是端到端自主解析。
 - Phase 2 的产品路径是 **MinerU remote batch**（`phase_2.py:84` → `orchestrator.py:120-132` → `remote/parser.py:242-295`），不是 `DocumentParseOrchestrator.parse` 的 remote-first/local fallback（`orchestrator.py:36-118`）。
-- LangGraph 只有 4 个 phase 节点，没有窗口子图、`Send` fan-out、checkpointer 或节点级进度（`topology.py:245-285`；阶段 2 记录 §7 也确认未做）。
+- LangGraph 只有 4 个 phase 节点，没有窗口子图、`Send` fan-out 或 checkpointer（`topology.py:245-285`；阶段 2 记录 §7 也确认未做）。
+- **部分“已完成”能力仍在未合并分支**：phase 级节点进度在 `origin/impl-stage-4b-terminology` / `origin/impl-stage-4a-reme-memory` 的 `src/pipeline/graph/progress.py`；ReMe HTTP client 在 `origin/impl-stage-4a-reme-memory`。两者都不在 `dev`，但 `progress.txt`（2026-11-18）已记为交付。评审和排期必须以 `dev` 为准，或先把分支 rebase/合入。
 
 ### 2.1 已休眠 / 未接线的旧实现
 
@@ -61,7 +62,7 @@ POST /pipeline
 | `core/agents/extraction`（旧 LLM 证据抽取，约 12.2k 行） | 不在产品图里；仅 `scripts/e2e_extract_evidence.py` 调用。contracts/catalog/grouping 仍被 Phase 3/4 复用 | `scripts/e2e_extract_evidence.py:28,216-220`；`phase_4.py:27` |
 | `core/agents/translation`（旧整篇翻译，约 5.3k 行） | Phase 3 只用 `detect_language`；`translated.json` 为空是切流设计 | `phase_3.py:36,180-194` |
 | `DocumentParseOrchestrator.parse` + `MinerULocalParser` | 产品 Phase 2 不走；local parser 仅 chat 上传和 fallback 用 | `phase_2.py:84`；`api/v1/chat.py:249` |
-| `core/adapters/mcp`（ReMe 适配层） | 只有 `__init__.py` 占位，没有 client / 协议 / 超时语义 | `backend/src/core/adapters/mcp/__init__.py` |
+| `core/adapters/mcp`（ReMe 适配层） | `dev` 上只有 `__init__.py` 占位；完整 HTTP client / 契约在未合并的 `origin/impl-stage-4a-reme-memory`（默认关闭、`NullMemoryClient`、0.8s 超时、失败降级为空） | `backend/src/core/adapters/mcp/__init__.py`；`git show origin/impl-stage-4a-reme-memory:backend/src/pipeline/mcp/reme/client.py` |
 | `docs/` 中的 `src/pipeline/tools/fact_chain`、`core/source_fact_chain` 路径 | 已被 `core/shared/tools/fact_chain` 取代，文档未同步 | `docs/active/2026-11-18-pipeline-stage-2-agentscope-runtime.md` §2 |
 
 ---
@@ -215,23 +216,23 @@ rowspan 表：第二行只剩 “ovarian cancer | ”，基因列为空
 
 #### P1-8 节点级进度没有暴露到 API
 
-**证据**：API 已有 `PhaseNodeResponse`/`nodes` 字段（`api/v1/contracts.py:97-104`），但 Phase 3 summary 只有计数类字段（windows/facts/provider_calls/source_language，`phase_3.py:218-228`），没有把 `ChainRun.stage_progress` 映射成 nodes；事件没有时间戳，也没有 trace id。
+**证据**：API 已有 `PhaseNodeResponse`/`nodes` 字段（`api/v1/contracts.py:97-104`），但 `dev` 的 Phase 3 summary 只有计数类字段（windows/facts/provider_calls/source_language，`phase_3.py:218-228`），没有把 `ChainRun.stage_progress` 映射成 nodes；事件没有时间戳，也没有 trace id。phase 级节点进度（`graph/progress.py`）只存在于未合并的 `origin/impl-stage-4b-terminology` / `origin/impl-stage-4a-reme-memory`，`dev` 上不存在。
 
 **影响**：出问题时只能翻 `chain_run.json` 或 loguru 日志，无法从状态接口看出“第几个窗口、哪个 stage 失败”。
 
-**最小改法**：把 `stage_progress` 聚合为每个 stage 的 `nodes`（status/progress/失败数/耗时），在 Phase 3 summary 增加 `failed_stages`、`latency_ms`；日志加 `run_id/window_id/stage` 结构化字段。**成本**：1.5 人日。
+**最小改法**：先合入/重做未合并分支的 phase 节点进度，再把 `stage_progress` 聚合为 window/stage 级 `nodes`（status/progress/失败数/耗时），在 Phase 3 summary 增加 `failed_stages`、`latency_ms`；日志加 `run_id/window_id/stage` 结构化字段。**成本**：1.5 人日（若先合分支）到 2 人日。
 
 ### P2 — 锦上添花（先记录，不阻塞）
 
 | # | 问题 | 证据 | 建议 | 成本 |
 |---|---|---|---|---|
-| P2-1 | ReMe 只有占位，没有 client/契约 | `core/adapters/mcp/__init__.py`；迁移方案 D4 | 先定只读 MCP 契约（search/fetch、超时、熔断、降级），作为 sidecar；不要进 Phase 3 关键路径，也不要用 ReMe 替代术语库/Neo4j 权威存储 | 2–3 人日设计+spike |
+| P2-1 | `dev` 上 ReMe 只有占位；实现停在未合并分支，且召回按窗口同步调用 | `core/adapters/mcp/__init__.py`；`origin/impl-stage-4a-reme-memory` 的 `pipeline/mcp/reme/*`（`_system_prompt` 每窗口 `search`，timeout 0.8s）；`progress.txt` 已记为交付 | 先 rebase/评审该分支，而不是重写；把召回改成每文档一次/按 source_hash 缓存，并加熔断与负缓存；保持默认关闭、只读注入、写回仅计数；prompt 的“reference only”只是软约束，verify 仍只认原文 quote；不要用 ReMe 替代术语库/Neo4j 权威存储 | 2–3 人日评审+联调 |
 | P2-2 | pre-parsed markdown 丢失页结构 | `phase_2.py:143-157` 固定 `total_pages=1`、`content_blocks=[]` | 从 acquisition 保留页映射，或按分页标记切分 | 0.5 人日 |
 | P2-3 | 本地上传临时文件不清理 | `local_upload/service.py:63-77`；`phase_1.py:97` 传 `upload_dir=None` | 在 run 结束/失败时清理，或统一落到 run 目录 | 0.5 人日 |
 | P2-4 | zip 下载无大小上限，整包读入内存 | `remote/parser.py:356-369` | 流式下载 + 最大字节数；校验 content-type | 0.5 人日 |
 | P2-5 | 置信度硬编码 0.9 | `projection.py:196` | 按 verification label/uncertain 映射，或暂时置空并标注 | 0.5 人日 |
 | P2-6 | 窗口可能从单词/句子中间切开 | `windowing.py:36-47` 只找换行 | 优先在句末/段落边界切，overlap 内回退 | 0.5 人日 |
-| P2-7 | 文档与代码路径漂移；休眠代码约 17.5k 行 | `docs/active/2026-11-18-...md`；extraction 12.2k + translation 5.3k | 更新迁移文档；休眠模块单独立项删除/归档，不要和当前修复混做 | 0.5 人日文档 |
+| P2-7 | 文档/进度与 `dev` 漂移；休眠代码约 17.5k 行 | `docs/active/2026-11-18-...md`；`progress.txt` 把未合并的 4a/4b 记为交付；extraction 12.2k + translation 5.3k | 更新迁移文档并把“已交付”改成“在分支未合入”；休眠模块单独立项删除/归档，不要和当前修复混做 | 0.5 人日文档 |
 
 ---
 
@@ -257,7 +258,7 @@ rowspan 表：第二行只剩 “ovarian cancer | ”，基因列为空
 **不建议做的事**
 - 不要为了“agent 化”把 verify/translate 也交给自由 agent；现有确定性校验是资产。
 - 不要在 P0 未修复前扩大 shadow 流量；shadow 差异会被同样的失败语义污染。
-- 不要把 ReMe 放进 Phase 3 同步调用链；先做只读、可超时、可降级的旁路。
+- 不要把 ReMe 召回做成每窗口同步 HTTP；至少每文档一次 + 缓存/熔断，并保持默认关闭。
 
 ---
 
