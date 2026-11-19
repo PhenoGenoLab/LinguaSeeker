@@ -119,3 +119,9 @@ AC2 改为 `grep -c '^> \*\*Status:\*\* superseded' == 1` 且 `grep -c 'Status:\
 `grep -c 'src/pipeline/{graph,skills,tools,mcp}`（原计划）' <doc>` == `1`，
 并与 `grep -c 'src/pipeline/{graph,skills,tools,mcp}' <doc>` 相等。判定意图不变：所有旧串
 出现都必须标注"原计划"。
+
+**r6 — 2026-11-19（提交节奏与 §5 不符，事后记录）**：§5 写的是"两步提交"（SPEC + 两个目标文件），
+实际落成 5 个提交：`6f334f844`(SPEC) → `8478bf513`(目标文件) → `7f208117b`(SPEC r2–r5) →
+`1238fda95`(EVIDENCE) → `3905fea63`(EVIDENCE 回填 CI 结果)。原因：RED 阶段发现 AC2/AC4 判据
+缺陷需可见修订；EVIDENCE 需在 CI 跑完后回填；第四个提交的提交信息与内容互换（见 EVIDENCE §1）。
+按用户指示，全部提交已 fast-forward 到 `dev` 并推送。§5 的"两步"是意图，不是验收条件。
