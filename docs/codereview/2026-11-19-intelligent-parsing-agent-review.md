@@ -53,7 +53,7 @@ POST /pipeline
 - **AgentScope 只覆盖 extract**，verify/translate 仍是 legacy（`service.py:47-57`、`extract.py:196-235`）。这是有意的“有界子智能体”，不是端到端自主解析。
 - Phase 2 的产品路径是 **MinerU remote batch**（`phase_2.py:84` → `orchestrator.py:120-132` → `remote/parser.py:242-295`），不是 `DocumentParseOrchestrator.parse` 的 remote-first/local fallback（`orchestrator.py:36-118`）。
 - LangGraph 只有 4 个 phase 节点，没有窗口子图、`Send` fan-out 或 checkpointer（`topology.py:245-285`；阶段 2 记录 §7 也确认未做）。
-- **部分“已完成”能力仍在未合并分支**：phase 级节点进度在 `origin/impl-stage-4b-terminology` / `origin/impl-stage-4a-reme-memory` 的 `src/pipeline/graph/progress.py`；ReMe HTTP client 在 `origin/impl-stage-4a-reme-memory`。两者都不在 `dev`，但 `progress.txt`（2026-11-18）已记为交付。评审和排期必须以 `dev` 为准，或先把分支 rebase/合入。
+- **部分“已完成”能力仍在未合并分支**：phase 级节点进度在 `origin/impl-stage-4b-terminology` / `origin/impl-stage-4a-reme-memory` 的 `src/pipeline/graph/progress.py`；ReMe HTTP client 在 `origin/impl-stage-4a-reme-memory`。两者都不在 `dev`，但 `progress.txt`（2026-11-18）已记为交付；4a 分支还基于 refactor 前的 `pipeline/tools` 路径，不能直接 merge，需要先按分层重写 import。评审和排期必须以 `dev` 为准，或先完成这个 rebase。
 
 ### 2.1 已休眠 / 未接线的旧实现
 
