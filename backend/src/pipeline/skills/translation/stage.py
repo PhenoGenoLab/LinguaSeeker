@@ -48,7 +48,8 @@ class TranslationStage:
         payload: dict[str, Any],
         window_id: str,
         presentation_version: str | None = None,
-    ) -> tuple[dict[str, Any] | None, str | None]: ...
+    ) -> tuple[dict[str, Any] | None, str | None]:
+        raise NotImplementedError("provided by the composing ChainRunner")
 
 
     def _translate(self, document: SourceDocument, window: DocumentWindow, run: ChainRun) -> tuple[StageOutcome, str]:
