@@ -1,17 +1,17 @@
 """Phase 4 skill: entity standardization and knowledge alignment.
 
-Deterministic delegation in ``legacy`` mode; agent path only under
-``shadow``/``agentscope``. The DB session is bound at call time — it is not
-serializable, so the agent's single tool closes over it and performs the real
-standardization, returning its JSON for the agent to echo back.
+Same contract as acquisition/parsing: the agent must call the
+`standardize_entities` tool, whose real ``StandardizationResult`` is returned
+unchanged. The DB session is bound at call time because it is not serializable;
+there is no fallback path.
 """
 
 from __future__ import annotations
 
-import json
+from collections.abc import Awaitable, Callable
 from typing import Any
 
-from src.pipeline.skills.runtime.modes import run_phase_async
+from src.pipeline.skills.runtime import messages
 
 
 class StandardizationSkill:
@@ -20,13 +20,14 @@ class StandardizationSkill:
     name = "phase_4_standardization"
     system_prompt = (
         "You standardize extracted clinical entities against terminology databases.\n"
-        "Call the `standardize_entities` tool exactly once, then reply with that tool's JSON\n"
-        "output verbatim. Never invent matches."
+        "Call the `standardize_entities` tool exactly once, then reply with a one-line summary."
     )
 
-    def __init__(self, cfg: Any = None, service: Any = None) -> None:
+    def __init__(self, cfg: Any = None, service: Any = None, agent: Any = None) -> None:
         self._cfg = cfg
         self._service = service
+        self._agent = agent
+        self._tool: Callable[[str], Awaitable[str]] | None = None
 
     @property
     def service(self) -> Any:
@@ -46,72 +47,39 @@ class StandardizationSkill:
         processing_run_id: str | None = None,
         owner_user_id: str | None = None,
     ) -> Any:
-        """Standardize one dual-extraction result, honouring the runtime mode."""
-        return await run_phase_async(
-            self.name,
-            legacy=lambda: self.service.run_dual_result(
-                session,
-                dual_result,
-                source_document_id=source_document_id,
-                processing_run_id=processing_run_id,
-                owner_user_id=owner_user_id,
-            ),
-            agent=lambda: self._agent_standardize(
-                session=session,
-                dual_result=dual_result,
-                source_document_id=source_document_id,
-                processing_run_id=processing_run_id,
-                owner_user_id=owner_user_id,
-            ),
-        )
-
-    def _result_model(self) -> type:
-        from src.core.agents.standardization.contracts import StandardizationResult
-
-        return StandardizationResult
-
-    async def _agent_standardize(
-        self,
-        *,
-        session: Any,
-        dual_result: Any,
-        source_document_id: str | None,
-        processing_run_id: str | None,
-        owner_user_id: str | None,
-    ) -> Any:
-        from agentscope.message import Msg, TextBlock
-
-        from src.pipeline.skills.runtime.agent import build_agent
-        from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
-
-        result_model = self._result_model()
+        """Standardize one dual-extraction result through the agent's tool."""
+        holder: dict[str, Any] = {}
 
         async def standardize_entities(_payload: str) -> str:
-            """Run the real standardization for the bound session and return JSON."""
-            result = await self.service.run_dual_result(
+            """Run standardization for the bound session and return a status string."""
+            holder["result"] = await self.service.run_dual_result(
                 session,
                 dual_result,
                 source_document_id=source_document_id,
                 processing_run_id=processing_run_id,
                 owner_user_id=owner_user_id,
             )
-            return result_model.model_validate(result).model_dump_json()
+            return "standardized"
 
-        agent = build_agent(
+        self._tool = standardize_entities
+        agent = self._build_agent(standardize_entities)
+        await agent.reply(messages.user_message("standardize the entities"))
+        if "result" not in holder:
+            raise RuntimeError(f"{self.name}: agent did not call standardize_entities")
+        return holder["result"]
+
+    def _build_agent(self, tool: Callable[[str], Awaitable[str]]) -> Any:
+        if self._agent is not None:
+            return self._agent
+        from src.pipeline.skills.runtime.agent import build_agent
+        from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
+
+        return build_agent(
             name=self.name,
             system_prompt=self.system_prompt,
             model=build_chat_model(self._cfg, tier="reasoning"),
-            tools=[standardize_entities],
+            tools=[tool],
         )
-        payload = json.dumps(
-            {
-                "source_document_id": source_document_id,
-                "processing_run_id": processing_run_id,
-            }
-        )
-        reply = await agent.reply(Msg(name="user", role="user", content=[TextBlock(text=payload)]))
-        text = reply.get_text_content() if hasattr(reply, "get_text_content") else str(reply.content)
-        return result_model.model_validate_json(text)
 
 
 __all__ = ["StandardizationSkill"]

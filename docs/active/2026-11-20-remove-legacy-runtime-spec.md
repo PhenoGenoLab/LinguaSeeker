@@ -95,3 +95,14 @@ adapter → skill → agent(AgentScope) → tools(core/shared/tools 或 core/age
 - 本地 `.venv` 无 agentscope：agent 真路径只能在 CI 的依赖环境构造；本地用注入的 fake agent 验证分支与失败传播。
 - verify/translate 两段仍是 provider 调用，未 agent 化；本 SPEC 删的是"开关"，不是这两段的实现方式。
 - 真实 LLM 影子数据仍为零；删掉 legacy 后没有对照基线，回滚只能 revert 本提交。
+
+## 7. 修订记录（批准后）
+
+**r2 — 2026-11-20（AC3 的断言写法与最终实现不符）**：原 AC3 要求"每个 skill 内恰好一次
+`await self._agent...`"，但单路径实现是 `self._build_agent(tool)` 后 `await agent.reply(...)`，
+且结果由工具闭包捕获（不解析模型回显）。修订 AC3 为：
+- `rg -c 'run_phase_async|run_phase_sync' src/pipeline/skills` == 0（无模式分支）；
+- 每个 skill 恰好一次 `await agent.reply(`，且不存在 `model_validate_json` 回显解析；
+- 结果经工具闭包捕获，agent 未调用工具 → `RuntimeError("<phase>: agent did not call <tool>")`。
+同时 AC4 的"非法 JSON"分支相应替换为"agent 未调用工具"分支（dataclass 结果不再走 JSON 回显，
+原先的 `model_validate_json` 在 dataclass 上根本不成立——这是实现期发现的 SPEC 缺陷）。

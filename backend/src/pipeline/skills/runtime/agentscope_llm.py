@@ -1,7 +1,7 @@
 """AgentScope model construction for pipeline skills.
 
-Imported only when ``pipeline.agent_runtime`` is ``shadow`` or ``agentscope``;
-the legacy path never loads AgentScope.
+Imported only when a skill builds its agent, so importing a skill module in a
+test that injects a fake agent never loads AgentScope.
 """
 
 from __future__ import annotations

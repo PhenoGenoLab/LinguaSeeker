@@ -27,7 +27,7 @@ from src.core.shared.tools.fact_chain.contracts import (
 from src.core.shared.tools.fact_chain.projection import project_dual_result, supported_facts
 from src.pipeline.skills.extraction.prompts import PRESENTATION_VERSION, current_prompt_versions
 from src.pipeline.skills.extraction.runner import ChainRunner
-from src.pipeline.skills.runtime.llm import LangChainChainProvider, Provider
+from src.pipeline.skills.runtime.llm import ChatModelProvider, Provider
 
 DEFAULT_WINDOW_CHARS = 4000
 DEFAULT_WINDOW_OVERLAP = 200
@@ -45,16 +45,11 @@ class ChainArtifacts:
 
 
 def _build_provider(cfg: Any) -> Provider:
-    """Build the stage provider; AgentScope loads only for shadow/agentscope."""
-    legacy = LangChainChainProvider(cfg)
-    mode = getattr(getattr(cfg, "pipeline", None), "agent_runtime", "legacy")
-    if mode not in ("shadow", "agentscope"):
-        if mode != "legacy":
-            logger.warning("unknown pipeline.agent_runtime={!r}; using legacy provider", mode)
-        return legacy
-    from src.pipeline.skills.extraction.extract import ExtractSkill, StageRouterProvider
+    """Extract runs through the AgentScope skill; verify/translate use chat models."""
+    from src.pipeline.skills.extraction.extract import ExtractAgentProvider, ExtractSkill
+    from src.pipeline.skills.runtime.llm import ChatModelProvider
 
-    return StageRouterProvider(legacy=legacy, extract=ExtractSkill(cfg), mode=mode)
+    return ExtractAgentProvider(chat=ChatModelProvider(cfg), extract=ExtractSkill(cfg))
 
 
 class SourceFactChainService:

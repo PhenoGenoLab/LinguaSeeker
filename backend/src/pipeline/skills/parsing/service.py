@@ -1,15 +1,15 @@
 """Phase 2 skill: document parsing (MinerU remote → local fallback).
 
-Same contract as the acquisition skill: deterministic delegation in ``legacy``
-mode, agent path only under ``shadow``/``agentscope``.
+Same contract as acquisition: the agent must call the `parse_document` tool and
+the tool's real ``ParseResult`` is returned unchanged.
 """
 
 from __future__ import annotations
 
-import json
+from collections.abc import Awaitable, Callable
 from typing import Any
 
-from src.pipeline.skills.runtime.modes import run_phase_async
+from src.pipeline.skills.runtime import messages
 
 
 class ParsingSkill:
@@ -18,14 +18,14 @@ class ParsingSkill:
     name = "phase_2_parsing"
     system_prompt = (
         "You parse one document for a clinical-genetics pipeline.\n"
-        "Call the `parse_document` tool exactly once with the JSON payload you were given,\n"
-        "then reply with that tool's JSON output verbatim. Do not invent fields."
+        "Call the `parse_document` tool exactly once, then reply with a one-line summary."
     )
 
-    def __init__(self, cfg: Any = None, service: Any = None) -> None:
+    def __init__(self, cfg: Any = None, service: Any = None, agent: Any = None) -> None:
         self._cfg = cfg
         self._service = service
-        self._agent = None
+        self._agent = agent
+        self._tool: Callable[[str], Awaitable[str]] | None = None
 
     @property
     def service(self) -> Any:
@@ -36,50 +36,35 @@ class ParsingSkill:
         return self._service
 
     async def parse_local_files_and_save(self, *, file_paths: list[str], output_dir: str) -> Any:
-        """Parse the given files, honouring ``pipeline.agent_runtime``."""
-        return await run_phase_async(
-            self.name,
-            legacy=lambda: self.service.parse_local_files_and_save(file_paths=file_paths, output_dir=output_dir),
-            agent=lambda: self._agent_parse(file_paths=file_paths, output_dir=output_dir),
-        )
+        """Parse the given files through the agent's single tool."""
+        holder: dict[str, Any] = {}
 
-    def _result_model(self) -> type:
-        from src.core.agents.parsing.contracts import ParseResult
+        async def parse_document(_payload: str) -> str:
+            """Parse the bound files and return a short status string."""
+            holder["result"] = await self.service.parse_local_files_and_save(
+                file_paths=file_paths, output_dir=output_dir
+            )
+            return "parsed"
 
-        return ParseResult
+        self._tool = parse_document
+        agent = self._build_agent(parse_document)
+        await agent.reply(messages.user_message("parse the document"))
+        if "result" not in holder:
+            raise RuntimeError(f"{self.name}: agent did not call parse_document")
+        return holder["result"]
 
-    def _build_agent(self) -> Any:
+    def _build_agent(self, tool: Callable[[str], Awaitable[str]]) -> Any:
         if self._agent is not None:
             return self._agent
         from src.pipeline.skills.runtime.agent import build_agent
         from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
 
-        result_model = self._result_model()
-
-        async def parse_document(payload: str) -> str:
-            """Parse the given files and return the saved-artifact JSON."""
-            data = json.loads(payload)
-            result = await self.service.parse_local_files_and_save(
-                file_paths=list(data["file_paths"]),
-                output_dir=str(data["output_dir"]),
-            )
-            return result_model.model_validate(result).model_dump_json()
-
-        self._agent = build_agent(
+        return build_agent(
             name=self.name,
             system_prompt=self.system_prompt,
             model=build_chat_model(self._cfg, tier="fast"),
-            tools=[parse_document],
+            tools=[tool],
         )
-        return self._agent
-
-    async def _agent_parse(self, *, file_paths: list[str], output_dir: str) -> Any:
-        from agentscope.message import Msg, TextBlock
-
-        payload = json.dumps({"file_paths": file_paths, "output_dir": output_dir})
-        reply = await self._build_agent().reply(Msg(name="user", role="user", content=[TextBlock(text=payload)]))
-        text = reply.get_text_content() if hasattr(reply, "get_text_content") else str(reply.content)
-        return self._result_model().model_validate_json(text)
 
 
 __all__ = ["ParsingSkill"]

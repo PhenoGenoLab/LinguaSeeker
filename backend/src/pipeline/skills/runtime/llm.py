@@ -26,8 +26,8 @@ class Provider(Protocol):
     def invoke(self, *, stage: str, model_id: str, prompt: str, payload: str) -> str: ...
 
 
-class LangChainChainProvider:
-    """Default provider backed by the configured fast and reasoning LLMs."""
+class ChatModelProvider:
+    """Chat-model provider used by stages that are not yet agent-backed."""
 
     def __init__(self, cfg: Any):
         self._cfg = cfg
@@ -72,4 +72,4 @@ class LangChainChainProvider:
         return text
 
 
-__all__ = ["LangChainChainProvider", "Provider", "ProviderError"]
+__all__ = ["ChatModelProvider", "Provider", "ProviderError"]

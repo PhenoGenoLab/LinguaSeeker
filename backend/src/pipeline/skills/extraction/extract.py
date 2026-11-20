@@ -17,7 +17,6 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from src.core.shared.contracts.skill_io import SkillError, SkillFailureKind, SkillRequest, SkillResult
 from src.pipeline.skills.extraction.prompts import EXTRACT_PROMPT, EXTRACT_PROMPT_VERSION
-from src.pipeline.skills.runtime.agent import build_agent, run_reply_sync
 from src.pipeline.skills.runtime.llm import Provider, ProviderError
 from src.core.shared.tools.fact_chain.contracts import ChainContractError, canonical_json
 from src.core.shared.tools.fact_chain.core import is_atomic, locate_quote, validate_reply_schema
@@ -87,6 +86,8 @@ class ExtractSkill:
     def _build_agent(self, window_text: str) -> Any:
         if self._agent_factory is not None:
             return self._agent_factory(window_text)
+        from src.pipeline.skills.runtime.agent import build_agent
+
         if self._model is None:
             from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
 
@@ -112,6 +113,8 @@ class ExtractSkill:
 
         started = time.perf_counter()
         try:
+            from src.pipeline.skills.runtime.agent import run_reply_sync
+
             agent = self._build_agent(window_text)
             message = run_reply_sync(agent, request.payload, ExtractReply)
             structured = getattr(message, "structured_output", None)
@@ -158,33 +161,10 @@ def _payload_window(payload: str) -> str:
         return ""
 
 
-class ShadowStats(BaseModel):
-    """Counters for one shadow-mode router."""
-
-    calls: int = 0
-    mismatches: int = 0
-    agent_failures: int = 0
 
 
-def compare_extract_replies(legacy_text: str, agent_text: str) -> list[str]:
-    """Return human-readable differences between two extract replies."""
-    try:
-        legacy = json.loads(legacy_text).get("facts")
-        agent = json.loads(agent_text).get("facts")
-    except (json.JSONDecodeError, AttributeError) as exc:
-        return [f"unparsable reply: {exc}"]
-    if not isinstance(legacy, list) or not isinstance(agent, list):
-        return ["facts must be a list"]
-    left = sorted(canonical_json(item) for item in legacy)
-    right = sorted(canonical_json(item) for item in agent)
-    if left == right:
-        return []
-    differences = [f"fact count legacy={len(left)} agent={len(right)}"]
-    only_legacy = [item for item in left if item not in right]
-    only_agent = [item for item in right if item not in left]
-    differences.extend(f"legacy_only: {item}" for item in only_legacy)
-    differences.extend(f"agent_only: {item}" for item in only_agent)
-    return differences
+
+
 
 
 class ExtractInvoker(Protocol):
@@ -193,55 +173,27 @@ class ExtractInvoker(Protocol):
     def invoke(self, *, stage: str, model_id: str, prompt: str, payload: str) -> str: ...
 
 
-class StageRouterProvider:
-    """Route extract to AgentScope; keep verify/translate on the legacy provider.
 
-    ``shadow`` calls both paths and returns the legacy reply, so production
-    output stays byte-identical while differences are logged.  ``agentscope``
-    returns the agent reply for extract only.
-    """
 
-    def __init__(self, *, legacy: Provider, extract: ExtractInvoker, mode: str) -> None:
-        if mode not in {"shadow", "agentscope"}:
-            raise ValueError(f"unsupported agent runtime mode: {mode}")
-        self._legacy = legacy
+
+class ExtractAgentProvider:
+    """Route the extract stage to the AgentScope skill; other stages use chat models."""
+
+    def __init__(self, *, chat: Provider, extract: ExtractInvoker) -> None:
+        self._chat = chat
         self._extract = extract
-        self._mode = mode
-        self._stats = ShadowStats()
-
-    @property
-    def stats(self) -> ShadowStats:
-        return self._stats
 
     def invoke(self, *, stage: str, model_id: str, prompt: str, payload: str) -> str:
-        if stage != "extract":
-            return self._legacy.invoke(stage=stage, model_id=model_id, prompt=prompt, payload=payload)
-        if self._mode == "agentscope":
+        if stage == "extract":
             return self._extract.invoke(stage=stage, model_id=model_id, prompt=prompt, payload=payload)
-        legacy_text = self._legacy.invoke(stage=stage, model_id=model_id, prompt=prompt, payload=payload)
-        self._stats.calls += 1
-        try:
-            agent_text = self._extract.invoke(stage=stage, model_id=model_id, prompt=prompt, payload=payload)
-        except (ProviderError, SkillError) as exc:
-            self._stats.agent_failures += 1
-            logger.warning("extract shadow agent failed, legacy reply kept: {}", exc)
-            return legacy_text
-        differences = compare_extract_replies(legacy_text, agent_text)
-        if differences:
-            self._stats.mismatches += 1
-            logger.warning("extract shadow diff ({}): {}", model_id, "; ".join(differences))
-        else:
-            logger.info("extract shadow match: model={}, window={}", model_id, _payload_window(payload))
-        return legacy_text
+        return self._chat.invoke(stage=stage, model_id=model_id, prompt=prompt, payload=payload)
 
 
 __all__ = [
+    "ExtractAgentProvider",
     "ExtractInvoker",
     "ExtractReply",
     "ExtractSkill",
     "ExtractedFact",
-    "ShadowStats",
-    "StageRouterProvider",
-    "compare_extract_replies",
     "window_tools",
 ]

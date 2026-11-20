@@ -573,7 +573,7 @@ def test_langchain_provider_routes_tiers_and_rejects_empty_replies(monkeypatch: 
             reasoning_effort="high",
         ),
     )
-    provider = provider_module.LangChainChainProvider(cfg)
+    provider = provider_module.ChatModelProvider(cfg)
 
     assert provider.invoke(stage="extract", model_id="fast-model", prompt="p", payload="{}") == "ok"
     assert provider.invoke(stage="verify", model_id="reasoning-model", prompt="p", payload="{}") == "ok"

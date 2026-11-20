@@ -218,7 +218,6 @@ class PipelineConfig(BaseModel):
 
     cache_enabled: bool = False
     dedup_enabled: bool = False
-    agent_runtime: Literal["legacy", "shadow", "agentscope"] = "legacy"
 
 
 class PostgreSQLConfig(BaseModel):
@@ -442,7 +441,6 @@ class Settings(BaseSettings):
 
     pipeline_cache_enabled: bool | None = None
     pipeline_dedup_enabled: bool | None = None
-    pipeline_agent_runtime: Literal["legacy", "shadow", "agentscope"] = "legacy"
 
     # ── Dispatcher / heartbeat I/O tuning (DISPATCHER_*, PIPELINE_HEARTBEAT_*) ──
 
@@ -630,7 +628,6 @@ class Settings(BaseSettings):
         self.pipeline = PipelineConfig(
             cache_enabled=production_like if self.pipeline_cache_enabled is None else self.pipeline_cache_enabled,
             dedup_enabled=production_like if self.pipeline_dedup_enabled is None else self.pipeline_dedup_enabled,
-            agent_runtime=self.pipeline_agent_runtime,
         )
         self.postgresql = PostgreSQLConfig(
             host=self.postgres_host,
