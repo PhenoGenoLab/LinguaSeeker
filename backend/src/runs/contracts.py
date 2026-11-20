@@ -12,7 +12,7 @@ from typing import Any, NoReturn
 
 from pydantic import BaseModel, Field
 
-from src.core.agents.extraction.contracts import (
+from src.pipeline.graph.agents.extraction.contracts import (
     ExtractionTarget,
 )
 
@@ -290,7 +290,7 @@ def build_retryable_errors() -> tuple[type, ...]:
         pass
 
     try:
-        from src.core.agents.parsing.exceptions import (
+        from src.pipeline.graph.agents.parsing.exceptions import (
             MinerUTimeoutError,
         )
 

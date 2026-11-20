@@ -18,10 +18,10 @@ from pathlib import Path
 import aiofiles
 
 from src.runs.contracts import PipelineGraphState
-from src.core.agents.extraction.workflow import (
+from src.pipeline.graph.agents.extraction.workflow import (
     DEFAULT_EXTRACTION_WORKFLOW_MODE,
 )
-from src.core.agents.extraction.stages.review_validation import (
+from src.pipeline.graph.agents.extraction.stages.review_validation import (
     DEFAULT_REVIEW_REJECT_POLICY,
 )
 

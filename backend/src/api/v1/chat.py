@@ -21,7 +21,7 @@ from src.api.rate_limit import limiter
 from src.api.wiring import get_local_parser
 from src.core.foundation.auth.contracts import AuthContext
 from src.core.config import get_config
-from src.core.agents.review.contracts import (
+from src.pipeline.graph.agents.review.contracts import (
     ChatMessageResponse,
     ChatSessionResponse,
 )
@@ -227,7 +227,7 @@ async def parse_chat_file(
     # ── Use wired parser singleton, fall back to fresh instance ──
     parser = get_local_parser()
     if parser is None:
-        from src.core.agents.parsing.local.parser import (
+        from src.pipeline.graph.agents.parsing.local.parser import (
             MinerULocalParser,
         )
 

@@ -30,7 +30,7 @@ class ParsingSkill:
     @property
     def service(self) -> Any:
         if self._service is None:
-            from src.core.agents.parsing import create_parse_service
+            from src.pipeline.graph.agents.parsing import create_parse_service
 
             self._service = create_parse_service()
         return self._service

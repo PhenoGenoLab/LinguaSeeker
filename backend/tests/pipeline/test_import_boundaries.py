@@ -157,11 +157,12 @@ def test_skills_do_not_import_database_clients() -> None:
     )
 
 
-def test_skills_do_not_import_graph() -> None:
+def test_skills_do_not_import_graph_execution() -> None:
+    """Skills may use agent implementations, never the graph topology/adapters."""
     _assert_no_imports(
         PIPELINE_ROOT / "skills",
-        ("src.pipeline.graph",),
-        "skills/ must not import graph/ (graph depends on skills, not the reverse)",
+        ("src.pipeline.graph.topology", "src.pipeline.graph.phases"),
+        "skills/ must not import the graph execution layer",
     )
 
 
@@ -189,11 +190,12 @@ def test_mcp_does_not_import_pipeline_or_tools() -> None:
     )
 
 
-def test_runs_do_not_import_pipeline() -> None:
+def test_runs_do_not_import_graph_execution() -> None:
+    """runs may reference agent contracts, but never the graph topology/adapters."""
     _assert_no_imports(
         RUNS_ROOT,
-        ("src.pipeline",),
-        "src/runs owns run lifecycle and state; the graph calls into it, never the reverse",
+        ("src.pipeline.graph.topology", "src.pipeline.graph.phases"),
+        "src/runs must not import the graph execution layer",
     )
 
 

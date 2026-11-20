@@ -24,7 +24,7 @@ from src.runs.contracts import (
     build_retryable_errors,
     classify_phase_error,
 )
-from src.core.agents.extraction.contracts import (
+from src.pipeline.graph.agents.extraction.contracts import (
     DualEvidenceExtractionResult,
 )
 

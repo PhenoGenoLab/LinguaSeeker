@@ -12,7 +12,7 @@ from httpx import AsyncClient
 @pytest.mark.asyncio
 async def test_get_bilingual_span(async_client: AsyncClient):
     """GET /api/v1/source-link/{id}/bilingual returns bilingual span."""
-    from src.core.agents.review.contracts import BilingualSpan
+    from src.pipeline.graph.agents.review.contracts import BilingualSpan
 
     evidence_id = uuid4()
     mock_response = BilingualSpan(
@@ -35,7 +35,7 @@ async def test_get_bilingual_span(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_track_span(async_client: AsyncClient):
     """GET /api/v1/source-link/{id}/{track} returns track span."""
-    from src.core.agents.review.contracts import TrackSpan
+    from src.pipeline.graph.agents.review.contracts import TrackSpan
 
     evidence_id = uuid4()
     mock_response = TrackSpan(

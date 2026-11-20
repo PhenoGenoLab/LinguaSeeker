@@ -24,7 +24,6 @@ CORE_ROOT = SRC_ROOT / "core"
 FOUNDATION = CORE_ROOT / "foundation"
 SHARED = CORE_ROOT / "shared"
 ADAPTERS = CORE_ROOT / "adapters"
-AGENTS = CORE_ROOT / "agents"
 
 
 def _iter_python_files(root: Path) -> list[Path]:
@@ -60,7 +59,7 @@ def _violations(root: Path, prefixes: tuple[str, ...]) -> list[str]:
 
 
 def test_foundation_depends_on_nothing_but_config() -> None:
-    violations = _violations(FOUNDATION, ("src.core.shared", "src.core.adapters", "src.core.agents", "src.pipeline"))
+    violations = _violations(FOUNDATION, ("src.core.shared", "src.core.adapters", "src.pipeline"))
     assert not violations, "foundation/ must stay at the bottom of the core layering:\n" + "\n".join(violations)
 
 
@@ -70,13 +69,13 @@ def test_shared_does_not_reach_downstream_layers() -> None:
 
 
 def test_adapters_stay_isolated() -> None:
-    violations = _violations(ADAPTERS, ("src.core.shared.tools", "src.core.agents", "src.pipeline"))
-    assert not violations, "adapters/ must not depend on tools, agents or the pipeline:\n" + "\n".join(violations)
+    violations = _violations(ADAPTERS, ("src.core.shared.tools", "src.pipeline"))
+    assert not violations, "adapters/ must not depend on tools or the pipeline:\n" + "\n".join(violations)
 
 
-def test_agents_do_not_import_pipeline_or_shared_tools() -> None:
-    violations = _violations(AGENTS, ("src.pipeline", "src.core.shared"))
-    assert not violations, "agents/ own their business logic; they must not call the pipeline:\n" + "\n".join(violations)
+def test_core_has_no_agents_package() -> None:
+    """Agent implementations live in src/pipeline/graph/agents, not in core."""
+    assert not (CORE_ROOT / "agents").exists(), "core/ must not contain an agents package"
 
 
 def test_core_root_modules_stay_dependency_free() -> None:
@@ -86,6 +85,6 @@ def test_core_root_modules_stay_dependency_free() -> None:
         f"{path.name} imports {module}"
         for path in root_modules
         for module in sorted(_imported_modules(path))
-        if module.startswith(("src.core.shared", "src.core.adapters", "src.core.agents", "src.pipeline"))
+        if module.startswith(("src.core.shared", "src.core.adapters", "src.pipeline"))
     ]
     assert not found, "core root modules must not depend on a stratum:\n" + "\n".join(found)

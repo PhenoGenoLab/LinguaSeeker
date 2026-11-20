@@ -14,7 +14,7 @@ from src.api.deps import get_neo4j_repository
 from src.api.rate_limit import limiter
 from src.core.foundation.auth.contracts import AuthContext
 from src.core.config import get_config
-from src.core.agents.graph_retrieval.contracts import (
+from src.pipeline.graph.agents.graph_retrieval.contracts import (
     GraphEntityType,
     GraphEdgeResponse,
     GraphNodeResponse,
@@ -22,7 +22,7 @@ from src.core.agents.graph_retrieval.contracts import (
     GraphRagQueryResponse,
     GraphSubgraphResponse,
 )
-from src.core.agents.graph_retrieval.core.qa_engine import GraphRagQaEngine, QaEngineConfig
+from src.pipeline.graph.agents.graph_retrieval.core.qa_engine import GraphRagQaEngine, QaEngineConfig
 from src.dao.neo4j.contracts import GraphNode, SubgraphContext
 from src.dao.neo4j.repository import Neo4jRepository
 

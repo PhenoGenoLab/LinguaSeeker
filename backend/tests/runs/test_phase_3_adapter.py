@@ -18,7 +18,7 @@ from src.runs.contracts import (
     SourceType,
 )
 from src.pipeline.graph.phases.phase_3 import Phase3Adapter
-from src.core.agents.extraction.contracts import (
+from src.pipeline.graph.agents.extraction.contracts import (
     DualEvidenceExtractionResult,
     ExtractionTarget,
 )

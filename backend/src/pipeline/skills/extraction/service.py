@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from src.core.agents.extraction.contracts import DualEvidenceExtractionResult
+from src.pipeline.graph.agents.extraction.contracts import DualEvidenceExtractionResult
 
 from src.core.shared.tools.fact_chain.contracts import (
     ChainConfig,
@@ -22,7 +22,7 @@ from src.core.shared.tools.fact_chain.contracts import (
     SourceDocument,
     sha256_text,
 )
-from src.core.shared.tools.fact_chain.projection import project_dual_result, supported_facts
+from src.pipeline.graph.agents.extraction.projection import project_dual_result, supported_facts
 from src.pipeline.skills.extraction.prompts import PRESENTATION_VERSION, current_prompt_versions
 from src.pipeline.skills.extraction.runner import ChainRunner
 from src.pipeline.skills.runtime.llm import Provider

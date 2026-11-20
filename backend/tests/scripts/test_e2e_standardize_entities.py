@@ -9,7 +9,7 @@ from scripts.e2e_standardize_entities import (
     DEFAULT_EXTRACT_EVIDENCE_DIR,
     run_standardize_entities,
 )
-from src.core.agents.standardization.contracts import (
+from src.pipeline.graph.agents.standardization.contracts import (
     BindingRole,
     EntityMatch,
     EntityType,

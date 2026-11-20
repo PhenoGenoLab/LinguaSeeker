@@ -38,7 +38,7 @@ def sample_state(tmp_path) -> PipelineGraphState:
 @pytest.mark.asyncio
 async def test_phase_4_adapter_success(sample_state: PipelineGraphState):
     """Phase 3 adapter successfully standardizes entities."""
-    from src.core.agents.standardization.contracts import (
+    from src.pipeline.graph.agents.standardization.contracts import (
         StandardizationResult,
     )
 
@@ -123,7 +123,7 @@ async def test_phase_4_adapter_skipped_when_zero_standardized(
     sample_state: PipelineGraphState,
 ):
     """Phase 4 adapter sets skip reason when standardized_count == 0."""
-    from src.core.agents.standardization.contracts import (
+    from src.pipeline.graph.agents.standardization.contracts import (
         StandardizationResult,
     )
 
@@ -208,7 +208,7 @@ async def _run_phase_4_with_counts(
     unmapped_count: int,
 ) -> PipelineGraphState:
     """Helper: run Phase 4 with specific standardization counts."""
-    from src.core.agents.standardization.contracts import (
+    from src.pipeline.graph.agents.standardization.contracts import (
         StandardizationResult,
     )
 

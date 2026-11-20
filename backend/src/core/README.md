@@ -16,30 +16,20 @@ core/
 ├── foundation/                  # L1 跨切面基础
 │   └── auth/                    #   认证契约与口令哈希
 ├── shared/                      # L2 共享能力与契约
-│   ├── tools/fact_chain/        #   确定性能力：契约、校验、窗口、投影
+│   ├── tools/fact_chain/        #   确定性能力：契约、校验、窗口
 │   └── contracts/skill_io.py    #   跨层 DTO（SkillRequest/SkillResult）
-├── adapters/                    # L3 外部协议适配
-│   └── mcp/                     #   ReMe 等（占位，只依赖 shared.contracts）
-└── agents/                      # L4 agent 实现（同级互引）
-    ├── acquisition/             #   文献采集（本地上传 / 在线获取）
-    ├── parsing/                 #   文档解析（MinerU remote / local）
-    ├── translation/             #   翻译（术语映射、句级对齐、校验）
-    ├── extraction/              #   证据抽取（字段目录、双轨抽取、离线基准）
-    ├── standardization/         #   实体标准化与知识对齐
-    ├── review/                  #   证据可视化、专家反馈、问答
-    └── graph_retrieval/         #   图谱构建与检索问答
+└── adapters/                    # L3 外部协议适配
+    └── mcp/                     #   ReMe 等（占位，只依赖 shared.contracts）
 ```
 
-> 本目录**不表达阶段编号**：阶段由 `src/pipeline/graph/` 的 LangGraph 拓扑编排，
-> core 只回答"这个 agent 能做什么"。
+> **本目录不含 agent 实现**：`acquisition / parsing / translation / extraction /
+> standardization / review / graph_retrieval` 都在 `src/pipeline/graph/agents/`，
+> 由 `pipeline/skills` 与 `pipeline/graph/phases` 调用。
 >
-> 依赖方向：`foundation ← shared ← agents`，`adapters` 只依赖 `shared.contracts`；
-> `src.pipeline`（LangGraph 编排 + AgentScope skills）单向依赖 `src.core`。
-> 反向依赖、以及跨层回指由 `tests/core/test_layer_boundaries.py` 与
+> 依赖方向：`foundation ← shared`，`adapters` 只依赖 `shared.contracts`；
+> `src.pipeline` 与 `src.runs` 依赖 core，core 不反向依赖二者。
+> 边界由 `tests/core/test_layer_boundaries.py` 与
 > `tests/pipeline/test_import_boundaries.py` 断言。
->
-> 已知的一处有意放宽：`shared/tools/fact_chain` 只读引用 `agents/extraction`
-> 的字段目录与分组规则，因此 `shared → agents` 的方向被允许但仅限该处。
 
 ## 核心组件
 

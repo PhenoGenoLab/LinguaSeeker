@@ -8,18 +8,18 @@ from unittest.mock import MagicMock, patch
 from src.core.config import ParseDocumentConfig
 
 # Source module paths for classes imported inside wire_dependencies()
-_REMOTE_PARSER_MOD = "src.core.agents.parsing.remote.parser.MinerURemoteParser"
-_LOCAL_PARSER_MOD = "src.core.agents.parsing.local.parser.MinerULocalParser"
+_REMOTE_PARSER_MOD = "src.pipeline.graph.agents.parsing.remote.parser.MinerURemoteParser"
+_LOCAL_PARSER_MOD = "src.pipeline.graph.agents.parsing.local.parser.MinerULocalParser"
 
 
 def _patch_wire_deps(stack: ExitStack):
     """Patch all dependencies wired inside wire_dependencies()."""
     for mod_path in [
-        "src.core.agents.acquisition.service.DocumentAcquisitionService",
-        "src.core.agents.parsing.orchestrator.DocumentParseOrchestrator",
-        "src.core.agents.parsing.service.ParseDocumentService",
+        "src.pipeline.graph.agents.acquisition.service.DocumentAcquisitionService",
+        "src.pipeline.graph.agents.parsing.orchestrator.DocumentParseOrchestrator",
+        "src.pipeline.graph.agents.parsing.service.ParseDocumentService",
         "src.pipeline.skills.extraction.service.SourceFactChainService",
-        "src.core.agents.standardization.api.EntityStandardizationService",
+        "src.pipeline.graph.agents.standardization.api.EntityStandardizationService",
         "src.pipeline.graph.topology.PipelineOrchestrator",
         "src.runs.concurrency.PipelineSemaphore",
         "src.runs.concurrency.RetryablePhaseExecutor",
@@ -140,12 +140,12 @@ def test_wire_dependencies_initializes_session_factory_before_use():
 
     with ExitStack() as stack:
         for mod_path in [
-            "src.core.agents.acquisition.service.DocumentAcquisitionService",
-            "src.core.agents.parsing.orchestrator.DocumentParseOrchestrator",
-            "src.core.agents.parsing.service.ParseDocumentService",
-            "src.core.agents.translation.api.TranslationService",
-            "src.core.agents.extraction.api.EvidenceExtractionService",
-            "src.core.agents.standardization.api.EntityStandardizationService",
+            "src.pipeline.graph.agents.acquisition.service.DocumentAcquisitionService",
+            "src.pipeline.graph.agents.parsing.orchestrator.DocumentParseOrchestrator",
+            "src.pipeline.graph.agents.parsing.service.ParseDocumentService",
+            "src.pipeline.graph.agents.translation.api.TranslationService",
+            "src.pipeline.graph.agents.extraction.api.EvidenceExtractionService",
+            "src.pipeline.graph.agents.standardization.api.EntityStandardizationService",
             "src.pipeline.graph.topology.PipelineOrchestrator",
             "src.runs.concurrency.PipelineSemaphore",
             "src.runs.concurrency.RetryablePhaseExecutor",

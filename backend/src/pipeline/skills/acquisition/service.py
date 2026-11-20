@@ -32,7 +32,7 @@ class AcquisitionSkill:
     @property
     def service(self) -> Any:
         if self._service is None:
-            from src.core.agents.acquisition.service import DocumentAcquisitionService
+            from src.pipeline.graph.agents.acquisition.service import DocumentAcquisitionService
 
             self._service = DocumentAcquisitionService()
         return self._service

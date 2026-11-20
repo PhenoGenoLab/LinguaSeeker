@@ -28,7 +28,7 @@
 - 编排层只负责流程拓扑、全局状态、路由决策与节点可观测性；不得包含具体业务规则。
 - 垂直特性包负责完整业务闭环：对编排器暴露 `api.py`/Node 接口，内部使用 `core.py` 放纯业务逻辑，`providers.py` 封装 LLM/DB/Rust I/O/外部服务，`contracts.py` 或 `schema.py` 放强类型契约。
 - 全局状态使用 Pydantic 模型作为单一真相源；节点之间通过类型化状态增量通信，禁止裸 `dict` 作为稳定跨模块契约。
-- 本仓库 Backend 映射：`backend/src/pipeline/`（graph/skills）是 pipeline 编排层，`backend/src/runs/` 是一次 run 的运行时（runner、dispatcher、状态持久化），`backend/src/core/<feature>/` 是 Features（含 `core/agents/*` 的 agent 能力、`core/shared/*` 与 `core/adapters/*`），`backend/src/utils/`、`backend/src/dao/`、Rust crates 是 Shared infrastructure，`backend/src/core/config.py` 是 Config。
+- 本仓库 Backend 映射：`backend/src/pipeline/`（graph/skills）是 pipeline 编排层（`pipeline/graph/agents/*` 放各 agent 实现），`backend/src/runs/` 是一次 run 的运行时（runner、dispatcher、状态持久化），`backend/src/core/` 只放 foundation/shared/adapters 与配置，`backend/src/utils/`、`backend/src/dao/`、Rust crates 是 Shared infrastructure。
 - Frontend 映射：`frontend/src/pages/` 负责页面级编排，`frontend/src/components/<feature>/` 与 `frontend/src/hooks/` 承载垂直 UI 特性，`frontend/src/components/`（antd 衍生组件）、`frontend/src/api/`、`frontend/src/types/`、`frontend/src/stores/` 为共享基础设施。
 
 ### 3. 文档管理
@@ -375,20 +375,19 @@ Lingua Seeker is a Multi-Agent infrastructure platform for medical genetics lite
 
 #### Backend (`backend/`)
 
-FastAPI async application. Business logic lives in `backend/src/` (not `app/`) and should prefer **Orchestrated Vertical Slice Architecture** for new modules: `src/pipeline/` owns the graph (LangGraph topology, AgentScope skills) and calls into `src/core/`; `src/runs/` owns the outer runtime (run lifecycle: Pydantic graph state, runner, dispatcher, persistence, node telemetry); `src/core/agents/<agent>/` owns the agent implementations, `src/core/shared/` the deterministic tools and DTOs, `src/core/adapters/` external protocols; `src/dao/`, `src/utils/`, Rust crates, and shared clients provide infrastructure.
+FastAPI async application. Business logic lives in `backend/src/` (not `app/`) and should prefer **Orchestrated Vertical Slice Architecture** for new modules: `src/pipeline/` owns the graph (LangGraph topology, AgentScope skills) and the agent implementations (`src/pipeline/graph/agents/<agent>/`); `src/runs/` owns the outer runtime (run lifecycle: Pydantic graph state, runner, dispatcher, persistence, node telemetry); `src/core/` holds only foundation (`config`, `auth`), shared deterministic tools/DTOs and external protocol adapters; `src/dao/`, `src/utils/`, Rust crates, and shared clients provide infrastructure.
 
 ```
 src/
-├── pipeline/      # Pipeline domain: graph topology, skills, deterministic tools
+├── pipeline/      # Pipeline layer
+│   ├── graph/     #   LangGraph topology + phase adapters + agents/<agent>/ implementations
+│   └── skills/    #   AgentScope skill definitions (acquisition, parsing, extraction, translation, standardization)
 ├── runs/          # Run lifecycle: GraphState, runner, dispatcher, state persistence
 ├── core/
 │   ├── config.py                          # pydantic-settings singleton, all env vars
-│   ├── ingest_and_digitize_data/          # Phase 1 feature slices: acquisition + upload + parsing
-│   │   ├── document_acquisition/          #   facade; online acquisition delegates to lit-acquisition SDK
-│   │   └── parse_document/                #   MinerU parsing (remote-first, local fallback)
-│   ├── cross_lingual_process_and_extract_evidence/  # Phase 2 features: extraction, translation, fusion
-│   ├── standardize_entities_and_align_knowledge/    # Phase 3 features: standardization, alignment
-│   └── visualize_evidence_with_expert_in_loop/      # Phase 4 features: review, feedback, export
+│   ├── foundation/auth/                   # auth contracts and password hashing
+│   ├── shared/                            # deterministic tools + cross-layer DTOs
+│   └── adapters/mcp/                      # external protocol adapters
 ├── api/           # FastAPI routes
 ├── dao/           # Shared persistence boundary
 └── utils/         # Shared telemetry/logging/hash utilities

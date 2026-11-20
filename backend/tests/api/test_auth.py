@@ -63,8 +63,8 @@ async def test_write_route_defaults_to_public_account_without_api_key(_mock_conf
             )
         )
 
-        from src.core.agents.review.contracts import ReviewStatus
-        from src.core.agents.review.feedback_service import PatchResult
+        from src.pipeline.graph.agents.review.contracts import ReviewStatus
+        from src.pipeline.graph.agents.review.feedback_service import PatchResult
 
         mock_service = MagicMock()
         mock_service.patch_evidence = AsyncMock(
@@ -119,8 +119,8 @@ async def test_write_route_accepted_with_valid_api_key(_mock_config_with_api_key
             )
         )
 
-        from src.core.agents.review.feedback_service import PatchResult
-        from src.core.agents.review.contracts import ReviewStatus
+        from src.pipeline.graph.agents.review.feedback_service import PatchResult
+        from src.pipeline.graph.agents.review.contracts import ReviewStatus
 
         mock_service = MagicMock()
         mock_service.patch_evidence = AsyncMock(

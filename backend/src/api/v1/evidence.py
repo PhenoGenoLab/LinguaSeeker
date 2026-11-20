@@ -14,7 +14,7 @@ from src.api.auth import get_current_account
 from src.api.deps import get_db_session, get_phase5_factory
 from src.api.rate_limit import limiter
 from src.core.foundation.auth.contracts import AuthContext
-from src.core.agents.review.contracts import (
+from src.pipeline.graph.agents.review.contracts import (
     EvidenceGroupDetailResponse,
     EvidenceGroupSummary,
     EvidencePatchRequest,
@@ -26,7 +26,7 @@ from src.core.agents.review.contracts import (
     PatchResultResponse,
     VariantSearchResponse,
 )
-from src.core.agents.review.search_service import SearchService
+from src.pipeline.graph.agents.review.search_service import SearchService
 from src.dao.postgresql.literature_profile_repo import LiteratureProfileRepository
 from src.dao.postgresql.models import CanonicalEvidenceItem
 

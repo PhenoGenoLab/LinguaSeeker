@@ -75,7 +75,7 @@ app.main → src.api.wiring → src.runs.* → src.core.*
 | Phase 3 | `core/standardize_entities_and_align_knowledge/` | 实体标准化 + 术语知识对齐 |
 | Phase 4 | `core/visualize_evidence_with_expert_in_loop/` | 专家审核、聊天、审计、溯源 |
 
-Phase 1-4 由 `pipeline/graph/topology.py`（LangGraph）编排为有向图；Phase 5 是独立的请求-响应式交互服务（`core/agents/review/` + `runs/phase_5_factory.py`）。
+Phase 1-4 由 `pipeline/graph/topology.py`（LangGraph）编排为有向图；Phase 5 是独立的请求-响应式交互服务（`pipeline/graph/agents/review/` + `runs/phase_5_factory.py`）。
 
 ## Usage / Patterns
 
