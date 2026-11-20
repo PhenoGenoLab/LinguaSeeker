@@ -18,7 +18,7 @@ def _patch_wire_deps(stack: ExitStack):
         "src.core.agents.acquisition.service.DocumentAcquisitionService",
         "src.core.agents.parsing.orchestrator.DocumentParseOrchestrator",
         "src.core.agents.parsing.service.ParseDocumentService",
-        "src.pipeline.skills.fact_chain.service.SourceFactChainService",
+        "src.pipeline.skills.extraction.service.SourceFactChainService",
         "src.core.agents.standardization.api.EntityStandardizationService",
         "src.pipeline.graph.topology.PipelineOrchestrator",
         "src.runs.concurrency.PipelineSemaphore",

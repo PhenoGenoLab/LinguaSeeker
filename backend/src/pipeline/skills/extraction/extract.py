@@ -16,7 +16,7 @@ from loguru import logger
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from src.core.shared.contracts.skill_io import SkillError, SkillFailureKind, SkillRequest, SkillResult
-from src.pipeline.skills.fact_chain.prompts import EXTRACT_PROMPT, EXTRACT_PROMPT_VERSION
+from src.pipeline.skills.extraction.prompts import EXTRACT_PROMPT, EXTRACT_PROMPT_VERSION
 from src.pipeline.skills.runtime.agent import build_agent, run_reply_sync
 from src.pipeline.skills.runtime.llm import Provider, ProviderError
 from src.core.shared.tools.fact_chain.contracts import ChainContractError, canonical_json

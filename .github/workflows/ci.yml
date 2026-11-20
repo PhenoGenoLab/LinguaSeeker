@@ -95,7 +95,8 @@ jobs:
           --ignore-missing-imports
           --follow-imports=silent
           src/core/shared/tools/fact_chain
-          src/pipeline/skills/fact_chain
+          src/pipeline/skills/extraction
+          src/pipeline/skills/translation
           src/pipeline/skills/runtime
           src/pipeline/graph/phases/phase_3.py
           src/runs/contracts.py
@@ -145,7 +146,8 @@ jobs:
           tests/core/agents/review/test_search_service.py
           -q
           --cov=src.core.shared.tools.fact_chain
-          --cov=src.pipeline.skills.fact_chain
+          --cov=src.pipeline.skills.extraction
+          --cov=src.pipeline.skills.translation
           --cov=src.pipeline.skills.runtime
           --cov=src.pipeline.graph.phases.phase_3
           --cov-branch

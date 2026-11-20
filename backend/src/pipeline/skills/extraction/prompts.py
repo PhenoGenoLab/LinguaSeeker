@@ -12,6 +12,7 @@ from src.core.shared.tools.fact_chain.contracts import (
     PromptVersions,
     sha256_text,
 )
+from src.pipeline.skills.translation.prompts import TRANSLATE_PROMPT_VERSION
 
 
 EXTRACT_PROMPT = (
@@ -28,15 +29,8 @@ VERIFY_PROMPT = (
     '{"verdicts": [{"fact_id", "label" (supported, unsupported or uncertain), "reason"}]}. '
     "Do not rewrite, correct or translate a candidate."
 )
-TRANSLATE_PROMPT = (
-    "Translate each raw_value into English. Keep numbers, units, gene and variant strings, "
-    "negation and uncertainty. Do not add facts. Return JSON "
-    '{"translations": [{"fact_id", "english_text"}]}.'
-)
-
 EXTRACT_PROMPT_VERSION = "extract:" + sha256_text(EXTRACT_PROMPT)[:12]
 VERIFY_PROMPT_VERSION = "verify:" + sha256_text(VERIFY_PROMPT)[:12]
-TRANSLATE_PROMPT_VERSION = "translate:" + sha256_text(TRANSLATE_PROMPT)[:12]
 PRESENTATION_VERSION = "en-presentation-v1:" + TRANSLATE_PROMPT_VERSION
 
 

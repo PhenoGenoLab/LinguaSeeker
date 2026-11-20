@@ -27,9 +27,7 @@ from src.core.agents.acquisition.contracts import (
 )
 
 if TYPE_CHECKING:
-    from src.core.agents.acquisition.service import (
-        DocumentAcquisitionService,
-    )
+    from src.pipeline.skills.acquisition.service import AcquisitionSkill
 
 _RETRYABLE_ERRORS = build_retryable_errors()
 
@@ -46,7 +44,7 @@ class Phase1Adapter:
 
     def __init__(
         self,
-        acquisition_service: DocumentAcquisitionService,
+        acquisition_service: AcquisitionSkill,
     ):
         self._acquisition = acquisition_service
 

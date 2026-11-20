@@ -22,7 +22,7 @@ from src.core.agents.extraction.contracts import (
     DualEvidenceExtractionResult,
     ExtractionTarget,
 )
-from src.pipeline.skills.fact_chain.service import SourceFactChainService
+from src.pipeline.skills.extraction.service import SourceFactChainService
 from src.pipeline.skills.runtime.llm import ProviderError
 
 GENE_QUOTE = "先证者携带BRCA1变异。"

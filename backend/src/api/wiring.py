@@ -141,9 +141,6 @@ def wire_dependencies() -> None:
     from src.api.deps import set_neo4j_repository, set_phase5_factory
     from src.api.v1.pipeline import set_pipeline_runner
     from src.core.agents.graph_retrieval.api import GraphRagService
-    from src.core.agents.acquisition.service import (
-        DocumentAcquisitionService,
-    )
     from src.core.agents.parsing.local.parser import (
         MinerULocalParser,
     )
@@ -164,7 +161,10 @@ def wire_dependencies() -> None:
     from src.pipeline.graph.phases.phase_3 import Phase3Adapter
     from src.pipeline.graph.phases.phase_4 import Phase4Adapter
     from src.pipeline.graph.topology import PipelineOrchestrator
-    from src.pipeline.skills.fact_chain.service import SourceFactChainService
+    from src.pipeline.skills.acquisition.service import AcquisitionSkill
+    from src.pipeline.skills.extraction.service import SourceFactChainService
+    from src.pipeline.skills.parsing.service import ParsingSkill
+    from src.pipeline.skills.standardization.service import StandardizationSkill
 
     global _engine, _session_factory, _redis_client, _local_parser, _dispatcher, _neo4j_driver, _neo4j_repository
 
@@ -202,7 +202,7 @@ def wire_dependencies() -> None:
 
     # ── Phase 1-4 services (long-lived, no session in constructor) ──
 
-    acquisition_service = DocumentAcquisitionService()
+    acquisition_skill = AcquisitionSkill(cfg=cfg)
     pd_cfg = cfg.parse_document
     remote_parser = MinerURemoteParser(
         api_token=cfg.mineru_api_token,
@@ -218,6 +218,7 @@ def wire_dependencies() -> None:
     )
     parse_orchestrator = DocumentParseOrchestrator(remote=remote_parser, local=_local_parser)
     parse_service = ParseDocumentService(parse_orchestrator)
+    parsing_skill = ParsingSkill(cfg=cfg, service=parse_service)
     graph_rag_service = GraphRagService(_neo4j_repository) if _neo4j_repository is not None else None
     source_fact_chain = SourceFactChainService(cfg=cfg)
     standardization_service = EntityStandardizationService(
@@ -225,13 +226,15 @@ def wire_dependencies() -> None:
         graph_rag_service=graph_rag_service,
     )
 
+    standardization_skill = StandardizationSkill(cfg=cfg, service=standardization_service)
+
     # ── Phase adapters ──
 
     phase_adapters = {
-        "phase_1": Phase1Adapter(acquisition_service),
-        "phase_2": Phase2Adapter(parse_service),
+        "phase_1": Phase1Adapter(acquisition_skill),
+        "phase_2": Phase2Adapter(parsing_skill),
         "phase_3": Phase3Adapter(source_fact_chain),
-        "phase_4": Phase4Adapter(standardization_service, session_factory),
+        "phase_4": Phase4Adapter(standardization_skill, session_factory),
     }
 
     # ── Orchestrator + Runner ──

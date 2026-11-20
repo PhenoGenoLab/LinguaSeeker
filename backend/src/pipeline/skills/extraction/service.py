@@ -25,8 +25,8 @@ from src.core.shared.tools.fact_chain.contracts import (
     sha256_text,
 )
 from src.core.shared.tools.fact_chain.projection import project_dual_result, supported_facts
-from src.pipeline.skills.fact_chain.prompts import PRESENTATION_VERSION, current_prompt_versions
-from src.pipeline.skills.fact_chain.runner import ChainRunner
+from src.pipeline.skills.extraction.prompts import PRESENTATION_VERSION, current_prompt_versions
+from src.pipeline.skills.extraction.runner import ChainRunner
 from src.pipeline.skills.runtime.llm import LangChainChainProvider, Provider
 
 DEFAULT_WINDOW_CHARS = 4000
@@ -52,7 +52,7 @@ def _build_provider(cfg: Any) -> Provider:
         if mode != "legacy":
             logger.warning("unknown pipeline.agent_runtime={!r}; using legacy provider", mode)
         return legacy
-    from src.pipeline.skills.fact_chain.extract import ExtractSkill, StageRouterProvider
+    from src.pipeline.skills.extraction.extract import ExtractSkill, StageRouterProvider
 
     return StageRouterProvider(legacy=legacy, extract=ExtractSkill(cfg), mode=mode)
 

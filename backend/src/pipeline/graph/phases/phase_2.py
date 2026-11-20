@@ -24,9 +24,7 @@ from src.runs.contracts import (
 )
 
 if TYPE_CHECKING:
-    from src.core.agents.parsing.service import (
-        ParseDocumentService,
-    )
+    from src.pipeline.skills.parsing.service import ParsingSkill
 
 _RETRYABLE_ERRORS = build_retryable_errors()
 
@@ -41,7 +39,7 @@ class Phase2Adapter:
 
     def __init__(
         self,
-        parse_service: ParseDocumentService,
+        parse_service: ParsingSkill,
     ):
         self._parse = parse_service
 

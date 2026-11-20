@@ -15,7 +15,7 @@ from src.core.shared.tools.fact_chain.contracts import (
 )
 from src.core.shared.tools.fact_chain.projection import project_dual_result
 from src.core.shared.tools.fact_chain.windowing import chunk_document
-from src.pipeline.skills.fact_chain.runner import BudgetExhausted, ChainRunner
+from src.pipeline.skills.extraction.runner import BudgetExhausted, ChainRunner
 from src.pipeline.skills.runtime.llm import ProviderError
 
 

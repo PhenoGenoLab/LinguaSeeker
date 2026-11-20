@@ -29,9 +29,7 @@ from src.core.agents.extraction.contracts import (
 )
 
 if TYPE_CHECKING:
-    from src.core.agents.standardization.api import (
-        EntityStandardizationService,
-    )
+    from src.pipeline.skills.standardization.service import StandardizationSkill
 
 _RETRYABLE_ERRORS = build_retryable_errors()
 
@@ -45,7 +43,7 @@ class Phase4Adapter:
 
     def __init__(
         self,
-        standardization_service: EntityStandardizationService,
+        standardization_service: StandardizationSkill,
         session_factory: async_sessionmaker[AsyncSession],
     ):
         self._standardization = standardization_service

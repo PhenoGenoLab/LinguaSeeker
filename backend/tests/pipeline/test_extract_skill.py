@@ -16,13 +16,13 @@ from agentscope.model import ChatModelBase, ChatResponse
 
 from src.core.config import PipelineConfig
 from src.core.shared.contracts.skill_io import SkillError, SkillRequest
-from src.pipeline.skills.fact_chain.extract import (
+from src.pipeline.skills.extraction.extract import (
     ExtractSkill,
     StageRouterProvider,
     compare_extract_replies,
     window_tools,
 )
-from src.pipeline.skills.fact_chain.prompts import EXTRACT_PROMPT
+from src.pipeline.skills.extraction.prompts import EXTRACT_PROMPT
 from src.pipeline.skills.runtime.llm import ProviderError
 from src.core.shared.tools.fact_chain.contracts import canonical_json
 
