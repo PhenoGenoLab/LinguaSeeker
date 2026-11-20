@@ -13,8 +13,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from loguru import logger
-
 from src.core.agents.extraction.contracts import DualEvidenceExtractionResult
 
 from src.core.shared.tools.fact_chain.contracts import (
@@ -27,7 +25,7 @@ from src.core.shared.tools.fact_chain.contracts import (
 from src.core.shared.tools.fact_chain.projection import project_dual_result, supported_facts
 from src.pipeline.skills.extraction.prompts import PRESENTATION_VERSION, current_prompt_versions
 from src.pipeline.skills.extraction.runner import ChainRunner
-from src.pipeline.skills.runtime.llm import ChatModelProvider, Provider
+from src.pipeline.skills.runtime.llm import Provider
 
 DEFAULT_WINDOW_CHARS = 4000
 DEFAULT_WINDOW_OVERLAP = 200

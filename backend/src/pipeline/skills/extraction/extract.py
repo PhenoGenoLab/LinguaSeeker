@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from src.core.shared.contracts.skill_io import SkillError, SkillFailureKind, SkillRequest, SkillResult
 from src.pipeline.skills.extraction.prompts import EXTRACT_PROMPT, EXTRACT_PROMPT_VERSION
-from src.pipeline.skills.runtime.llm import Provider, ProviderError
+from src.pipeline.skills.runtime.llm import Provider
 from src.core.shared.tools.fact_chain.contracts import ChainContractError, canonical_json
 from src.core.shared.tools.fact_chain.core import is_atomic, locate_quote, validate_reply_schema
 
