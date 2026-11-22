@@ -12,7 +12,7 @@ from typing import Any, NoReturn
 
 from pydantic import BaseModel, Field
 
-from src.pipeline.graph.agents.extraction.contracts import (
+from src.core.tools.extraction.contracts import (
     ExtractionTarget,
 )
 

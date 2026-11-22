@@ -12,8 +12,8 @@ from httpx import AsyncClient
 @pytest.mark.asyncio
 async def test_patch_evidence_returns_updated_card(async_client: AsyncClient):
     """PATCH /api/v1/evidence/{id} applies patch and returns result."""
-    from src.pipeline.graph.agents.review.contracts import ReviewStatus
-    from src.pipeline.graph.agents.review.feedback_service import PatchResult
+    from src.core.tools.review.contracts import ReviewStatus
+    from src.core.tools.review.feedback_service import PatchResult
 
     evidence_id = uuid4()
     mock_result = PatchResult(
@@ -61,7 +61,7 @@ async def test_patch_evidence_404_for_unknown(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_evidence_group_detail(async_client: AsyncClient):
     """GET /api/v1/evidence/groups/{group_id} returns grouped evidence detail."""
-    from src.pipeline.graph.agents.review.contracts import (
+    from src.core.tools.review.contracts import (
         EvidenceFieldDistribution,
         EvidenceGroupDetailResponse,
     )

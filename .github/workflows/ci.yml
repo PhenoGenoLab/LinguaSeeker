@@ -144,7 +144,6 @@ jobs:
           tests/pipeline
           tests/api/test_wiring_config.py
           tests/pipeline/test_search_service.py
-          --ignore=tests/pipeline/graph/agents
           -q
           --cov=src.core.shared.tools.fact_chain
           --cov=src.pipeline.skills.extraction

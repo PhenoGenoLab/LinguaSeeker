@@ -14,17 +14,11 @@ from uuid import UUID
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.pipeline.graph.agents.review.chat_service import ChatService
-from src.pipeline.graph.agents.review.delta_audit_service import (
-    DeltaAuditService,
-)
-from src.pipeline.graph.agents.review.feedback_service import (
-    FeedbackService,
-)
-from src.pipeline.graph.agents.review.providers import (
-    ChatLLMProvider,
-)
-from src.pipeline.graph.agents.review.source_linker import SourceLinker
+from src.pipeline.graph.agents.review import ChatService
+from src.pipeline.graph.agents.review import DeltaAuditService
+from src.pipeline.graph.agents.review import FeedbackService
+from src.pipeline.graph.agents.review import ChatLLMProvider
+from src.pipeline.graph.agents.review import SourceLinker
 
 if TYPE_CHECKING:
     from src.core.config import Settings

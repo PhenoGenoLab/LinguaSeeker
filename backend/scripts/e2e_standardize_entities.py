@@ -28,16 +28,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.e2e_extract_evidence import run_extract_evidence
 from src.core.config import Settings, get_config
-from src.pipeline.graph.agents.extraction.contracts import (
+from src.core.tools.extraction.contracts import (
     DualEvidenceExtractionResult,
 )
-from src.pipeline.graph.agents.standardization.api import (
+from src.pipeline.skills.standardization.api import (
     EntityStandardizationService,
     build_summary_metadata,
     import_terminology,
     serialize_matches,
 )
-from src.pipeline.graph.agents.standardization.contracts import StandardizationResult
+from src.core.tools.standardization.contracts import StandardizationResult
 from src.dao.postgresql.connection import async_session_factory, build_async_engine, get_async_session
 
 

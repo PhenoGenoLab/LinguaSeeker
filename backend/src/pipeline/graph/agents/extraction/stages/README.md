@@ -154,8 +154,8 @@ finalize → EvidenceExtractionResult
 各阶段由 `EvidenceExtractionWorkflow` 自动编排，通常无需直接调用。如需单独使用：
 
 ```python
-from src.pipeline.graph.agents.extraction.stages.evidence_map import RelevanceScanStage
-from src.pipeline.graph.agents.extraction.stages.primary_broad_extraction import PrimaryBroadExtractionStage
+from src.pipeline.skills.extraction.stages.evidence_map import RelevanceScanStage
+from src.pipeline.skills.extraction.stages.primary_broad_extraction import PrimaryBroadExtractionStage
 
 # 相关性扫描
 scan_stage = RelevanceScanStage(provider=llm_provider)

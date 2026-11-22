@@ -1,17 +1,9 @@
-"""GraphRAG vertical slice: graph construction, retrieval, and Q&A."""
+"""Portal — literature graph retrieval agent.
 
-from src.pipeline.graph.agents.graph_retrieval.api import GraphRagService
-from src.pipeline.graph.agents.graph_retrieval.contracts import (
-    GraphEntityType,
-    GraphRelationType,
-    LiteratureGraphEdge,
-    LiteratureGraphNode,
-)
+Graph building and retrieval live in :mod:`src.core.tools.graph_retrieval`, the
+Q&A agent in :mod:`src.pipeline.skills.graph_retrieval`.
+"""
 
-__all__ = [
-    "GraphEntityType",
-    "GraphRelationType",
-    "LiteratureGraphEdge",
-    "LiteratureGraphNode",
-    "GraphRagService",
-]
+from src.pipeline.skills.graph_retrieval.api import GraphRagService
+
+__all__ = ["GraphRagService"]

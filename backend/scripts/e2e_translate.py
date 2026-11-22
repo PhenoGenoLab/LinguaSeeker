@@ -16,7 +16,7 @@ from loguru import logger
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.core.config import get_config
-from src.pipeline.graph.agents.translation.api import TranslationService
+from src.pipeline.skills.translation.api import TranslationService
 
 OUTPUT_DIR = Path(__file__).resolve().parents[1] / "output" / "cross_lingual"
 

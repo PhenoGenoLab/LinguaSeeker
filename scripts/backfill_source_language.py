@@ -26,7 +26,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import get_config
-from src.pipeline.graph.agents.review.search_service import (
+from src.core.tools.review.search_service import (
     _detect_source_language_from_text,
     _extract_source_language,
     _extract_source_language_from_state,

@@ -140,7 +140,7 @@ def wire_dependencies() -> None:
     from src.runs.state_persistence import SessionBoundStatePersistence
     from src.api.deps import set_neo4j_repository, set_phase5_factory
     from src.api.v1.pipeline import set_pipeline_runner
-    from src.pipeline.graph.agents.graph_retrieval.api import GraphRagService
+    from src.pipeline.skills.graph_retrieval.api import GraphRagService
     from src.core.tools.parsing.local.parser import (
         MinerULocalParser,
     )
@@ -153,7 +153,7 @@ def wire_dependencies() -> None:
     from src.core.tools.parsing.service import (
         ParseDocumentService,
     )
-    from src.pipeline.graph.agents.standardization.api import (
+    from src.pipeline.skills.standardization.api import (
         EntityStandardizationService,
     )
     from src.pipeline.graph.phases.phase_1 import Phase1Adapter

@@ -32,7 +32,7 @@ class StandardizationSkill:
     @property
     def service(self) -> Any:
         if self._service is None:
-            from src.pipeline.graph.agents.standardization.api import EntityStandardizationService
+            from src.pipeline.skills.standardization.api import EntityStandardizationService
             from src.core.config import get_config
 
             self._service = EntityStandardizationService(cfg=self._cfg or get_config(), graph_rag_service=None)

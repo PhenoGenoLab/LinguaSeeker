@@ -51,16 +51,16 @@ from sqlalchemy import select
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.core.config import get_config
-from src.pipeline.graph.agents.translation.api import TranslationService
-from src.pipeline.graph.agents.parsing.remote.parser import MinerURemoteParser
-from src.pipeline.graph.agents.review.chat_service import ChatService
-from src.pipeline.graph.agents.review.contracts import (
+from src.pipeline.skills.translation.api import TranslationService
+from src.core.tools.parsing.remote.parser import MinerURemoteParser
+from src.pipeline.skills.review.chat_service import ChatService
+from src.core.tools.review.contracts import (
     EvidencePatchRequest,
     ReviewStatus,
 )
-from src.pipeline.graph.agents.review.delta_audit_service import DeltaAuditService
-from src.pipeline.graph.agents.review.feedback_service import FeedbackService
-from src.pipeline.graph.agents.review.source_linker import SourceLinker
+from src.core.tools.review.delta_audit_service import DeltaAuditService
+from src.core.tools.review.feedback_service import FeedbackService
+from src.core.tools.review.source_linker import SourceLinker
 from src.dao.postgresql.connection import async_session_factory, build_async_engine, get_async_session
 from src.dao.postgresql.models import CanonicalEvidenceItem, ProcessingRun
 

@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from src.pipeline.graph.agents.extraction.contracts import (
+from src.core.tools.extraction.contracts import (
     ExtractionTarget,
 )
 

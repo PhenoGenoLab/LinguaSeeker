@@ -1,6 +1,6 @@
 # SPEC — agents 门户化 + 确定性能力下沉 core/tools
 
-**状态**: 执行中（Stage 1 试点：acquisition）
+**状态**: 已完成 Stage 1-7（acquisition、parsing、standardization、extraction、translation、review、graph_retrieval）；Stage 8 收口中
 **决定来源**: 用户 2026-11-22 明确架构——`graph` 编排 → `agents` 门户 → `skills` 实现专业 agent → `skills` 调用 `core` 的具体工具。
 **范围**: `backend/src/pipeline/graph/agents/*` 共 153 个 `.py`、31,563 行；外部 import 点 188+ 文件。
 
@@ -75,3 +75,34 @@ prompt 目录另计约 1.1k 行，按规则 1 归 skills。
 | 188+ 外部 import 点 | 机械改写 `src.pipeline.graph.agents.<A>.` → 新落点；门户路径只在 `graph/phases`、`runs/phase_*_factory` 保留 |
 | 门户变成 shim | 门户只导出 phase/factory 真正用到的名字；`__all__` 逐一列出，禁止 `import *` |
 | 一次性大迁移不可回滚 | 每 agent 一个提交，测试全绿才进入下一个 |
+
+
+## 7. 执行结果（2026-11-22）
+
+| Stage | 提交 | 结果 |
+|---|---|---|
+| 1 acquisition | `4b33f9c5c` | 527 行 → `core/tools/acquisition`，门户 2 个名字 |
+| 2 parsing | `617dbc988` | 1,734 行 → `core/tools/parsing`，门户 `ParsingSkill` |
+| 3-7 其余 | 本次提交 | 111 个文件按规则拆分；门户 5 个；188+ 外部 import 改指新路径 |
+
+实测分布：`core/tools/<agent>` 承载契约/规则/持久化，`skills/<agent>` 承载 prompt、provider、
+stages、workflow、api；`agent` 目录只剩门户 `__init__.py`。
+
+### 与 SPEC 的偏离（必须知道）
+
+1. **`skills/extraction/prompts.py` 与新建的 `prompts/` 包同名冲突** → 两个模块合并进
+   `prompts/__init__.py`，旧单文件删除。`EXTRACT_PROMPT` 等名字保持不变。
+2. **`providers.py` 归类按语义修正**：HTTP 推理适配器（`standardization/similarity_match`、
+   `graph_retrieval`）留在 core/tools；LLM provider 进 skills。
+3. **`qa_engine.py`、`chat_service.py` 起初按名称规则落入 core，因 import LLM provider
+   被重新判为 skills**（规则的传播只覆盖了相对 import，绝对 import 靠人工复查）。
+4. **测试位置**：`tests/pipeline/graph/agents/<A>/` 整体移到 `tests/core/tools/<A>/`。
+   它们依赖 `rust_io`/`langchain_openai`/`agentscope`，CI 的确定性套件本来就不收集，
+   迁移后同样不收集。
+5. **边界规则变化**：删除 `test_skills_do_not_import_database_clients`（skills 现在承担
+   持久化），保留 `test_skills_do_not_import_graph_execution`。CI 的
+   `--ignore=tests/pipeline/graph/agents` 已移除（该路径不复存在）。
+6. **已知数据依赖失败**：`tests/core/tools/extraction/test_e2e_fabry_dual_tracks.py`
+   在旧位置因 `parents[4]` 解析到 `tests/` 而跳过；迁移后解析到 backend，真实读取
+   `backend/output/.../法布雷病1例`，断言 original 页跨度 4 页、实际 3 页。涉及模块逐行
+   diff 仅 import 变化，判定为 fixture 漂移，未在本次修复。

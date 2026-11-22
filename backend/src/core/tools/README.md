@@ -17,10 +17,19 @@ core/tools         具体工具 ← 本目录
 
 ```
 tools/
-├── builtin/    # shell、文件、交互：Bash PowerShell Read Write Edit Glob Grep
-│               #                       AskUser ResetTools LocalBackend/BackendBase
-└── task/       # TaskCreate TaskGet TaskList TaskUpdate
+├── builtin/           # shell、文件、交互：Bash PowerShell Read Write Edit Glob Grep
+│                      #                       AskUser ResetTools LocalBackend/BackendBase
+├── task/              # TaskCreate TaskGet TaskList TaskUpdate
+├── acquisition/       # 文献采集：DocumentAcquisitionService、契约、local_upload
+├── parsing/           # MinerU remote/local、编排、契约
+├── extraction/        # 证据抽取确定性部分：契约、core、domain、reconcile、verify、projection
+├── standardization/   # 匹配、导入、投影、hgvs、similarity_match 等
+├── translation/       # 契约、artifact 持久化、语言检测
+├── review/            # 检索、反馈、delta audit、source link、variant 聚合
+└── graph_retrieval/   # 图契约、builder、retrieval、Neo4j provider
 ```
+
+prompt、模型调用与 Skill 编排不在这里，见 `src/pipeline/skills/<agent>/`。
 
 分类镜像 AgentScope 的 `agentscope.tool` 布局，因此 `src.core.tools.builtin` 对应
 `agentscope.tool._builtin`，`src.core.tools.task` 对应 `agentscope.tool._task`。

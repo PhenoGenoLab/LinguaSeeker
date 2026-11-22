@@ -7,14 +7,14 @@ from unittest.mock import MagicMock
 import pytest
 
 from src.runs.phase_5_factory import Phase5ServiceFactory
-from src.pipeline.graph.agents.review.chat_service import ChatService
-from src.pipeline.graph.agents.review.delta_audit_service import (
+from src.pipeline.skills.review.chat_service import ChatService
+from src.core.tools.review.delta_audit_service import (
     DeltaAuditService,
 )
-from src.pipeline.graph.agents.review.feedback_service import (
+from src.core.tools.review.feedback_service import (
     FeedbackService,
 )
-from src.pipeline.graph.agents.review.source_linker import SourceLinker
+from src.core.tools.review.source_linker import SourceLinker
 
 
 @pytest.fixture

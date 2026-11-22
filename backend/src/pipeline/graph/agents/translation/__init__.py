@@ -1,23 +1,10 @@
-"""Cross-lingual translation feature slice.
+"""Portal — translation agent.
 
-Provides document formatting, language detection, multi-stage LLM translation,
-and persistence for the Phase 2 cross-lingual pipeline.
+Deterministic text work lives in :mod:`src.core.tools.translation`, the agent in
+:mod:`src.pipeline.skills.translation`. The graph imports this portal only.
 """
 
-from .api import TranslationService
-from .contracts import (
-    CrossLingualOutput,
-    PipelineState,
-    TranslationAlignmentChunk,
-    TranslationResult,
-)
-from .persistence import DocumentPersistenceService
+from src.core.tools.translation.translate.language_detector import detect_language
+from src.pipeline.skills.translation import TranslationService
 
-__all__ = [
-    "CrossLingualOutput",
-    "DocumentPersistenceService",
-    "PipelineState",
-    "TranslationAlignmentChunk",
-    "TranslationResult",
-    "TranslationService",
-]
+__all__ = ["TranslationService", "detect_language"]

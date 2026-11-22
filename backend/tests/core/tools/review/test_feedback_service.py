@@ -1,0 +1,257 @@
+"""Tests for feedback service."""
+
+from __future__ import annotations
+
+import uuid
+
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.core.tools.review.contracts import (
+    EvidenceCardPayload,
+    EvidencePatchRequest,
+    ReviewStatus,
+)
+from src.core.tools.review.feedback_service import (
+    FeedbackService,
+)
+
+
+@pytest.mark.asyncio
+class TestFeedbackService:
+    """FeedbackService handles evidence card patch operations."""
+
+    async def test_patch_single_field(self, db_session: AsyncSession) -> None:
+        """Patching one field updates payload and records delta."""
+        evidence_id = await self._create_test_evidence(db_session)
+
+        patch = EvidencePatchRequest(
+            fields={"phenotype": "Fabry 病"},
+            change_reason="Bilingual correction",
+        )
+        service = FeedbackService(db_session)
+        result = await service.patch_evidence(
+            canonical_evidence_id=evidence_id,
+            patch=patch,
+            reviewer_id=None,
+        )
+
+        assert result.new_status == ReviewStatus.CORRECTED
+        assert result.deltas == 1
+        assert result.field_deltas[0].field == "phenotype"
+        assert result.field_deltas[0].old_value == "Fabry disease"
+        assert result.field_deltas[0].new_value == "Fabry 病"
+
+    async def test_patch_no_change_skips_delta(self, db_session: AsyncSession) -> None:
+        """Patching with identical values produces no delta (zero-noise)."""
+        evidence_id = await self._create_test_evidence(db_session)
+        patch = EvidencePatchRequest(fields={"phenotype": "Fabry disease"})
+        service = FeedbackService(db_session)
+        result = await service.patch_evidence(
+            canonical_evidence_id=evidence_id,
+            patch=patch,
+            reviewer_id=None,
+        )
+
+        assert result.deltas == 0
+        assert result.field_deltas == []
+
+    async def test_patch_multiple_fields(self, db_session: AsyncSession) -> None:
+        """Patching multiple fields records all deltas."""
+        evidence_id = await self._create_test_evidence(db_session)
+        patch = EvidencePatchRequest(
+            fields={
+                "gene": "GAL",
+                "classification": "Pathogenic",
+            }
+        )
+        service = FeedbackService(db_session)
+        result = await service.patch_evidence(
+            canonical_evidence_id=evidence_id,
+            patch=patch,
+            reviewer_id=None,
+        )
+
+        assert result.deltas == 2
+        fields = {d.field for d in result.field_deltas}
+        assert fields == {"gene", "classification"}
+
+    async def test_patch_with_explicit_status(self, db_session: AsyncSession) -> None:
+        """Explicit new_status overrides auto-CORRECTED."""
+        evidence_id = await self._create_test_evidence(db_session)
+        patch = EvidencePatchRequest(
+            fields={"phenotype": "Fabry 病"},
+            new_status=ReviewStatus.APPROVED,
+        )
+        service = FeedbackService(db_session)
+        result = await service.patch_evidence(
+            canonical_evidence_id=evidence_id,
+            patch=patch,
+            reviewer_id=None,
+        )
+
+        assert result.new_status == ReviewStatus.APPROVED
+
+    async def test_patch_rejects_invalid_field(self, db_session: AsyncSession) -> None:
+        """Arbitrary field paths are rejected."""
+        evidence_id = await self._create_test_evidence(db_session)
+        with pytest.raises(ValueError, match="Invalid fields"):
+            patch = EvidencePatchRequest(fields={"__class__": "exploit"})
+            service = FeedbackService(db_session)
+            await service.patch_evidence(
+                canonical_evidence_id=evidence_id,
+                patch=patch,
+                reviewer_id=None,
+            )
+
+    async def test_patch_empty_fields_rejected(self, db_session: AsyncSession) -> None:
+        """Empty fields dict with no status change is rejected by contract validation."""
+        with pytest.raises(ValueError, match="at least one"):
+            EvidencePatchRequest(fields={})
+
+    async def test_patch_status_only_accepted(self, db_session: AsyncSession) -> None:
+        """Empty fields with new_status is a valid status-only patch."""
+        req = EvidencePatchRequest(fields={}, new_status=ReviewStatus.APPROVED)
+        assert req.new_status == ReviewStatus.APPROVED
+        assert req.fields == {}
+
+    async def test_status_only_change_records_audit_event(self, db_session: AsyncSession) -> None:
+        """Status-only change (no field deltas) still records an audit event."""
+        from sqlalchemy import select
+
+        from src.dao.postgresql.models import ReviewAuditEvent
+
+        evidence_id = await self._create_test_evidence(db_session)
+        service = FeedbackService(db_session)
+
+        # Status-only patch: provisional -> approved, no field changes
+        patch = EvidencePatchRequest(
+            fields={},
+            new_status=ReviewStatus.APPROVED,
+            change_reason="status-only approval",
+        )
+        result = await service.patch_evidence(
+            canonical_evidence_id=evidence_id,
+            patch=patch,
+            reviewer_id=None,
+        )
+        assert result.deltas == 0
+        assert result.new_status == ReviewStatus.APPROVED
+
+        # Verify audit event was recorded
+        stmt = select(ReviewAuditEvent).where(ReviewAuditEvent.canonical_evidence_id == evidence_id)
+        events = (await db_session.execute(stmt)).scalars().all()
+        assert len(events) == 1
+        assert events[0].old_status == "provisional"
+        assert events[0].new_status == "approved"
+        assert events[0].field_deltas == []
+        assert events[0].change_reason == "status-only approval"
+
+    async def test_patch_nonexistent_evidence_raises(self, db_session: AsyncSession) -> None:
+        """Patching nonexistent evidence raises NoResultFound."""
+        from uuid import uuid4
+
+        from sqlalchemy.exc import NoResultFound
+
+        patch = EvidencePatchRequest(fields={"phenotype": "test"})
+        service = FeedbackService(db_session)
+        with pytest.raises(NoResultFound):
+            await service.patch_evidence(
+                canonical_evidence_id=uuid4(),
+                patch=patch,
+                reviewer_id=None,
+            )
+
+    async def test_patch_evidence_respects_owner_scope(self, db_session: AsyncSession) -> None:
+        """A personal account cannot patch a public evidence row by id."""
+        from uuid import uuid4
+
+        from sqlalchemy.exc import NoResultFound
+
+        evidence_id = await self._create_test_evidence(db_session)
+        patch = EvidencePatchRequest(fields={"phenotype": "Fabry 病"})
+        service = FeedbackService(db_session)
+
+        with pytest.raises(NoResultFound):
+            await service.patch_evidence(
+                canonical_evidence_id=evidence_id,
+                patch=patch,
+                owner_user_id=uuid4(),
+            )
+
+    async def test_patch_preserves_field_level_active_payload_keys(self, db_session: AsyncSession) -> None:
+        """Patching must preserve field-level keys (group_id, source, track, entity_id)."""
+        from unittest.mock import AsyncMock, patch as mock_patch
+
+        evidence_id = await self._create_test_evidence(
+            db_session,
+            field_id="B.disease_diagnosis",
+            active_payload={
+                "field_id": "B.disease_diagnosis",
+                "field_name": "Disease diagnosis",
+                "value": "Fabry disease",
+                "group_id": "case-1",
+                "track": "original",
+                "source": {"text_snippet": "Fabry disease was diagnosed"},
+                "entity_id": "entity-1",
+            },
+        )
+
+        service = FeedbackService(db_session)
+        # Mock refresh calls to avoid SQLite TRUNCATE issue (pre-existing)
+        with (
+            mock_patch.object(service, "_refresh_literature_profile", new_callable=AsyncMock),
+            mock_patch.object(service, "_refresh_search_index", new_callable=AsyncMock),
+        ):
+            await service.patch_evidence(
+                canonical_evidence_id=evidence_id,
+                patch=EvidencePatchRequest(fields={"disease": "Fabry disease type I"}),
+                reviewer_id=None,
+            )
+
+        from src.dao.postgresql.models import CanonicalEvidenceItem
+
+        evidence = await db_session.get(CanonicalEvidenceItem, evidence_id)
+        assert evidence is not None
+        assert evidence.active_payload["group_id"] == "case-1"
+        assert evidence.active_payload["source"] == {"text_snippet": "Fabry disease was diagnosed"}
+        assert evidence.active_payload["track"] == "original"
+        assert evidence.active_payload["entity_id"] == "entity-1"
+        assert evidence.active_payload["value"] == "Fabry disease type I"
+
+    async def _create_test_evidence(
+        self,
+        session: AsyncSession,
+        *,
+        field_id: str = "A.test.1",
+        active_payload: dict | None = None,
+    ) -> uuid.UUID:
+        """Helper: create test evidence card with provisional status."""
+        from uuid import uuid4
+
+        from src.dao.postgresql.models import CanonicalEvidenceItem, SourceDocument
+
+        doc = SourceDocument(source_document_id=uuid4(), raw_metadata={})
+        session.add(doc)
+        await session.flush()
+
+        if active_payload is None:
+            active_payload = EvidenceCardPayload(
+                gene="GLA",
+                phenotype="Fabry disease",
+            ).model_dump()
+
+        evidence = CanonicalEvidenceItem(
+            canonical_evidence_id=uuid4(),
+            source_document_id=doc.source_document_id,
+            field_id=field_id,
+            position_hash="abc123",
+            text_hash="def456",
+            entity_scope_hash="ghi789",
+            current_best_status="found",
+            review_status="provisional",
+            active_payload=active_payload,
+        )
+        session.add(evidence)
+        await session.flush()
+        return evidence.canonical_evidence_id

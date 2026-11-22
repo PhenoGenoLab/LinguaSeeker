@@ -16,8 +16,8 @@ import sys
 from loguru import logger
 
 from src.core.config import get_config
-from src.pipeline.graph.agents.standardization.api import build_terminology_embeddings
-from src.pipeline.graph.agents.standardization.contracts import EntityType
+from src.pipeline.skills.standardization.api import build_terminology_embeddings
+from src.core.tools.standardization.contracts import EntityType
 
 
 def _configure_logger() -> None:

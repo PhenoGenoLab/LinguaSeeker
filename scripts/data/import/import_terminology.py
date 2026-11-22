@@ -34,7 +34,7 @@ async def _generate_embeddings() -> None:
     Delegates to the Phase 3 public facade (build_terminology_embeddings),
     which uses TerminologyEmbeddingIndexer with EmbeddingHttpProvider.
     """
-    from src.pipeline.graph.agents.standardization.api import (
+    from src.pipeline.skills.standardization.api import (
         build_terminology_embeddings,
     )
 
@@ -45,7 +45,7 @@ async def _generate_embeddings() -> None:
 
 async def main() -> None:
     """Run the terminology import facade."""
-    from src.pipeline.graph.agents.standardization.api import import_terminology
+    from src.pipeline.skills.standardization.api import import_terminology
 
     _configure_logger()
     args = parse_args()

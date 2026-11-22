@@ -13,7 +13,7 @@ from src.core.shared.tools.fact_chain.contracts import (
     SourceHashMismatch,
     sha256_text,
 )
-from src.pipeline.graph.agents.extraction.projection import project_dual_result
+from src.core.tools.extraction.projection import project_dual_result
 from src.core.shared.tools.fact_chain.windowing import chunk_document
 from src.pipeline.skills.extraction.runner import BudgetExhausted, ChainRunner
 from src.pipeline.skills.runtime.llm import ProviderError
@@ -299,8 +299,8 @@ def test_projection_drops_unsupported_facts() -> None:
 
 
 def test_projection_feeds_phase_four_standardization_input() -> None:
-    from src.pipeline.graph.agents.standardization.adapters import DualResultAdapter
-    from src.pipeline.graph.agents.standardization.contracts import EntityType
+    from src.core.tools.standardization.adapters import DualResultAdapter
+    from src.core.tools.standardization.contracts import EntityType
 
     run = run_chain()
     result = project_dual_result(run, target_gene="BRCA1", target_disease="breast cancer")
@@ -382,8 +382,8 @@ def test_projection_keeps_each_gene_with_its_own_variant() -> None:
 
 
 def test_projection_target_guard_keeps_off_target_facts_out_of_phase_four() -> None:
-    from src.pipeline.graph.agents.standardization.adapters import DualResultAdapter
-    from src.pipeline.graph.agents.standardization.contracts import EntityType
+    from src.core.tools.standardization.adapters import DualResultAdapter
+    from src.core.tools.standardization.contracts import EntityType
 
     text, facts = multi_gene_facts()
     run = run_chain(text=text, provider=StubProvider(facts))

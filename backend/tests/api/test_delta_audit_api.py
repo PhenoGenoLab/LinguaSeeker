@@ -68,12 +68,12 @@ async def test_patch_evidence_event_is_queryable_by_source_document(
         patch("src.api.v1.evidence.get_phase5_factory", return_value=factory),
         patch("src.api.v1.delta_audit.get_phase5_factory", return_value=factory),
         patch(
-            "src.pipeline.graph.agents.review.feedback_service."
+            "src.core.tools.review.feedback_service."
             "FeedbackService._refresh_literature_profile",
             new_callable=AsyncMock,
         ),
         patch(
-            "src.pipeline.graph.agents.review.feedback_service.FeedbackService._refresh_search_index",
+            "src.core.tools.review.feedback_service.FeedbackService._refresh_search_index",
             new_callable=AsyncMock,
         ),
     ):

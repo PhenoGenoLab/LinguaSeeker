@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.auth import get_current_account
 from src.api.deps import get_db_session, get_phase5_factory
 from src.core.foundation.auth.contracts import AuthContext
-from src.pipeline.graph.agents.review.contracts import (
+from src.core.tools.review.contracts import (
     DeltaEntry,
     ReviewAuditEventResponse,
     ReviewStatus,

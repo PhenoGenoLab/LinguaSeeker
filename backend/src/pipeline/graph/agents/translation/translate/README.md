@@ -156,7 +156,7 @@ TranslationResult
 ## 使用
 
 ```python
-from src.pipeline.graph.agents.translation.translate import (
+from src.pipeline.skills.translation.translate import (
     MultiStageTranslator, detect_language, create_llm
 )
 

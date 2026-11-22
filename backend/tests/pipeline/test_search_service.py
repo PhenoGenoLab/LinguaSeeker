@@ -10,7 +10,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.pipeline.graph.agents.review.search_service import (
+from src.core.tools.review.search_service import (
     SearchService,
     _build_highlight,
     _coerce_str,

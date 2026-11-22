@@ -25,8 +25,8 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.core.config import get_config
-from src.pipeline.graph.agents.extraction.api import EvidenceExtractionService
-from src.pipeline.graph.agents.extraction.contracts import (
+from src.pipeline.skills.extraction.api import EvidenceExtractionService
+from src.core.tools.extraction.contracts import (
     DualEvidenceExtractionResult,
     DualTrackDocuments,
     EvidenceExtractionResult,

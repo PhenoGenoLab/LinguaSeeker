@@ -103,7 +103,7 @@ mark_redacted_values()         ── 空括号 + CJK 间隙
 ## 使用
 
 ```python
-from src.pipeline.graph.agents.translation.translate.validator import (
+from src.core.tools.translation.translate.validator import (
     strip_source_contamination,
     strip_prompt_artifacts,
     normalize_cjk_punctuation,

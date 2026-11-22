@@ -6,6 +6,7 @@ presentation fields without creating new facts.
 """
 
 from src.pipeline.skills.translation.prompts import TRANSLATE_PROMPT, TRANSLATE_PROMPT_VERSION
+from src.pipeline.skills.translation.api import TranslationService
 from src.pipeline.skills.translation.stage import TranslationStage
 
-__all__ = ["TRANSLATE_PROMPT", "TRANSLATE_PROMPT_VERSION", "TranslationStage"]
+__all__ = ["TRANSLATE_PROMPT", "TRANSLATE_PROMPT_VERSION", "TranslationService", "TranslationStage"]

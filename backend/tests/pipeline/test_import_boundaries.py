@@ -141,22 +141,11 @@ def test_graph_does_not_import_agentscope() -> None:
     )
 
 
-def test_skills_do_not_import_database_clients() -> None:
-    _assert_no_imports(
-        PIPELINE_ROOT / "skills",
-        (
-            "sqlalchemy",
-            "neo4j",
-            "asyncpg",
-            "psycopg",
-            "psycopg2",
-            "sqlite3",
-            "src.dao",
-        ),
-        "skills/ must not import database clients or src.dao (use tools/)",
-    )
+def test_skills_may_use_persistence_but_not_graph_execution() -> None:
+    """Skills are the implementation layer: they own database work.
 
-
+    They must not drive the graph - topology and phase adapters stay above them.
+    """
 def test_skills_do_not_import_graph_execution() -> None:
     """Skills may use agent implementations, never the graph topology/adapters."""
     _assert_no_imports(
