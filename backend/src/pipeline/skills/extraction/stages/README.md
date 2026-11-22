@@ -11,7 +11,6 @@
 ```
 stages/
 ├── __init__.py                  # 模块入口
-├── preprocessing.py             # 证据预处理（规范化 + 截断）
 ├── role_routing.py              # 证据角色路由
 ├── evidence_map.py              # 相关性扫描与通道分类
 ├── block_selection.py           # 高召回块选择
@@ -27,12 +26,6 @@ stages/
 
 ## 核心组件
 
-### 预处理 (`preprocessing.py`)
-
-`EvidencePreprocessor` — 规范化和截断证据字段：
-- 空白规范化（多空格/换行→单空格）
-- 分级截断：article_limit=3000、paragraph_limit=800、sentence_limit=400
-- 处理字段：article_title、article_abstract、article_keywords、paragraph_text、figure_caption、table_caption、table_data、supplementary_info
 
 ### 角色路由 (`role_routing.py`)
 
