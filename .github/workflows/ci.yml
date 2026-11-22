@@ -128,8 +128,8 @@ jobs:
           cache-dependency-glob: "backend/uv.lock"
 
       # The `ci` dependency group is the minimal import chain for these tests.
-      # It deliberately excludes torch/NVIDIA wheels and the Rust extension so
-      # a pure-Python suite cannot fail on GPU downloads or maturin builds.
+      # It deliberately excludes torch/NVIDIA wheels and the rust-io wheel so a
+      # pure-Python suite cannot fail on GPU downloads or platform-specific wheels.
       # Exporting the frozen lock keeps versions pinned while allowing PyPI as
       # the download source instead of the mirror recorded in uv.lock.
       - name: Export locked CI requirements

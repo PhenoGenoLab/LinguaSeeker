@@ -94,7 +94,7 @@ sudo usermod -aG docker $USER
 
 ### CI (every push / PR)
 
-- `ci.yml` runs ruff lint on the backend, ESLint + TypeScript type-check + vitest on the frontend, and `cargo test` on all three Rust crates.
+- `ci.yml` runs ruff lint, mypy and pytest on the backend plus ESLint + TypeScript type-check + vitest on the frontend. The Rust extension is the published `rust-io` wheel, so there is no cargo job.
 
 ### Image publish (local only)
 
