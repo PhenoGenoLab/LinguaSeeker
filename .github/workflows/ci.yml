@@ -151,6 +151,10 @@ jobs:
             --index-url https://pypi.org/simple/ \
             -r /tmp/ci-requirements.txt
 
+      # Coverage scope: the deterministic suite exercises these modules. The
+      # extraction/translation implementation moved into the same directories,
+      # so the old dir-wide targets would now measure thousands of lines this
+      # suite never runs; those are covered by their own (non-CI) test suites.
       - name: Run deterministic unit suite
         run: >-
           .venv/bin/python -m pytest
@@ -161,10 +165,13 @@ jobs:
           tests/pipeline/test_search_service.py
           -q
           --cov=src.core.shared.tools.fact_chain
-          --cov=src.pipeline.skills.extraction
-          --cov=src.pipeline.skills.translation
           --cov=src.pipeline.skills.runtime
+          --cov=src.pipeline.skills.extraction.service
+          --cov=src.pipeline.skills.extraction.extract
+          --cov=src.pipeline.skills.extraction.runner
+          --cov=src.pipeline.skills.translation.stage
           --cov=src.pipeline.graph.phases.phase_3
+          --cov=src.runs.contracts
           --cov-branch
           --cov-report=term-missing
           --cov-fail-under=85

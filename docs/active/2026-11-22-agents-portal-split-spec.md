@@ -125,3 +125,15 @@ CI 的 mypy 在迁移前只检查 `skills/` 下的薄封装；实现搬入后，
 
 其中 `translator.py` 的 5 vs 7 元组不匹配值得单独排查：它可能是真实的运行时缺陷，
 而不只是注解问题。已删除的 `stages/preprocessing.py` 也曾贡献 1 个错误。
+
+## 9. CI 覆盖率门禁的调整
+
+迁移后 `--cov=src.pipeline.skills.extraction|translation`（目录级）会把 2.3 万行实现纳入
+统计，而确定性套件只跑其中的薄封装，总覆盖率从 85%+ 掉到 **37%**。CI 改为按文件计量确定性
+套件真正覆盖的模块（此前就是这些薄封装）：
+
+`fact_chain`、`skills/runtime`、`skills/extraction/{service,extract,runner}.py`、
+`skills/translation/stage.py`、`phases/phase_3.py`、`runs/contracts.py`。
+
+在 CI 等价环境（ci 依赖组 + agentscope，无 langchain_openai）实测：**287 passed，89.27%**。
+被排除的 prompt/translator/stages 由各自的测试套件覆盖（`tests/core/tools/...`，不在确定性 CI 内）。
