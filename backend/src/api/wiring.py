@@ -18,7 +18,7 @@ from src.dao.redis.connection import build_redis_client
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
     from src.runs.dispatcher import SingleJobDispatcher
-    from src.pipeline.graph.agents.parsing.local.parser import (
+    from src.core.tools.parsing.local.parser import (
         MinerULocalParser,
     )
 
@@ -141,16 +141,16 @@ def wire_dependencies() -> None:
     from src.api.deps import set_neo4j_repository, set_phase5_factory
     from src.api.v1.pipeline import set_pipeline_runner
     from src.pipeline.graph.agents.graph_retrieval.api import GraphRagService
-    from src.pipeline.graph.agents.parsing.local.parser import (
+    from src.core.tools.parsing.local.parser import (
         MinerULocalParser,
     )
-    from src.pipeline.graph.agents.parsing.orchestrator import (
+    from src.core.tools.parsing.orchestrator import (
         DocumentParseOrchestrator,
     )
-    from src.pipeline.graph.agents.parsing.remote.parser import (
+    from src.core.tools.parsing.remote.parser import (
         MinerURemoteParser,
     )
-    from src.pipeline.graph.agents.parsing.service import (
+    from src.core.tools.parsing.service import (
         ParseDocumentService,
     )
     from src.pipeline.graph.agents.standardization.api import (

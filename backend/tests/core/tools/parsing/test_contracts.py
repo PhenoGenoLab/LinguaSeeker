@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from src.pipeline.graph.agents.parsing.contracts import (
+from src.core.tools.parsing.contracts import (
     DocumentMetadata,
     FigurePosition,
     MinerUBatchExtractProgress,

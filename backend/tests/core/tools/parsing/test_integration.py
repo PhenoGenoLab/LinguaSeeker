@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from src.pipeline.graph.agents.parsing import (
+from src.core.tools.parsing import (
     MinerULocalParser,
     ParseDocumentService,
     ParseResult,

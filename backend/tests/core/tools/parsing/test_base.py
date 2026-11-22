@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.pipeline.graph.agents.parsing.base import ParserStrategy
-from src.pipeline.graph.agents.parsing.contracts import (
+from src.core.tools.parsing.base import ParserStrategy
+from src.core.tools.parsing.contracts import (
     DocumentMetadata,
     PageContent,
     ParseResult,

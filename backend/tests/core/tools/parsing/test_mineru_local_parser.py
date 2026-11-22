@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from src.pipeline.graph.agents.parsing.contracts import ParseResult
-from src.pipeline.graph.agents.parsing.exceptions import MinerUAPIError
-from src.pipeline.graph.agents.parsing.local.parser import (
+from src.core.tools.parsing.contracts import ParseResult
+from src.core.tools.parsing.exceptions import MinerUAPIError
+from src.core.tools.parsing.local.parser import (
     MinerULocalParser,
 )
 

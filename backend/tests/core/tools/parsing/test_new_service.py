@@ -7,13 +7,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.pipeline.graph.agents.parsing.contracts import (
+from src.core.tools.parsing.contracts import (
     DocumentMetadata,
     PageContent,
     ParseResult,
     ParseAndSaveResult,
 )
-from src.pipeline.graph.agents.parsing.service import ParseDocumentService
+from src.core.tools.parsing.service import ParseDocumentService
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ async def test_service_save(sample_result, tmp_path):
     """Test service save method."""
     service = ParseDocumentService(orchestrator=AsyncMock())
 
-    with patch("src.pipeline.graph.agents.parsing.service.files_io"):
+    with patch("src.core.tools.parsing.service.files_io"):
         saved = await service.save(sample_result, str(tmp_path))
 
         assert saved.md_path == tmp_path / "output.md"
@@ -67,7 +67,7 @@ async def test_service_dedup():
     """Test service dedup method."""
     service = ParseDocumentService(orchestrator=AsyncMock())
 
-    with patch("src.pipeline.graph.agents.parsing.service.files_io") as mock_files:
+    with patch("src.core.tools.parsing.service.files_io") as mock_files:
         mock_files.check_duplicate.return_value = {"hash": "abc123", "is_duplicate": False}
 
         results = await service.dedup(["test.pdf"], ["known_hash"])
@@ -85,7 +85,7 @@ async def test_service_parse_and_save(mock_orchestrator, sample_result, tmp_path
 
     service = ParseDocumentService(orchestrator=mock_orchestrator)
 
-    with patch("src.pipeline.graph.agents.parsing.service.files_io"):
+    with patch("src.core.tools.parsing.service.files_io"):
         result = await service.parse_and_save("test.pdf", str(tmp_path))
 
         assert isinstance(result, ParseAndSaveResult)

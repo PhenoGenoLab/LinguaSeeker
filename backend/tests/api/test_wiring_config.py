@@ -8,16 +8,16 @@ from unittest.mock import MagicMock, patch
 from src.core.config import ParseDocumentConfig
 
 # Source module paths for classes imported inside wire_dependencies()
-_REMOTE_PARSER_MOD = "src.pipeline.graph.agents.parsing.remote.parser.MinerURemoteParser"
-_LOCAL_PARSER_MOD = "src.pipeline.graph.agents.parsing.local.parser.MinerULocalParser"
+_REMOTE_PARSER_MOD = "src.core.tools.parsing.remote.parser.MinerURemoteParser"
+_LOCAL_PARSER_MOD = "src.core.tools.parsing.local.parser.MinerULocalParser"
 
 
 def _patch_wire_deps(stack: ExitStack):
     """Patch all dependencies wired inside wire_dependencies()."""
     for mod_path in [
         "src.core.tools.acquisition.service.DocumentAcquisitionService",
-        "src.pipeline.graph.agents.parsing.orchestrator.DocumentParseOrchestrator",
-        "src.pipeline.graph.agents.parsing.service.ParseDocumentService",
+        "src.core.tools.parsing.orchestrator.DocumentParseOrchestrator",
+        "src.core.tools.parsing.service.ParseDocumentService",
         "src.pipeline.skills.extraction.service.SourceFactChainService",
         "src.pipeline.graph.agents.standardization.api.EntityStandardizationService",
         "src.pipeline.graph.topology.PipelineOrchestrator",
@@ -141,8 +141,8 @@ def test_wire_dependencies_initializes_session_factory_before_use():
     with ExitStack() as stack:
         for mod_path in [
             "src.core.tools.acquisition.service.DocumentAcquisitionService",
-            "src.pipeline.graph.agents.parsing.orchestrator.DocumentParseOrchestrator",
-            "src.pipeline.graph.agents.parsing.service.ParseDocumentService",
+            "src.core.tools.parsing.orchestrator.DocumentParseOrchestrator",
+            "src.core.tools.parsing.service.ParseDocumentService",
             "src.pipeline.graph.agents.translation.api.TranslationService",
             "src.pipeline.graph.agents.extraction.api.EvidenceExtractionService",
             "src.pipeline.graph.agents.standardization.api.EntityStandardizationService",

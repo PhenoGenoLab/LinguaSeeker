@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-from src.pipeline.graph.agents.parsing.remote.parser import MinerURemoteParser
+from src.core.tools.parsing.remote.parser import MinerURemoteParser
 
 
 def test_mineru_remote_parser_name():

@@ -25,16 +25,16 @@ import httpx
 import pytest
 from loguru import logger
 
-from src.pipeline.graph.agents.parsing.contracts import (
+from src.core.tools.parsing.contracts import (
     DocumentMetadata,
     PageContent,
     ParseResult,
 )
-from src.pipeline.graph.agents.parsing.exceptions import MinerUAPIError
-from src.pipeline.graph.agents.parsing.local.parser import (
+from src.core.tools.parsing.exceptions import MinerUAPIError
+from src.core.tools.parsing.local.parser import (
     MinerULocalParser,
 )
-from src.pipeline.graph.agents.parsing.remote.parser import (
+from src.core.tools.parsing.remote.parser import (
     MinerURemoteParser,
 )
 

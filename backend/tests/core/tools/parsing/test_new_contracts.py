@@ -8,7 +8,7 @@ from pathlib import Path
 
 def test_parser_name_literal():
     """Test ParserName includes remote and local variants."""
-    from src.pipeline.graph.agents.parsing.contracts import ParserName
+    from src.core.tools.parsing.contracts import ParserName
 
     assert "mineru-remote" in ParserName.__args__
     assert "mineru-local" in ParserName.__args__
@@ -17,7 +17,7 @@ def test_parser_name_literal():
 
 def test_saved_files_creation():
     """Test SavedFiles dataclass creation."""
-    from src.pipeline.graph.agents.parsing.contracts import SavedFiles
+    from src.core.tools.parsing.contracts import SavedFiles
 
     now = datetime.now()
     saved = SavedFiles(
@@ -34,7 +34,7 @@ def test_saved_files_creation():
 
 def test_dedup_result_creation():
     """Test DedupResult dataclass creation."""
-    from src.pipeline.graph.agents.parsing.contracts import DedupResult
+    from src.core.tools.parsing.contracts import DedupResult
 
     result = DedupResult(
         file_path="/tmp/test.pdf",
@@ -48,7 +48,7 @@ def test_dedup_result_creation():
 
 def test_parse_and_save_result_creation():
     """Test ParseAndSaveResult inherits ParseResult and adds saved files."""
-    from src.pipeline.graph.agents.parsing.contracts import (
+    from src.core.tools.parsing.contracts import (
         DocumentMetadata,
         PageContent,
         ParseAndSaveResult,

@@ -24,7 +24,7 @@ from src.runs.contracts import (
 )
 
 if TYPE_CHECKING:
-    from src.pipeline.skills.parsing.service import ParsingSkill
+    from src.pipeline.graph.agents.parsing import ParsingSkill
 
 _RETRYABLE_ERRORS = build_retryable_errors()
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.pipeline.graph.agents.parsing.exceptions import (
+from src.core.tools.parsing.exceptions import (
     MinerUAPIError,
     MinerUTimeoutError,
     ParseDocumentError,

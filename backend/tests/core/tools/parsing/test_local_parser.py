@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-from src.pipeline.graph.agents.parsing.local.parser import MinerULocalParser
+from src.core.tools.parsing.local.parser import MinerULocalParser
 
 
 def test_mineru_local_parser_name():
