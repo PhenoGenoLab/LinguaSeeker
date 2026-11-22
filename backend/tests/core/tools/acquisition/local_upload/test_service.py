@@ -1,10 +1,10 @@
 """Tests for local upload service."""
 
-from src.pipeline.graph.agents.acquisition.local_upload.contracts import (
+from src.core.tools.acquisition.local_upload.contracts import (
     MAX_FILE_SIZE_BYTES,
     LocalUploadedFile,
 )
-from src.pipeline.graph.agents.acquisition.local_upload.service import validate_local_upload
+from src.core.tools.acquisition.local_upload.service import validate_local_upload
 
 
 class TestValidateLocalUpload:

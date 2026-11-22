@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.pipeline.graph.agents.acquisition.service import DocumentAcquisitionService
-from src.pipeline.graph.agents.acquisition.contracts import (
+from src.core.tools.acquisition.service import DocumentAcquisitionService
+from src.core.tools.acquisition.contracts import (
     AcquisitionSource,
     DocumentAcquisitionRequest,
 )

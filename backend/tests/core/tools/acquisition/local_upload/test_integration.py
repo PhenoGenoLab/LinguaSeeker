@@ -3,7 +3,7 @@
 import os
 import tempfile
 
-from src.pipeline.graph.agents.acquisition.local_upload import upload_document
+from src.core.tools.acquisition.local_upload import upload_document
 
 
 def test_full_upload_flow():

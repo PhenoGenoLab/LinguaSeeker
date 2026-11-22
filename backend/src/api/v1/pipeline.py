@@ -33,7 +33,7 @@ from src.api.v1.contracts import (
 )
 from src.core.config import get_config
 from src.core.foundation.auth.contracts import AuthContext
-from src.pipeline.graph.agents.acquisition.contracts import (
+from src.core.tools.acquisition.contracts import (
     AcquisitionSource,
     DocumentAcquisitionRequest,
 )
@@ -228,7 +228,7 @@ async def acquire_literature(
     apply); prefer `action="search"` for cheap metadata-only lookups.
     """
     # Imported here so tests can patch the service class where it is defined.
-    from src.pipeline.graph.agents.acquisition.service import (
+    from src.core.tools.acquisition.service import (
         DocumentAcquisitionService,
     )
 

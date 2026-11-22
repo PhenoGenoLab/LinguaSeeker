@@ -9,13 +9,13 @@ from dataclasses import dataclass
 import pytest
 from httpx import AsyncClient
 
-from src.pipeline.graph.agents.acquisition.contracts import (
+from src.core.tools.acquisition.contracts import (
     AcquisitionSource,
     DocumentAcquisitionResult,
     DocumentDownloadEntry,
 )
 
-_SERVICE_MOD = "src.pipeline.graph.agents.acquisition.service.DocumentAcquisitionService.acquire"
+_SERVICE_MOD = "src.core.tools.acquisition.service.DocumentAcquisitionService.acquire"
 
 
 @dataclass

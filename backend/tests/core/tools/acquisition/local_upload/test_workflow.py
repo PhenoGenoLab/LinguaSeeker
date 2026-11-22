@@ -3,7 +3,7 @@
 import tempfile
 import os
 
-from src.pipeline.graph.agents.acquisition.local_upload.workflow import upload_document
+from src.core.tools.acquisition.local_upload.workflow import upload_document
 
 
 class TestLocalUploadDocument:

@@ -15,7 +15,7 @@ _LOCAL_PARSER_MOD = "src.pipeline.graph.agents.parsing.local.parser.MinerULocalP
 def _patch_wire_deps(stack: ExitStack):
     """Patch all dependencies wired inside wire_dependencies()."""
     for mod_path in [
-        "src.pipeline.graph.agents.acquisition.service.DocumentAcquisitionService",
+        "src.core.tools.acquisition.service.DocumentAcquisitionService",
         "src.pipeline.graph.agents.parsing.orchestrator.DocumentParseOrchestrator",
         "src.pipeline.graph.agents.parsing.service.ParseDocumentService",
         "src.pipeline.skills.extraction.service.SourceFactChainService",
@@ -140,7 +140,7 @@ def test_wire_dependencies_initializes_session_factory_before_use():
 
     with ExitStack() as stack:
         for mod_path in [
-            "src.pipeline.graph.agents.acquisition.service.DocumentAcquisitionService",
+            "src.core.tools.acquisition.service.DocumentAcquisitionService",
             "src.pipeline.graph.agents.parsing.orchestrator.DocumentParseOrchestrator",
             "src.pipeline.graph.agents.parsing.service.ParseDocumentService",
             "src.pipeline.graph.agents.translation.api.TranslationService",

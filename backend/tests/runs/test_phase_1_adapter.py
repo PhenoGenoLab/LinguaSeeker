@@ -25,7 +25,7 @@ def sample_state() -> PipelineGraphState:
 
 
 def _make_acquisition_result(success: bool = True, **kwargs):
-    from src.pipeline.graph.agents.acquisition.contracts import (
+    from src.core.tools.acquisition.contracts import (
         DocumentAcquisitionResult,
         AcquisitionSource,
     )
@@ -38,7 +38,7 @@ def _make_acquisition_result(success: bool = True, **kwargs):
 
 
 def _stored_pdf(path: str = "/tmp/test.pdf"):
-    from src.pipeline.graph.agents.acquisition.local_upload.contracts import (
+    from src.core.tools.acquisition.local_upload.contracts import (
         LocalStoredFile,
     )
 

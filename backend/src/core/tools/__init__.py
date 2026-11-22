@@ -16,12 +16,20 @@ Import boundary: this is the only ``core`` package allowed to import
 dependency leaf, and the direction above is enforced by
 ``tests/pipeline/test_import_boundaries.py``.
 
-Category packages mirror the AgentScope tool layout:
+Category packages mirror the AgentScope tool layout and add the domain tools
+that skills call:
 
 * :mod:`src.core.tools.builtin` - shell, file and interaction tools
 * :mod:`src.core.tools.task` - task list tools
+* :mod:`src.core.tools.<agent>` - deterministic domain tools (acquisition,
+  parsing, ...) moved out of ``pipeline/graph/agents``
+
+Domain packages are not imported from this module: importing them would pull
+``lit_acquisition``, database drivers and file I/O into every ``core.tools``
+import. Import the subpackage you need.
 """
 
-from src.core.tools import builtin, task
-
+# Subpackages are intentionally not imported here: ``builtin``/``task`` need
+# agentscope and domain packages need their SDKs, so importing them eagerly
+# would make every ``src.core.tools`` import as heavy as the heaviest tool.
 __all__ = ["builtin", "task"]
