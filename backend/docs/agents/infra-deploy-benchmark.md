@@ -118,7 +118,6 @@ jobs:
           - 5432:5432
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -126,16 +125,10 @@ jobs:
         run: pip install uv
       - name: Install dependencies
         run: uv sync
-      - name: Build Rust extensions
-        run: uv run maturin develop --release -m libs/rust-io/Cargo.toml
-      - name: Run Rust tests
-        run: |
-          cargo test -p net-io
-          cargo test -p files-io
+      - name: Check rust-io wheel
+        run: uv run python -c "import rust_io.net, rust_io.files"
       - name: Run Python tests
         run: uv run pytest --cov=app --cov-report=xml
-      - name: Lint Rust
-        run: cargo clippy --all-targets -- -D warnings
       - name: Lint Python
         run: uv run ruff check .
 

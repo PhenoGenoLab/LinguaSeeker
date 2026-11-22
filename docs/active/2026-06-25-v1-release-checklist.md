@@ -40,9 +40,7 @@ git status --short --branch
 (cd frontend && bun run lint)
 (cd frontend && bun run type-check)
 (cd frontend && bun run build)
-(cd backend/libs/rust-io && cargo test)
-(cd backend/libs/files-io && cargo test)
-(cd backend/libs/net-io && cargo test)
+(cd backend && uv run python -c "import rust_io.net, rust_io.files")
 ```
 
 Expected result: all commands pass. If any command fails, fix the issue before creating the release tag.

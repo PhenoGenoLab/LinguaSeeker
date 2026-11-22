@@ -14,7 +14,7 @@
 |------|------|
 | 前端 | Vite、React 18、TypeScript（strict）、Ant Design、Zustand、React Query、Axios、React Router |
 | 后端 | Python 3.12、FastAPI、SQLAlchemy 2.0（async）、Alembic、LangGraph |
-| 原生 I/O | Rust（PyO3/maturin 扩展：rust-io、files-io、net-io） |
+| 原生 I/O | Rust 扩展 `rust-io`（PyPI wheel，含 `rust_io.net` / `rust_io.files`） |
 | 推理 | 外部 Docker 容器：Embedding(:8002)、Rerank(:8003)、Doc-Parse(:44321) |
 | 数据库 | PostgreSQL 16（pgvector）、Redis 8.0 |
 | 基础设施 | Docker Compose、Ansible |
@@ -126,7 +126,7 @@ bun run dev
 | `cd frontend && bun run type-check` | TypeScript 类型检查 |
 | `cd frontend && bun run build` | 生产构建 |
 | `cd frontend && bun run test` | 前端测试 |
-| `cd backend/libs/rust-io && cargo test` | Rust 测试 |
+| `cd backend && uv run python -c "import rust_io.net, rust_io.files"` | 检查 Rust 扩展可用 |
 
 ## 部署
 
@@ -165,7 +165,7 @@ docker compose -f deploy/compose/backend-host/docker-compose.yml \
 
 - 包管理器：`uv`（Python）、`bun`（Node.js）、`cargo`（Rust）
 - 日志：`loguru`，输出到 `logs/`
-- 测试：`pytest`（后端）、`vitest`（前端）、`cargo test`（Rust）
+- 测试：`pytest`（后端）、`vitest`（前端）
 - 代码风格：Google Style Guide，Ruff（Python）和 ESLint（TypeScript）
 - 提交信息：Conventional Commits（`feat:`、`fix:`、`docs:` 等）
 - API 版本：`/api/v1/` 前缀

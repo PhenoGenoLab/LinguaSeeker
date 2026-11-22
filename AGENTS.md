@@ -42,7 +42,7 @@
 - 所有测试文件统一放入 **`tests/`**。
 - Backend 测试：`backend/tests/`
 - Frontend 测试：`frontend/tests/`
-- Rust 测试：`backend/libs/rust-io/tests/`
+- Rust 扩展：不在本仓库构建，依赖 PyPI 的 `rust-io`；`backend/libs/config-loader/` 的测试在 `backend/libs/config-loader/tests/`
 
 ### 5. 进度记录
 
@@ -396,17 +396,17 @@ Feature slices should expose orchestrator-facing node adapters (`api.py` when us
 
 Configuration: `src/core/config.py` loads layered YAML from `backend/config/defaults`, `backend/config/environments`, and `backend/config/vault`, then lets environment variables override those values. Nested domain models (`cfg.llm`, `cfg.postgresql`, etc.) are built from flat fields by a `model_validator`. Access via `from src.core.config import get_config`.
 
-#### Rust Native Extensions (`backend/libs/`)
+#### Rust Native Extensions
 
-Three PyO3 crates, all using `cdylib` + `rlib` crate types, async via `pyo3-async-runtimes` + tokio:
+`rust-io` is consumed as a published wheel (`rust-io>=0.2,<0.3`), not built here:
 
-| Crate | Python module | Purpose |
-|-------|--------------|---------|
-| `rust-io` | `rust_io` | Literature search/download via providers (Crossref, OpenAlex, EuropePMC, PMC, DOAJ, JStage, Unpaywall). Also has `files` submodule for SHA256, file write, PDF validation. |
-| `files-io` | `files_io` | Unified local + S3 file I/O. Dedup, parallel ops, archive (zip/tar/gzip). |
-| `net-io` | `rust_io.net` | Literature search/download via providers + MinerU document parsing API. Same provider set as rust-io, newer architecture. |
+| Python module | Purpose |
+|---------------|---------|
+| `rust_io.net` | Literature search/download via 15 providers + MinerU document parsing API |
+| `rust_io.files` | Local + S3 file I/O, dedup, parallel ops, archive (zip/tar/gzip), SHA-256 |
 
-All three expose async Python functions via `pyo3_async_runtimes::tokio::future_into_py`. Online literature acquisition is delegated to the external `lit-acquisition` SDK (local path dependency `../05_lit-acquisition`, editable; wired in `src/api/wiring.py`); its gateway calls `net_io.fetch_one()` for HTTP I/O when the Rust extension is importable and falls back to pure-Python `httpx` otherwise.
+`src/utils/rust_io.py` imports both submodules lazily and degrades to pure-Python
+fallbacks when the wheel is missing. Online literature acquisition is delegated to the external `lit-acquisition` SDK (local path dependency `../05_lit-acquisition`, editable; wired in `src/api/wiring.py`); its gateway calls `net_io.fetch_one()` for HTTP I/O when the Rust extension is importable and falls back to pure-Python `httpx` otherwise.
 
 #### External Inference Services (not in this repo)
 
@@ -487,13 +487,10 @@ bun run test         # Vitest
 
 #### Rust Libraries
 
-```bash
-cd backend/libs/rust-io     # or files-io, net-io
-cargo test
-cargo bench                 # rust-io only
-```
-
-To rebuild the PyO3 extension after Rust changes: `maturin develop --release` (from the crate directory).
+The native extension is consumed as the published wheel: `rust-io>=0.2,<0.3`
+(PyPI), which provides `rust_io`, `rust_io.net` and `rust_io.files`. The repo no
+longer vendors the crates, so there is nothing to `cargo test` or `maturin
+develop` here; upgrade the pin in `backend/pyproject.toml` to pick up a release.
 
 #### External Inference Services
 
@@ -524,4 +521,4 @@ All config data lives in `backend/config/` or explicit environment variables. Ke
 
 - Backend: `pytest` with `pytest-asyncio` for async tests. Tests mirror source structure under `backend/tests/`.
 - Frontend: tests under `frontend/tests/`.
-- Rust: `cargo test` per crate.
+- Rust: `rust-io` comes from PyPI; verify with `python -c "import rust_io.net, rust_io.files"`.

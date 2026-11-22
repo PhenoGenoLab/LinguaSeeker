@@ -14,7 +14,7 @@ Modern tools only. System-level installs are prohibited.
 |---|---|---|
 | Python | `uv` | `pip` / `pip3` / system Python |
 | Node.js | `nvm` + `npm` | system global Node |
-| Rust | `cargo` | — |
+| Rust | — (extension ships as the `rust-io` wheel) | — |
 | C/C++ | `cmake` | — |
 
 - All dependencies must be declared in config files (`pyproject.toml` / `package.json` / `Cargo.toml`).
@@ -27,7 +27,7 @@ Modern tools only. System-level installs are prohibited.
 | Backend entry | `app/main.py`, business logic in `src/` and subdirectories |
 | Frontend entry | Next.js App Router in `frontend/app/`, components in `frontend/components/` |
 | Documentation | `docs/` (archive: `docs/archive/`) |
-| Tests | `tests/` (Rust: `libs/rust-io/tests/`) |
+| Tests | `tests/` (`libs/config-loader/tests/` for the shared YAML loader) |
 | Scripts | `scripts/` |
 | Database | `database/` (migrations: `migrations/`, seeds: `seeds/`) |
 | Deployment | repository root `deploy/`; Ansible orchestration under `deploy/ansible/` |

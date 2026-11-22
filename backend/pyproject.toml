@@ -18,14 +18,13 @@ dependencies = [
     "celery>=5.4.0",
     "pydantic-settings>=2.3.0",
     "python-dotenv>=1.0.0",
-    "maturin>=1.13.1",
     "requests[socks]>=2.33.1",
     "pysocks>=1.7.1",
     "torch>=2.11.0",
     "loguru>=0.7.0",
     "mineru_vl_utils",
     "tokenizers>=0.22.0,<=0.23.0",
-    "rust-io",
+    "rust-io>=0.2,<0.3",
     "pymupdf>=1.27.2.3",
     "lingua-language-detector>=2.2.0",
     "langchain-core>=1.4.0",
@@ -78,7 +77,6 @@ url = "https://mirrors.aliyun.com/pypi/simple/"
 
 [tool.uv.sources]
 acmg-config-loader = { path = "../libs/config-loader", editable = true }
-rust-io = { path = "libs/rust-io", editable = true }
 
 [tool.pytest.ini_options]
 pythonpath = [".."]
