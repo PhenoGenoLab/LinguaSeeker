@@ -1,6 +1,6 @@
 [package]
 name = "rust-io"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2024"
 description = "High-performance I/O module for Lingua Seeker"
 
@@ -9,6 +9,7 @@ name = "rust_io"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-pyo3 = { version = "0.28.2", features = ["extension-module"] }
+pyo3 = "0.30"
 files-io = { path = "../files-io" }
+io-py = { path = "../io-py" }
 net-io = { path = "../net-io" }

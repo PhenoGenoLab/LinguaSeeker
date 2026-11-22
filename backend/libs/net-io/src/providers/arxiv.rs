@@ -52,10 +52,10 @@ impl ArxivProvider {
             // Extract PDF link
             let mut pdf_url = None;
             for line in entry.lines() {
-                if line.contains("title=\"pdf\"") {
-                    if let Some(href) = extract_attr(line, "href") {
-                        pdf_url = Some(href.to_string());
-                    }
+                if line.contains("title=\"pdf\"")
+                    && let Some(href) = extract_attr(line, "href")
+                {
+                    pdf_url = Some(href.to_string());
                 }
             }
 

@@ -35,10 +35,7 @@ impl OpenAireProvider {
                     .and_then(|t| t.as_str())
                     .unwrap_or("")
                     .to_string();
-                let doi = result
-                    .get("doi")
-                    .and_then(|d| d.as_str())
-                    .map(String::from);
+                let doi = result.get("doi").and_then(|d| d.as_str()).map(String::from);
                 let year = result
                     .get("publicationDate")
                     .and_then(|d| d.as_str())

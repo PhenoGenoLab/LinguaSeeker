@@ -29,5 +29,7 @@ fn rust_io(m: &Bound<'_, PyModule>) -> PyResult<()> {
     register_submodule(m, "net", "rust_io.net", net.bind(py))?;
     let files = pyo3::wrap_pymodule!(files_io::py::files)(py);
     register_submodule(m, "files", "rust_io.files", files.bind(py))?;
+    let io = pyo3::wrap_pymodule!(io_py::io)(py);
+    register_submodule(m, "io", "rust_io.io", io.bind(py))?;
     Ok(())
 }

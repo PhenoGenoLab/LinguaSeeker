@@ -5,9 +5,9 @@ build-backend = "maturin"
 [project]
 name = "rust-io"
 requires-python = ">=3.12"
-description = "High-performance Rust native extensions for Lingua Seeker: literature search, MinerU document parsing, file I/O, S3, archives, and SHA-256 dedup."
+description = "High-performance Rust native extensions: generic async I/O (local/HTTP/S3), literature search, MinerU parsing, archives, and SHA-256 dedup."
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 authors = [
     { name = "Lingua Seeker Team" },
 ]
@@ -15,7 +15,7 @@ classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
@@ -23,7 +23,7 @@ classifiers = [
 dynamic = ["version"]
 
 [project.urls]
-Homepage = "https://github.com/PhenoGenoLab/LinguaSeeker"
-Repository = "https://github.com/PhenoGenoLab/LinguaSeeker"
+Homepage = "https://github.com/Ruri-Ichigyo/rust-io"
+Repository = "https://github.com/Ruri-Ichigyo/rust-io"
 [tool.maturin]
 features = ["pyo3/extension-module"]

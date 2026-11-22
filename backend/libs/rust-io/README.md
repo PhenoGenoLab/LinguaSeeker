@@ -1,6 +1,6 @@
 # rust-io
 
-> Lingua Seeker 的 PyO3 门面 crate，将 `net-io` 和 `files-io` 注册为 `rust_io` Python 模块的子模块。
+> Lingua Seeker 的 PyO3 门面 crate，将 `net-io`、`files-io` 和 `io-py` 注册为 `rust_io` Python 模块的子模块。
 
 ## 概览
 
@@ -8,7 +8,8 @@
 
 1. 创建 `rust_io.net` 子模块，注册 `net-io` 的所有 `#[pyfunction]`
 2. 创建 `rust_io.files` 子模块，注册 `files-io` 的所有 `#[pyfunction]` 和 `#[pyclass]`
-3. 通过 `sys.modules` 注册子模块，使其可通过 `import rust_io.net` / `import rust_io.files` 直接访问
+3. 创建 `rust_io.io` 子模块，注册 `io-py` 的通用异步 I/O 函数
+4. 通过 `sys.modules` 注册子模块，使其可通过 `import rust_io.net` / `rust_io.files` / `rust_io.io` 直接访问
 
 ## 公开 API
 
@@ -18,6 +19,7 @@
 |-------------|-----------|------|
 | `rust_io.net` | [net-io](../net-io/README.md) | 15 个文献数据源、MinerU API、Web 爬取 |
 | `rust_io.files` | [files-io](../files-io/README.md) | File 类、批量操作、去重、工具函数 |
+| `rust_io.io` | [io-core](../io-core/README.md) | 通用异步 I/O：本地/HTTP/S3、多路复用、流式传输 |
 
 ### `rust_io.net` 注册的函数
 
@@ -52,11 +54,23 @@
 | `write_file` | function | 写入字节数据 |
 | `validate_pdf_magic` | function | PDF 魔数校验 |
 
+### `rust_io.io` 注册的函数
+
+| 函数 | 说明 |
+|------|------|
+| `read` / `read_range` | 读取整个对象 / 指定字节区间 |
+| `write` | 写入 bytes/bytearray/memoryview/str |
+| `stat` / `list` / `delete` / `copy` | 元数据、目录列举、删除、复制 |
+| `read_many` / `write_many` / `copy_many` | 有界并发批处理，结果按输入顺序返回 |
+| `read_any` | 多镜像竞速，返回首个成功结果 |
+| `download` / `upload` | 流式下载/上传（不整文件驻留内存） |
+| `hash` / `hash_many` | 流式 SHA-256 / rayon 并行批哈希 |
+
 ## 架构
 
 ```
 rust-io/src/
-└── lib.rs    # #[pymodule] rust_io — 挂载 net 和 files 子模块
+└── lib.rs    # #[pymodule] rust_io — 挂载 net、files、io 子模块
 ```
 
 ### 子模块注册机制
@@ -71,6 +85,8 @@ fn rust_io(m: &Bound<'_, PyModule>) -> PyResult<()> {
     register_submodule(m, "net", "rust_io.net", net.bind(py))?;
     let files = pyo3::wrap_pymodule!(files_io::py::files)(py);
     register_submodule(m, "files", "rust_io.files", files.bind(py))?;
+    let io = pyo3::wrap_pymodule!(io_py::io)(py);
+    register_submodule(m, "io", "rust_io.io", io.bind(py))?;
     Ok(())
 }
 ```
@@ -99,6 +115,15 @@ result = await net_io.fetch_one("crossref", "search", {"query": "CRISPR"})
 f = files_io.File("/tmp/output.txt")
 f.write("hello")
 print(f.read(as_text=True))
+
+# 通用异步 I/O（本地/HTTP/S3 统一 URI）
+import rust_io.io as io_io
+await io_io.write("/tmp/report.bin", b"payload")
+results = await io_io.read_many(
+    ["/tmp/a.bin", "s3://bucket/b.bin", "https://example.com/c.bin"],
+    limit=3,
+)
+await io_io.download("https://example.com/paper.pdf", "/tmp/paper.pdf")
 ```
 
 ## 构建
@@ -109,12 +134,13 @@ cd backend
 uv run maturin develop --release -m libs/rust-io/Cargo.toml
 ```
 
-构建产物为 `rust_io.so`（Linux/macOS）或 `rust_io.pyd`（Windows），包含 `net-io` 和 `files-io` 的全部代码（静态链接）。
+构建产物为 `rust_io.so`（Linux/macOS）或 `rust_io.pyd`（Windows），包含 `net-io`、`files-io` 和 `io-core` 的全部代码（静态链接）。
 
 ## 依赖
 
 | 依赖 | 版本 | 说明 |
 |------|------|------|
-| `pyo3` | `0.28.2` | Python 绑定（extension-module） |
+| `pyo3` | `0.30` | Python 绑定（extension-module） |
 | `net-io` | path | HTTP/Web I/O crate（提供 `rust_io.net`） |
 | `files-io` | path | 文件 I/O crate（提供 `rust_io.files`） |
+| `io-py` | path | 通用 I/O 绑定 crate（提供 `rust_io.io`） |

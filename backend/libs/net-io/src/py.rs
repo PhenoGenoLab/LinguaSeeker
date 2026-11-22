@@ -2,8 +2,8 @@ use crate::client::HttpClient;
 use crate::error::GatewayError;
 use crate::providers::{
     ArxivProvider, BaseProvider, BioRxivProvider, CiniiProvider, CoreProvider, CrossrefProvider,
-    DoajProvider, EuropePmcProvider, JstageProvider, MedRxivProvider, OpenAlexProvider,
-    OpenAireProvider, PmcProvider, SciEloProvider, UnpaywallProvider,
+    DoajProvider, EuropePmcProvider, JstageProvider, MedRxivProvider, OpenAireProvider,
+    OpenAlexProvider, PmcProvider, SciEloProvider, UnpaywallProvider,
 };
 use crate::types::{Action, FetchParams, FetchResult};
 use futures::future::join_all;
@@ -154,8 +154,8 @@ pub fn download_file<'py>(
     proxy: Option<String>,
 ) -> PyResult<Bound<'py, PyAny>> {
     pyo3_async_runtimes::tokio::future_into_py(py, async move {
-        let client = HttpClient::new(timeout_ms, max_retries, proxy.as_deref())
-            .map_err(PyErr::from)?;
+        let client =
+            HttpClient::new(timeout_ms, max_retries, proxy.as_deref()).map_err(PyErr::from)?;
         let (bytes, final_url, status_code) = client.get_bytes(&url).await.map_err(PyErr::from)?;
         Python::attach(|py| {
             let dict = pyo3::types::PyDict::new(py);
@@ -206,11 +206,13 @@ async fn execute_provider(
         ("unpaywall", Action::Search | Action::Download) => {
             UnpaywallProvider::search(client, params).await
         }
-        ("crossref" | "openalex" | "europepmc" | "pmc" | "scielo" | "base" | "core" | "openaire" | "arxiv" | "biorxiv" | "medrxiv" | "cinii", Action::Download) => {
-            Err(GatewayError::Other(format!(
-                "action {action:?} is not supported for provider {provider}"
-            )))
-        }
+        (
+            "crossref" | "openalex" | "europepmc" | "pmc" | "scielo" | "base" | "core" | "openaire"
+            | "arxiv" | "biorxiv" | "medrxiv" | "cinii",
+            Action::Download,
+        ) => Err(GatewayError::Other(format!(
+            "action {action:?} is not supported for provider {provider}"
+        ))),
         _ => Err(GatewayError::Provider {
             provider: provider.to_string(),
             message: format!("unknown provider: {provider}"),

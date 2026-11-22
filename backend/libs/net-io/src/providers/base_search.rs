@@ -47,14 +47,8 @@ impl BaseProvider {
                     .and_then(|t| t.as_str())
                     .unwrap_or("")
                     .to_string();
-                let doi = doc
-                    .get("doi")
-                    .and_then(|d| d.as_str())
-                    .map(String::from);
-                let year = doc
-                    .get("year")
-                    .and_then(|y| y.as_str())
-                    .map(String::from);
+                let doi = doc.get("doi").and_then(|d| d.as_str()).map(String::from);
+                let year = doc.get("year").and_then(|y| y.as_str()).map(String::from);
                 let authors: Vec<String> = doc
                     .get("creator")
                     .and_then(|c| c.as_array())

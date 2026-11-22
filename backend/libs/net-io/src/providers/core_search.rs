@@ -43,10 +43,7 @@ impl CoreProvider {
                     .and_then(|t| t.as_str())
                     .unwrap_or("")
                     .to_string();
-                let doi = result
-                    .get("doi")
-                    .and_then(|d| d.as_str())
-                    .map(String::from);
+                let doi = result.get("doi").and_then(|d| d.as_str()).map(String::from);
                 let year = result
                     .get("yearPublished")
                     .and_then(|y| y.as_i64())
@@ -57,16 +54,19 @@ impl CoreProvider {
                     .map(|arr| {
                         arr.iter()
                             .filter_map(|a| {
-                                a.get("name")
-                                    .and_then(|n| n.as_str())
-                                    .map(String::from)
+                                a.get("name").and_then(|n| n.as_str()).map(String::from)
                             })
                             .collect()
                     })
                     .unwrap_or_default();
                 let url = result
                     .get("downloadUrl")
-                    .or_else(|| result.get("sourceFulltextUrls").and_then(|u| u.as_array()).and_then(|a| a.first()))
+                    .or_else(|| {
+                        result
+                            .get("sourceFulltextUrls")
+                            .and_then(|u| u.as_array())
+                            .and_then(|a| a.first())
+                    })
                     .and_then(|u| u.as_str())
                     .map(String::from);
 

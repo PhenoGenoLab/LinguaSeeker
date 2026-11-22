@@ -106,3 +106,99 @@ async def test_unpaywall_requires_configured_email(monkeypatch):
 
     assert result["success"] is False
     assert result["warnings"] == ["unpaywall_requires_email"]
+
+
+def test_io_facade_exports_async_surface():
+    import rust_io.io as io
+
+    assert io.__name__ == "rust_io.io"
+    for name in (
+        "read",
+        "read_range",
+        "write",
+        "stat",
+        "list",
+        "delete",
+        "copy",
+        "read_many",
+        "write_many",
+        "copy_many",
+        "read_any",
+        "download",
+        "upload",
+        "hash",
+        "hash_many",
+    ):
+        assert hasattr(io, name)
+
+
+@pytest.mark.asyncio
+async def test_io_local_roundtrip_batches_and_streaming(tmp_path):
+    import rust_io.io as io
+
+    target = tmp_path / "nested" / "sample.txt"
+    await io.write(str(target), "hello")
+    assert await io.read(str(target)) == b"hello"
+    assert await io.read_range(str(target), 1, 3) == b"ell"
+
+    metadata = await io.stat(str(target))
+    assert metadata["len"] == 5
+    assert metadata["is_file"] is True
+    assert metadata["uri"] == str(target)
+    assert await io.list(str(target.parent)) == ["sample.txt"]
+
+    await io.write(str(target), b"0123456789")
+    assert await io.hash(str(target)) == hashlib.sha256(b"0123456789").hexdigest()
+
+    copied = tmp_path / "copied.txt"
+    await io.copy(str(target), str(copied))
+    assert copied.read_bytes() == b"0123456789"
+
+    missing = tmp_path / "missing.txt"
+    batch = await io.read_many([str(target), str(missing)], limit=2)
+    assert [item["ok"] for item in batch] == [True, False]
+    assert batch[0]["bytes"] == b"0123456789"
+    assert str(missing) in batch[1]["error"]
+
+    writes = await io.write_many(
+        [(str(tmp_path / "one.txt"), b"1"), (str(tmp_path / "two.txt"), "2")],
+        limit=2,
+    )
+    assert [item["ok"] for item in writes] == [True, True]
+    assert (tmp_path / "two.txt").read_bytes() == b"2"
+
+    copies = await io.copy_many([(str(target), str(tmp_path / "three.txt"))], limit=1)
+    assert copies[0]["ok"] is True
+
+    winner = await io.read_any([str(missing), str(target)])
+    assert winner["uri"] == str(target)
+    assert winner["bytes"] == b"0123456789"
+
+    downloaded = tmp_path / "downloaded.bin"
+    assert await io.download(str(target), str(downloaded)) == 10
+    assert downloaded.read_bytes() == b"0123456789"
+
+    upload_source = tmp_path / "upload-source.bin"
+    upload_source.write_bytes(b"upload me")
+    uploaded = tmp_path / "uploaded.bin"
+    await io.upload(str(upload_source), str(uploaded))
+    assert uploaded.read_bytes() == b"upload me"
+
+    hashes = await io.hash_many([str(target), str(missing)], limit=2)
+    assert hashes[0]["hash"] == hashlib.sha256(b"0123456789").hexdigest()
+    assert hashes[1]["ok"] is False
+
+
+@pytest.mark.asyncio
+async def test_io_errors_map_to_python_exceptions(tmp_path):
+    import rust_io.io as io
+
+    with pytest.raises(FileNotFoundError):
+        await io.read(str(tmp_path / "missing.txt"))
+
+    with pytest.raises(ValueError):
+        await io.read("ftp://example.com/x")
+
+    with pytest.raises(ValueError):
+        await io.read_many([str(tmp_path / "x")], limit=0)
+

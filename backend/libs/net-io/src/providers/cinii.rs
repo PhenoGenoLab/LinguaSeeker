@@ -39,10 +39,7 @@ impl CiniiProvider {
                     .and_then(|t| t.as_str())
                     .unwrap_or("")
                     .to_string();
-                let doi = entry
-                    .get("doi")
-                    .and_then(|d| d.as_str())
-                    .map(String::from);
+                let doi = entry.get("doi").and_then(|d| d.as_str()).map(String::from);
                 let year = entry
                     .get("publicationDate")
                     .or_else(|| entry.get("publicationName"))
@@ -59,9 +56,7 @@ impl CiniiProvider {
                                 if let Some(name) = a.as_str() {
                                     Some(name.to_string())
                                 } else if let Some(obj) = a.as_object() {
-                                    obj.get("name")
-                                        .and_then(|n| n.as_str())
-                                        .map(String::from)
+                                    obj.get("name").and_then(|n| n.as_str()).map(String::from)
                                 } else {
                                     None
                                 }

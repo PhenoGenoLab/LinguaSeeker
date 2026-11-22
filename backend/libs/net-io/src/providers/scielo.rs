@@ -31,10 +31,7 @@ impl SciEloProvider {
                     .and_then(|t| t.as_str())
                     .unwrap_or("")
                     .to_string();
-                let doi = doc
-                    .get("doi")
-                    .and_then(|d| d.as_str())
-                    .map(String::from);
+                let doi = doc.get("doi").and_then(|d| d.as_str()).map(String::from);
                 let year = doc
                     .get("publication_date")
                     .and_then(|d| d.as_str())
@@ -49,10 +46,7 @@ impl SciEloProvider {
                             .collect()
                     })
                     .unwrap_or_default();
-                let url = doc
-                    .get("url")
-                    .and_then(|u| u.as_str())
-                    .map(String::from);
+                let url = doc.get("url").and_then(|u| u.as_str()).map(String::from);
 
                 items.push(serde_json::json!({
                     "source": "scielo",

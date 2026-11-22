@@ -125,13 +125,13 @@ print(dup["is_duplicate"])
 
 | 依赖 | 版本 | 说明 |
 |------|------|------|
-| `pyo3` | `0.28.2` | Python 绑定 |
-| `pyo3-async-runtimes` | `0.28` | Tokio 异步运行时集成 |
+| `pyo3` | `0.30` | Python 绑定 |
+| `pyo3-async-runtimes` | `0.30` | Tokio 异步运行时集成 |
 | `tokio` | `1` | 异步运行时（rt-multi-thread） |
 | `aws-sdk-s3` | `1` | AWS S3 客户端 |
 | `aws-config` | `1` | AWS 配置加载 |
 | `aws-credential-types` | `1` | AWS 凭证类型 |
-| `zip` | `2` | zip 归档处理 |
+| `zip` | `9` | zip 归档处理 |
 | `tar` | `0.4` | tar 归档处理 |
 | `flate2` | `1` | gzip 压缩 |
 | `sha2` | `0.10` | SHA-256 哈希 |

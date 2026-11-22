@@ -47,7 +47,11 @@ async fn search_preprint_server(
         .as_secs();
     let days_since_epoch = now / 86400;
     let end_date = epoch_days_to_date(days_since_epoch);
-    let start_date = if source == "medrxiv" { "2019-01-01" } else { "2013-01-01" };
+    let start_date = if source == "medrxiv" {
+        "2019-01-01"
+    } else {
+        "2013-01-01"
+    };
 
     let url = format!("{}/{}/{}/{}", api_url, start_date, end_date, count);
 
@@ -73,10 +77,7 @@ async fn search_preprint_server(
                 continue;
             }
 
-            let doi = result
-                .get("doi")
-                .and_then(|d| d.as_str())
-                .map(String::from);
+            let doi = result.get("doi").and_then(|d| d.as_str()).map(String::from);
             let year = result
                 .get("date")
                 .and_then(|d| d.as_str())
@@ -127,7 +128,20 @@ fn epoch_days_to_date(days: u64) -> String {
     }
 
     let leap = is_leap_year(y);
-    let days_in_month = [31, if leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let days_in_month = [
+        31,
+        if leap { 29 } else { 28 },
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
+    ];
     let mut m = 0;
     for (i, &days_in_m) in days_in_month.iter().enumerate() {
         if remaining < days_in_m as u64 {
@@ -141,5 +155,5 @@ fn epoch_days_to_date(days: u64) -> String {
 }
 
 fn is_leap_year(year: u64) -> bool {
-    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+    (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400)
 }

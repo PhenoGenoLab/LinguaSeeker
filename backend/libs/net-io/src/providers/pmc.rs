@@ -196,10 +196,10 @@ fn ncbi_api_key() -> Option<String> {
 
 /// Insert `api_key` into an E-utilities query params object if available.
 fn insert_api_key(params: &mut serde_json::Value) {
-    if let Some(key) = ncbi_api_key() {
-        if let Some(obj) = params.as_object_mut() {
-            obj.insert("api_key".into(), serde_json::Value::String(key));
-        }
+    if let Some(key) = ncbi_api_key()
+        && let Some(obj) = params.as_object_mut()
+    {
+        obj.insert("api_key".into(), serde_json::Value::String(key));
     }
 }
 

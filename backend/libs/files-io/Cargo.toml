@@ -9,13 +9,13 @@ name = "files_io"
 crate-type = ["rlib"]
 
 [dependencies]
-pyo3 = { version = "0.28.2" }
-pyo3-async-runtimes = { version = "0.28", features = ["tokio-runtime"] }
+pyo3 = { version = "0.30" }
+pyo3-async-runtimes = { version = "0.30", features = ["tokio-runtime"] }
 tokio = { version = "1", features = ["rt-multi-thread"] }
-aws-sdk-s3 = "1"
+aws-sdk-s3 = { version = "1", default-features = false, features = ["default-https-client", "rt-tokio", "http-1x"] }
 aws-config = "1"
 aws-credential-types = "1"
-zip = "2"
+zip = "9"
 tar = "0.4"
 flate2 = "1"
 sha2 = "0.10"

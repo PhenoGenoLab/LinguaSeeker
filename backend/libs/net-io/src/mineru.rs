@@ -103,9 +103,7 @@ pub async fn upload_local_files(
     let upload_futures: Vec<_> = urls
         .iter()
         .zip(file_paths)
-        .map(|(upload_url, file_path)| {
-            upload_local_file(client, upload_url, file_path, None)
-        })
+        .map(|(upload_url, file_path)| upload_local_file(client, upload_url, file_path, None))
         .collect();
 
     let results = futures::future::join_all(upload_futures).await;

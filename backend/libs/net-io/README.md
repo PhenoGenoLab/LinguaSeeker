@@ -152,8 +152,8 @@ result = await net_io.mineru_upload_local_files(
 
 | 依赖 | 版本 | 说明 |
 |------|------|------|
-| `pyo3` | `0.28.2` | Python 绑定 |
-| `pyo3-async-runtimes` | `0.28` | Tokio 异步运行时集成 |
+| `pyo3` | `0.30` | Python 绑定 |
+| `pyo3-async-runtimes` | `0.30` | Tokio 异步运行时集成 |
 | `reqwest` | `0.13` | HTTP 客户端（rustls, gzip, socks） |
 | `bytes` | `1` | 响应字节缓冲（避免 `Bytes` → `Vec` 复制） |
 | `tokio` | `1` | 异步运行时 |
@@ -161,7 +161,7 @@ result = await net_io.mineru_upload_local_files(
 | `scraper` | `0.26` | HTML 解析与 CSS 选择器 |
 | `url` | `2` | URL 解析与构造 |
 | `serde` / `serde_json` | `1` | 序列化 |
-| `pythonize` | `0.28` | Rust → Python 对象转换 |
+| `pythonize` | `0.30` | Rust → Python 对象转换 |
 | `urlencoding` | `2` | URL 编码 |
 | `thiserror` | `2` | 错误类型派生 |
 

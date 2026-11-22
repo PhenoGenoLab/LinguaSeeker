@@ -1,13 +1,15 @@
 # Native Extensions
 
-> Rust/PyO3 原生扩展，为 Lingua Seeker 提供文献采集、MinerU 文档解析、文件 I/O（本地 + S3）、归档处理和 SHA-256 去重能力。三个 crate，一个 Python 模块：`rust_io`。
+> Rust/PyO3 原生扩展，为 Lingua Seeker 提供文献采集、MinerU 文档解析、通用异步 I/O（本地/HTTP/S3）、归档处理和 SHA-256 去重能力。五个 crate，一个 Python 模块：`rust_io`。
 
 ## 概览
 
 ```
 rust-io  (cdylib + rlib)  ← 唯一构建为 Python 扩展的 crate
  ├─ net-io    (rlib)      ← HTTP/Web I/O：15 个文献数据源 + MinerU API
- └─ files-io  (rlib)      ← 文件 I/O：本地 + S3、归档、SHA-256 去重
+ ├─ files-io  (rlib)      ← 文件 I/O：本地 + S3、归档、SHA-256 去重
+ ├─ io-py     (rlib)      ← PyO3 绑定：rust_io.io
+ └─ io-core   (rlib)      ← 通用异步 I/O 引擎：路由、重试、多路复用、流式传输
 ```
 
 | Crate | Python 模块 | 构建类型 |
@@ -15,8 +17,10 @@ rust-io  (cdylib + rlib)  ← 唯一构建为 Python 扩展的 crate
 | `rust-io` | `rust_io` | `cdylib`（`.so`/`.pyd`）— 通过 `import rust_io` 加载 |
 | `net-io` | `rust_io.net` | `rlib` — 静态链接到 `rust-io` |
 | `files-io` | `rust_io.files` | `rlib` — 静态链接到 `rust-io` |
+| `io-py` | `rust_io.io` | `rlib` — `io-core` 的 Python 绑定 |
+| `io-core` | —（纯 Rust） | `rlib` — 通用异步 I/O 引擎 |
 
-`net-io` 和 `files-io` **不是**独立的 Python 模块。它们各自通过 `#[pymodule(submodule)]` 声明子模块并导出 `#[pyfunction]` / `#[pyclass]`，由 `rust-io` 门面通过 `wrap_pymodule!` 挂载为 `rust_io.net` 和 `rust_io.files`。
+`net-io`、`files-io` 和 `io-py` **不是**独立的 Python 模块。它们各自通过 `#[pymodule(submodule)]` 声明子模块并导出 `#[pyfunction]` / `#[pyclass]`，由 `rust-io` 门面通过 `wrap_pymodule!` 挂载为 `rust_io.net`、`rust_io.files` 和 `rust_io.io`。
 
 ## 目录结构
 
@@ -25,7 +29,9 @@ backend/libs/
 ├── config-loader/    # 纯 Python：分层 YAML 配置加载器
 ├── rust-io/          # PyO3 门面 crate（cdylib）
 ├── net-io/           # HTTP/Web I/O crate（rlib）
-└── files-io/         # 文件 I/O crate（rlib）
+├── files-io/         # 文件 I/O crate（rlib）
+├── io-py/            # 通用 I/O 的 PyO3 绑定（rlib）
+└── io-core/          # 通用异步 I/O 引擎（rlib）
 ```
 
 ## 快速开始

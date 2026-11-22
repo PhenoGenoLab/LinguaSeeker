@@ -91,7 +91,13 @@ pub fn extract(archive_path: &str, output_dir: &str) -> Result<u64, FileError> {
         let mut file = archive
             .by_index(i)
             .map_err(|e| FileError::Archive(e.to_string()))?;
-        let entry_name = file.mangled_name();
+        let entry_name = file
+            .mangled_name()
+            .map_err(|e| FileError::Archive(e.to_string()))?;
+        let is_dir = file
+            .name()
+            .map_err(|e| FileError::Archive(e.to_string()))?
+            .ends_with('/');
         if is_zip_symlink(file.unix_mode()) {
             return Err(FileError::Archive(format!(
                 "symlink entries are not supported: '{}'",
@@ -100,7 +106,7 @@ pub fn extract(archive_path: &str, output_dir: &str) -> Result<u64, FileError> {
         }
         validate_entry_path(&entry_name, &out_root)?;
         let outpath = out_root.join(&entry_name);
-        if file.name().ends_with('/') {
+        if is_dir {
             fs::create_dir_all(&outpath)?;
         } else {
             if let Some(parent) = outpath.parent() {
