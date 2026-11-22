@@ -28,7 +28,7 @@
 - 编排层只负责流程拓扑、全局状态、路由决策与节点可观测性；不得包含具体业务规则。
 - 垂直特性包负责完整业务闭环：对编排器暴露 `api.py`/Node 接口，内部使用 `core.py` 放纯业务逻辑，`providers.py` 封装 LLM/DB/Rust I/O/外部服务，`contracts.py` 或 `schema.py` 放强类型契约。
 - 全局状态使用 Pydantic 模型作为单一真相源；节点之间通过类型化状态增量通信，禁止裸 `dict` 作为稳定跨模块契约。
-- 本仓库 Backend 映射：`backend/src/pipeline/`（graph/skills）是 pipeline 编排层（`pipeline/graph/agents/*` 放各 agent 实现），`backend/src/runs/` 是一次 run 的运行时（runner、dispatcher、状态持久化），`backend/src/core/` 只放 foundation/shared/adapters 与配置，`backend/src/utils/`、`backend/src/dao/`、Rust crates 是 Shared infrastructure。
+- 本仓库 Backend 映射（单向依赖）：`backend/src/pipeline/graph/` 负责编排（topology、phases、routing）；`pipeline/graph/agents/*` 只是门户（薄节点，委托给某个 skill）；`backend/src/pipeline/skills/` 实现各专业 agent（prompt、模型调用、控制流）；`backend/src/core/tools/` 放 skills 交给 agent 的具体工具。`backend/src/runs/` 是一次 run 的运行时（runner、dispatcher、状态持久化），`backend/src/core/` 只放配置、`foundation/`、`shared/`、`tools/`、`adapters/`，不含 agent 实现；`backend/src/utils/`、`backend/src/dao/`、Rust crates 是 Shared infrastructure。
 - Frontend 映射：`frontend/src/pages/` 负责页面级编排，`frontend/src/components/<feature>/` 与 `frontend/src/hooks/` 承载垂直 UI 特性，`frontend/src/components/`（antd 衍生组件）、`frontend/src/api/`、`frontend/src/types/`、`frontend/src/stores/` 为共享基础设施。
 
 ### 3. 文档管理

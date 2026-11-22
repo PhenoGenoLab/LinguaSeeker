@@ -29,7 +29,7 @@
 │   │   ├── pipeline/               # 管线领域层
 │   │   │   ├── graph/              #   LangGraph 拓扑、Phase 1-4 适配器、agents
 │   │   │   └── skills/             #   AgentScope skills
-│   │   ├── core/                   # 配置 + 基础层（foundation/shared/adapters）
+│   │   ├── core/                   # 配置 + 基础层（foundation/shared/tools/adapters）
 │   │   ├── runs/                   # 一次 run 的生命周期（runner、dispatcher、状态持久化）
 │   │   ├── api/                    # FastAPI 路由（v1/）
 │   │   ├── dao/                    # 数据访问（PostgreSQL、Redis、Neo4j）

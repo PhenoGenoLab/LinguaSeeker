@@ -32,9 +32,9 @@ REMOVED_LEGACY_MODULES = (
     "src.pipeline.mcp",
     "src.pipeline.contracts",
     # Second move: core was split into foundation/shared/adapters/phases, so the
-    # pre-layering core paths must stay dead.
+    # pre-layering core paths must stay dead.  ``src.core.tools`` is deliberately
+    # absent: core/tools now holds the AgentScope tool definitions.
     "src.core.auth",
-    "src.core.tools",
     "src.core.contracts",
     "src.core.mcp",
     "src.core.ingest_and_digitize_data",
@@ -128,7 +128,7 @@ def test_pipeline_skeleton_packages_exist() -> None:
 
 
 def test_core_packages_hold_the_concrete_layers() -> None:
-    for layer in ("shared/tools", "shared/contracts", "adapters/mcp", "foundation/auth"):
+    for layer in ("shared/tools", "shared/contracts", "adapters/mcp", "foundation/auth", "tools/builtin", "tools/task"):
         package = CORE_ROOT / layer
         assert (package / "__init__.py").is_file(), f"missing core package: {package}"
 

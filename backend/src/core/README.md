@@ -4,7 +4,7 @@
 
 ## 概述
 
-`core` 是 ACMG Lingua 后端的核心包，包含全局配置管理（`config.py`）和四个业务阶段子模块。配置系统基于 Pydantic Settings，从 YAML 文件和环境变量加载，以单例模式提供全局访问。
+`core` 是 ACMG Lingua 后端的配置与共享层，包含全局配置管理（`config.py`）、跨切面基础（`foundation/`）、共享能力与契约（`shared/`）、skills 交给 agent 的具体工具（`tools/`）与外部协议适配（`adapters/`）。配置系统基于 Pydantic Settings，从 YAML 文件和环境变量加载，以单例模式提供全局访问。
 
 ## 结构
 
@@ -17,6 +17,9 @@ core/
 ├── shared/                      # L2 共享能力与契约
 │   ├── tools/fact_chain/        #   确定性能力：契约、校验、窗口
 │   └── contracts/skill_io.py    #   跨层 DTO（SkillRequest/SkillResult）
+├── tools/                       # skills 交给 agent 的具体工具（唯一允许 import agentscope）
+│   ├── builtin/                 #   Bash/Read/Write/Edit/Glob/Grep/AskUser/...
+│   └── task/                    #   TaskCreate/TaskGet/TaskList/TaskUpdate
 └── adapters/                    # L3 外部协议适配
     └── mcp/                     #   ReMe 等（占位，只依赖 shared.contracts）
 ```
@@ -25,7 +28,8 @@ core/
 > standardization / review / graph_retrieval` 都在 `src/pipeline/graph/agents/`，
 > 由 `pipeline/skills` 与 `pipeline/graph/phases` 调用。
 >
-> 依赖方向：`foundation ← shared`，`adapters` 只依赖 `shared.contracts`；
+> 依赖方向（单向）：`graph`（编排）→ `agents`（门户，薄节点）→ `skills`（agent 实现）
+> → `core/tools`（具体工具）。`foundation ← shared`，`adapters` 只依赖 `shared.contracts`；
 > `src.pipeline` 与 `src.runs` 依赖 core，core 不反向依赖二者。
 > 边界由 `tests/core/test_layer_boundaries.py` 与
 > `tests/pipeline/test_import_boundaries.py` 断言。

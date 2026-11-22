@@ -38,8 +38,8 @@ Modern tools only. System-level installs are prohibited.
 
 New modules should prefer **Orchestrated Vertical Slice Architecture**:
 
-- `src/runs/` owns the run lifecycle: global Pydantic graph state, runner, dispatcher, state persistence, node telemetry. LangGraph topology lives in `src/pipeline/graph/`.
-- `src/core/<feature>/` contains vertical feature slices. A non-trivial slice should expose an `api.py` node adapter, keep pure domain behavior in `core.py`, wrap LLM/DB/Rust/external dependencies in `providers.py`, and define feature-local contracts in `contracts.py` or `schema.py`.
+- Layering is one-directional: `src/pipeline/graph/` orchestrates the run; `src/pipeline/graph/agents/` are portals that only delegate to one skill; `src/pipeline/skills/` implement the agents (prompts, model calls, control flow); `src/core/tools/` holds the concrete AgentScope tools those skills expose. `src/runs/` owns the run lifecycle (global Pydantic state, runner, dispatcher, persistence, node telemetry).
+- `src/core/` holds configuration and shared layers (`config.py`, `foundation/`, `shared/`, `tools/`, `adapters/`); it never holds agent implementations. A non-trivial feature slice still exposes an `api.py` node adapter, keeps pure domain behavior in `core.py`, wraps LLM/DB/Rust/external dependencies in `providers.py`, and defines contracts in `contracts.py` or `schema.py`.
 - `src/utils/`, `src/dao/`, Rust crates, and shared clients are infrastructure. Business core code must not depend directly on SDK clients when a provider boundary is practical.
 - Workflow code wires nodes and edges only; feature packages own the biomedical, translation, standardization, feedback, and report-generation decisions.
 - Cross-node state uses typed Pydantic/dataclass/TypedDict contracts. Do not introduce stable bare-dict return contracts.
