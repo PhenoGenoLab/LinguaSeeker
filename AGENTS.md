@@ -342,7 +342,7 @@
 #### 29.2 SSRF 防护
 
 - 所有发起外部 HTTP 请求的代码**必须**在请求前和重定向后校验目标 URL，拒绝私有/保留 IP 地址。
-- 使用 `validate_url_safe()` 函数（DNS 解析 + 私有 IP 检查），已实现于 `backend/src/utils/ssrf.py`，调用点在 `backend/src/pipeline/graph/agents/parsing/orchestrator.py`（请求前 + 重定向后各一次）。
+- 使用 `validate_url_safe()` 函数（DNS 解析 + 私有 IP 检查），已实现于 `backend/src/utils/ssrf.py`，调用点在 `backend/src/core/tools/parsing/orchestrator.py`（请求前 + 重定向后各一次）。
   - 在线文献获取已委托给 `lit-acquisition` SDK（本地路径依赖 `../05_lit-acquisition`，editable），其 `net` 层内置同等的 SSRF 校验
 - 新增外部 HTTP 请求代码时，**必须**复用上述函数或等效的 SSRF 校验逻辑。
 
@@ -374,7 +374,7 @@ Lingua Seeker is a Multi-Agent infrastructure platform for medical genetics lite
 
 #### Backend (`backend/`)
 
-FastAPI async application. Business logic lives in `backend/src/` (not `app/`) and should prefer **Orchestrated Vertical Slice Architecture** for new modules: `src/pipeline/` owns the graph (LangGraph topology, AgentScope skills) and the agent implementations (`src/pipeline/graph/agents/<agent>/`); `src/runs/` owns the outer runtime (run lifecycle: Pydantic graph state, runner, dispatcher, persistence, node telemetry); `src/core/` holds only foundation (`config`, `auth`), shared deterministic tools/DTOs and external protocol adapters; `src/dao/`, `src/utils/`, Rust crates, and shared clients provide infrastructure.
+FastAPI async application. Business logic lives in `backend/src/` (not `app/`) and should prefer **Orchestrated Vertical Slice Architecture** for new modules: `src/pipeline/graph/` owns the LangGraph topology and phase adapters, `src/pipeline/graph/agents/<agent>/` holds only portals, `src/pipeline/skills/<agent>/` implements the agents (prompts, model calls, control flow), and `src/core/tools/<agent>/` holds the deterministic tools they call; `src/runs/` owns the outer runtime (run lifecycle: Pydantic graph state, runner, dispatcher, persistence, node telemetry); `src/core/` holds only foundation (`config`, `auth`), shared deterministic tools/DTOs and external protocol adapters; `src/dao/`, `src/utils/`, Rust crates, and shared clients provide infrastructure.
 
 ```
 src/

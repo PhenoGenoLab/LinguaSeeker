@@ -17,8 +17,8 @@ src/
 │   ├── tools/                   # 具体工具（builtin/、task/、acquisition/、parsing/、extraction/ …）
 │   └── adapters/                # L3 外部协议适配（mcp）
 ├── pipeline/            # pipeline 领域层
-│   ├── graph/                   # LangGraph 拓扑、Phase 1-4 适配器、agents
-│   └── skills/                  # AgentScope skills（acquisition/parsing/extraction/translation/standardization/runtime）
+│   ├── graph/                   # LangGraph 拓扑、Phase 1-4 适配器、agents 门户
+│   └── skills/                  # 专业 agent 实现（prompt、模型调用、编排）+ runtime
 ├── runs/                # 一次 run 的生命周期（runner、dispatcher、状态持久化）
 │   ├── runner.py                # 后台管线运行器
 │   ├── dispatcher.py            # 单任务作业调度器
@@ -65,12 +65,12 @@ app.main → src.api.wiring → src.runs.* → src.pipeline.* / src.core.*
 
 | Phase | 模块 | 职责 |
 |-------|------|------|
-| Phase 1 | `pipeline/graph/agents/acquisition/` + `pipeline/graph/agents/parsing/` | 文献采集 + MinerU 文档解析 |
-| Phase 2 | `pipeline/graph/agents/translation/` + `pipeline/graph/agents/extraction/` | 跨语言翻译 + 双轨证据提取 |
-| Phase 3 | `pipeline/graph/agents/standardization/` | 实体标准化 + 术语知识对齐 |
-| Phase 4 | `pipeline/graph/agents/review/` | 专家审核、聊天、审计、溯源 |
+| Phase 1 | `pipeline/skills/acquisition/` + `pipeline/skills/parsing/` | 文献采集 + MinerU 文档解析 |
+| Phase 2 | `pipeline/skills/translation/` + `pipeline/skills/extraction/` | 跨语言翻译 + 双轨证据提取 |
+| Phase 3 | `pipeline/skills/standardization/` | 实体标准化 + 术语知识对齐 |
+| Phase 4 | `pipeline/skills/review/` | 专家审核、聊天、审计、溯源 |
 
-Phase 1-4 由 `pipeline/graph/topology.py`（LangGraph）编排为有向图；Phase 5 是独立的请求-响应式交互服务（`pipeline/graph/agents/review/` + `runs/phase_5_factory.py`）。
+Phase 1-4 由 `pipeline/graph/topology.py`（LangGraph）编排为有向图；Phase 5 是独立的请求-响应式交互服务（`pipeline/skills/review/` + `runs/phase_5_factory.py`）。
 
 ## Usage / Patterns
 
