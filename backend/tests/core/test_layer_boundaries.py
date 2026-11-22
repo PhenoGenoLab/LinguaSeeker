@@ -7,7 +7,7 @@ the phases live in ``src.pipeline.graph``; core holds the agents each phase call
                     ↑
                  adapters
 
-``core.root`` (``config.py``, ``config_loader.py``) is importable by everyone and
+``core.root`` (``config.py``) is importable by everyone and
 imports nothing from the strata.  The tests are AST-based so they stay cheap and
 independent of optional runtime dependencies.
 """
@@ -79,7 +79,7 @@ def test_core_has_no_agents_package() -> None:
 
 
 def test_core_root_modules_stay_dependency_free() -> None:
-    """``config.py`` / ``config_loader.py`` must not depend on a stratum."""
+    """``config.py`` must not depend on a stratum."""
     root_modules = {path for path in _iter_python_files(CORE_ROOT) if path.parent == CORE_ROOT}
     found = [
         f"{path.name} imports {module}"

@@ -25,7 +25,7 @@ from urllib.parse import quote, urlparse
 
 from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from src.core.config_loader import load_backend_config_into_env
+from acmg_config_loader import load_backend_config_into_env
 
 
 # ── Constants ───────────────────────────────────────────────────────────

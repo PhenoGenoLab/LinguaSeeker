@@ -15,7 +15,7 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.utils.parsing import parse_gene_from_group_id, parse_variant_from_group_id
+from src.utils.text import parse_gene_from_group_id, parse_variant_from_group_id
 from src.utils.text_normalize import block_text_from_dict, concat_document_text
 from src.utils.translation_render_quality import (
     is_likely_untranslated_render_blocks,

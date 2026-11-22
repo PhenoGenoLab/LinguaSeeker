@@ -22,9 +22,6 @@ utils/
 ├── ssrf.py                # SSRF 防护（URL 安全验证）
 ├── observability.py       # LangSmith 追踪 + 结构化日志装饰器
 ├── rust_io.py             # Rust 原生扩展延迟导入（files_io、net_io）
-├── llm_params.py          # [兼容性 shim] 重导出 resolve_max_tokens
-├── markdown_helpers.py    # [兼容性 shim] 重导出 extract_abstract_from_markdown
-├── parsing.py             # [兼容性 shim] 重导出 parse_gene/variant_from_group_id
 └── __init__.py
 ```
 

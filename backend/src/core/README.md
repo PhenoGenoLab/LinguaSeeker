@@ -12,7 +12,6 @@
 core/
 ├── __init__.py                  # 空包标识
 ├── config.py                    # L0 全局配置（Settings 单例），所有层可 import
-├── config_loader.py             # L0 向后兼容 shim，委托给 acmg_config_loader
 ├── foundation/                  # L1 跨切面基础
 │   └── auth/                    #   认证契约与口令哈希
 ├── shared/                      # L2 共享能力与契约

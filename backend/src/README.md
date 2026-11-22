@@ -10,19 +10,14 @@
 
 ```
 src/
-├── core/                # 核心业务逻辑和配置管理
+├── core/                # 配置与基础层
 │   ├── config.py                # Settings 单例（Pydantic Settings）
-│   ├── config_loader.py         # 分层 YAML 配置加载（兼容性 shim）
-│   ├── ingest_and_digitize_data/          # Phase 1: 文献采集和文档解析
-│   ├── cross_lingual_process_and_extract_evidence/  # Phase 2: 翻译和证据提取
-│   ├── standardize_entities_and_align_knowledge/    # Phase 3: 实体标准化
-│   └── visualize_evidence_with_expert_in_loop/      # Phase 4: 专家审核反馈
-├── pipeline/            # pipeline 领域层（阶段 1-2 目录迁移）
-│   ├── graph/                   # LangGraph 拓扑与 Phase 1-4 适配器
-│   ├── skills/                  # AgentScope 子智能体、prompt、模型运行时
-│   ├── tools/                   # 确定性能力（事实链校验、窗口、投影）
-│   ├── mcp/                     # 外部协议适配
-│   └── contracts/               # 跨层 DTO
+│   ├── foundation/              # L1 跨切面基础（auth）
+│   ├── shared/                  # L2 共享能力与契约（fact_chain、skill_io）
+│   └── adapters/                # L3 外部协议适配（mcp）
+├── pipeline/            # pipeline 领域层
+│   ├── graph/                   # LangGraph 拓扑、Phase 1-4 适配器、agents
+│   └── skills/                  # AgentScope skills（acquisition/parsing/extraction/translation/standardization/runtime）
 ├── runs/                # 一次 run 的生命周期（runner、dispatcher、状态持久化）
 │   ├── runner.py                # 后台管线运行器
 │   ├── dispatcher.py            # 单任务作业调度器
@@ -43,7 +38,6 @@ src/
 │   ├── postgresql/              # SQLAlchemy ORM 和仓储
 │   ├── redis/                   # Redis 缓存操作
 │   ├── neo4j/                   # 图数据库（预留）
-│   └── minio/                   # 对象存储（预留）
 └── utils/               # 通用工具函数
     ├── logger.py                # 日志配置（loguru）
     ├── llm_adapter.py           # LLM 客户端适配器（密钥池轮转）
@@ -59,7 +53,7 @@ src/
 ### 依赖关系图
 
 ```
-app.main → src.api.wiring → src.runs.* → src.core.*
+app.main → src.api.wiring → src.runs.* → src.pipeline.* / src.core.*
                 ↓
            src.dao.* (PostgreSQL / Redis)
                 ↓
@@ -70,10 +64,10 @@ app.main → src.api.wiring → src.runs.* → src.core.*
 
 | Phase | 模块 | 职责 |
 |-------|------|------|
-| Phase 1 | `core/ingest_and_digitize_data/` | 文献采集 + MinerU 文档解析 |
-| Phase 2 | `core/cross_lingual_process_and_extract_evidence/` | 跨语言翻译 + 双轨证据提取 |
-| Phase 3 | `core/standardize_entities_and_align_knowledge/` | 实体标准化 + 术语知识对齐 |
-| Phase 4 | `core/visualize_evidence_with_expert_in_loop/` | 专家审核、聊天、审计、溯源 |
+| Phase 1 | `pipeline/graph/agents/acquisition/` + `pipeline/graph/agents/parsing/` | 文献采集 + MinerU 文档解析 |
+| Phase 2 | `pipeline/graph/agents/translation/` + `pipeline/graph/agents/extraction/` | 跨语言翻译 + 双轨证据提取 |
+| Phase 3 | `pipeline/graph/agents/standardization/` | 实体标准化 + 术语知识对齐 |
+| Phase 4 | `pipeline/graph/agents/review/` | 专家审核、聊天、审计、溯源 |
 
 Phase 1-4 由 `pipeline/graph/topology.py`（LangGraph）编排为有向图；Phase 5 是独立的请求-响应式交互服务（`pipeline/graph/agents/review/` + `runs/phase_5_factory.py`）。
 

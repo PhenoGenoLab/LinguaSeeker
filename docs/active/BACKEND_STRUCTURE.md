@@ -88,7 +88,6 @@ backend/
 │   │       └── delta_audit.py                          # Delta audit endpoints
 │   ├── core/
 │   │   ├── config.py                                   # Core config (pydantic-settings)
-│   │   ├── config_loader.py                            # YAML config loading
 │   │   ├── ingest_and_digitize_data/                   # Phase 1
 │   │   │   ├── document_acquisition/
 │   │   │   │   ├── contracts.py                        # Search/fetch contracts
@@ -252,7 +251,7 @@ cfg.postgresql.host
 cfg.mineru.api_url
 ```
 
-Environment variables are flat, for example `LLM_API_KEY`, and are mapped to nested Pydantic models by `model_validator`. YAML config is loaded via `config_loader.py` from layered sources: `backend/config/defaults`, `backend/config/environments`, and `backend/config/vault`.
+Environment variables are flat, for example `LLM_API_KEY`, and are mapped to nested Pydantic models by `model_validator`. YAML config is loaded via `acmg_config_loader` from layered sources: `backend/config/defaults`, `backend/config/environments`, and `backend/config/vault`.
 
 ### 3.2 Task Runtime and Lifecycle
 
