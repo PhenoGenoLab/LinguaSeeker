@@ -148,7 +148,7 @@ class ParseDocumentService:
                     sha = duplicate.get("hash", "")
                     is_dup = duplicate.get("is_duplicate", sha in known or sha in seen_hashes)
                 else:
-                    sha = files_io.sha256_file(fp)
+                    sha = files_io.compute_sha256(fp)
                     is_dup = sha in known or sha in seen_hashes
                 if sha:
                     seen_hashes.add(sha)
