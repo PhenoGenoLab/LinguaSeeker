@@ -152,7 +152,7 @@ reconcile → 双轨交叉校验 → 最终结果
 ## 使用
 
 ```python
-from src.core.cross_lingual_process_and_extract_evidence.extract_evidence.api import EvidenceExtractionService
+from src.pipeline.graph.agents.extraction.api import EvidenceExtractionService
 
 # 初始化
 service = EvidenceExtractionService(cfg)

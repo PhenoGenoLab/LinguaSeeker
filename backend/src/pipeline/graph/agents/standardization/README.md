@@ -18,7 +18,7 @@ Phase 3 是 Lingua Seeker 管道的核心标准化阶段。它接收 Phase 2 输
 ## 目录结构
 
 ```
-standardize_entities_and_align_knowledge/
+standardization/
 ├── __init__.py              # 包声明
 ├── api.py                   # 公共门面：EntityStandardizationService、术语导入/嵌入构建
 ├── core.py                  # StandardizationService：编排匹配与持久化

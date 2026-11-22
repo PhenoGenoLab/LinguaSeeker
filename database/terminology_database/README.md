@@ -124,7 +124,7 @@ wget https://github.com/monarch-initiative/mondo/releases/download/v2026-06-02/m
 
 ```python
 from pathlib import Path
-from src.core.standardize_entities_and_align_knowledge.importers import build_clinvar_core_tsv
+from src.pipeline.graph.agents.standardization.importers import build_clinvar_core_tsv
 
 build_clinvar_core_tsv(
     source_path=Path("database/terminology_database/clinvar/variant_summary.txt"),

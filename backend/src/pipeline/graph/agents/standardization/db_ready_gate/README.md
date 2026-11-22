@@ -201,9 +201,9 @@ The implementation is O(n) over candidates. Each candidate check is string and t
 Run focused tests from `backend/`:
 
 ```bash
-uv run pytest tests/core/standardize_entities_and_align_knowledge/test_db_ready_gate.py -q
-uv run pytest tests/core/standardize_entities_and_align_knowledge/test_repositories.py -q
-uv run ruff check src/core/standardize_entities_and_align_knowledge/db_ready_gate src/core/standardize_entities_and_align_knowledge/repositories.py tests/core/standardize_entities_and_align_knowledge/test_db_ready_gate.py tests/core/standardize_entities_and_align_knowledge/test_repositories.py
+uv run pytest tests/pipeline/graph/agents/standardization/test_db_ready_gate.py -q
+uv run pytest tests/pipeline/graph/agents/standardization/test_repositories.py -q
+uv run ruff check src/pipeline/graph/agents/standardization/db_ready_gate src/pipeline/graph/agents/standardization/repositories.py tests/pipeline/graph/agents/standardization/test_db_ready_gate.py tests/pipeline/graph/agents/standardization/test_repositories.py
 ```
 
 Current coverage verifies accepted candidates, Phase 2 `text_snippet` source support, variant binding rejection, source-support rejection and expert override, review rejection, custom policy requirements, batch reason counts, and repository-level canonical filtering.

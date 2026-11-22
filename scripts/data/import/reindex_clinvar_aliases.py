@@ -100,7 +100,7 @@ def _configure_logger() -> None:
 
 async def _run_import(args: argparse.Namespace) -> None:
     """Re-run the ClinVar terminology import through the public facade."""
-    from src.core.standardize_entities_and_align_knowledge.api import import_terminology
+    from src.pipeline.graph.agents.standardization.api import import_terminology
 
     logger.info(
         "Re-importing terminology: root={}, version={}, sources={}",

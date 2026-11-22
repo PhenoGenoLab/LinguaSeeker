@@ -156,7 +156,7 @@ TranslationResult
 ## 使用
 
 ```python
-from src.core.cross_lingual_process_and_extract_evidence.cross_lingual.translate import (
+from src.pipeline.graph.agents.translation.translate import (
     MultiStageTranslator, detect_language, create_llm
 )
 

@@ -78,8 +78,8 @@ FormattedDocument
 ## 使用
 
 ```python
-from src.core.cross_lingual_process_and_extract_evidence.cross_lingual.format.formatter import MarkdownFormatter
-from src.core.cross_lingual_process_and_extract_evidence.cross_lingual.format.segmenter import segment_text
+from src.pipeline.graph.agents.translation.format.formatter import MarkdownFormatter
+from src.pipeline.graph.agents.translation.format.segmenter import segment_text
 
 # 格式化文档
 formatter = MarkdownFormatter()

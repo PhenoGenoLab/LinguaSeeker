@@ -26,15 +26,13 @@
 ├── backend/                        # FastAPI 应用
 │   ├── app/                        # 入口点（main.py）
 │   ├── src/                        # 业务逻辑（编排垂直切片架构）
-│   │   ├── agents/                 # 管线编排器（LangGraph）
+│   │   ├── pipeline/               # 管线领域层
+│   │   │   ├── graph/              #   LangGraph 拓扑、Phase 1-4 适配器、agents
+│   │   │   └── skills/             #   AgentScope skills
+│   │   ├── core/                   # 配置 + 基础层（foundation/shared/adapters）
+│   │   ├── runs/                   # 一次 run 的生命周期（runner、dispatcher、状态持久化）
 │   │   ├── api/                    # FastAPI 路由（v1/）
-│   │   ├── core/                   # 功能切片（Phase 1-4）
-│   │   │   ├── config.py                       # 配置
-│   │   │   ├── ingest_and_digitize_data/       # Phase 1
-│   │   │   ├── cross_lingual_process_and_extract_evidence/  # Phase 2
-│   │   │   ├── standardize_entities_and_align_knowledge/    # Phase 3
-│   │   │   └── visualize_evidence_with_expert_in_loop/      # Phase 4
-│   │   ├── dao/                    # 数据访问（PostgreSQL、Redis）
+│   │   ├── dao/                    # 数据访问（PostgreSQL、Redis、Neo4j）
 │   │   └── utils/                  # 共享工具
 │   ├── libs/                       # Rust 原生扩展
 │   ├── config/                     # 分层 YAML 配置

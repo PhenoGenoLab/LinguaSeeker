@@ -15,7 +15,7 @@ Phase 4 是 Lingua Seeker 的人机交互层，为前端提供完整的证据审
 ## 目录结构
 
 ```
-visualize_evidence_with_expert_in_loop/
+review/
 ├── __init__.py           # 空包声明
 ├── contracts.py          # Pydantic 模型和类型化契约（API 请求/响应）
 ├── search_service.py     # SearchService：证据搜索与文档内容加载

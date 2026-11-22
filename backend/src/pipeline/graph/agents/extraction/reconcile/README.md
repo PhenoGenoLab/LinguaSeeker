@@ -125,7 +125,7 @@ ReconcileOutput
 ## 使用
 
 ```python
-from src.core.cross_lingual_process_and_extract_evidence.extract_evidence.reconcile import (
+from src.pipeline.graph.agents.extraction.reconcile import (
     CrossTrackReconcileService, ReconcileParams,
 )
 

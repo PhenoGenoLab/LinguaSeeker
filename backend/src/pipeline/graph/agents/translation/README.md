@@ -93,8 +93,8 @@ TranslationResult (含术语表、段落、对齐信息、翻译块)
 ## 使用
 
 ```python
-from src.core.cross_lingual_process_and_extract_evidence.cross_lingual.format.formatter import MarkdownFormatter
-from src.core.cross_lingual_process_and_extract_evidence.cross_lingual.translate.translator import MultiStageTranslator
+from src.pipeline.graph.agents.translation.format.formatter import MarkdownFormatter
+from src.pipeline.graph.agents.translation.translate.translator import MultiStageTranslator
 
 # 格式化
 formatter = MarkdownFormatter()

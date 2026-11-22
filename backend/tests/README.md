@@ -15,10 +15,15 @@ tests/
 ├── test_health.py                   # 健康检查测试
 ├── test_startup_lock.py             # 启动 advisory lock 测试
 
-├── agents/                          # 管线编排器测试
-│   ├── test_state_persistence_layer.py
-│   ├── test_phase2_retry.py
-│   ├── test_phase_2_adapter.py
+├── pipeline/                        # pipeline 领域层测试
+│   ├── graph/agents/                #   agent 实现测试（需 rust_io / agentscope，默认不进 CI）
+│   ├── test_extract_skill.py
+│   ├── test_import_boundaries.py
+│   ├── test_search_service.py
+│   └── test_skill_single_path.py
+├── runs/                            # run 生命周期测试
+│   ├── test_orchestrator.py
+│   ├── test_state_persistence.py
 │   ├── test_processing_cache.py
 │   ├── test_state_transition_guard.py
 │   ├── test_concurrency.py
@@ -36,17 +41,18 @@ tests/
 │   ├── test_delta_audit_api.py
 │   ├── test_wiring_config.py
 │   └── ...
-├── core/                            # 核心业务逻辑测试
+├── core/                            # 配置、契约与分层边界测试
+│   ├── auth/
+│   ├── source_fact_chain/
 │   ├── test_config.py
 │   ├── test_config_loader.py
+│   ├── test_layer_boundaries.py
 │   ├── test_contracts.py
 │   ├── test_database_config.py
 │   ├── test_formatter.py
 │   ├── test_grounding.py
-│   ├── test_search_service.py
 │   ├── test_parse_document_config.py
-│   ├── cross_lingual_process_and_extract_evidence/  # Phase 2 子模块测试
-│   └── standardize_entities_and_align_knowledge/    # Phase 3 子模块测试
+│   └── test_translation_validator.py
 ├── benchmark/                       # 基准和评估测试
 │   ├── test_build_unified_dataset.py
 │   ├── test_case_studies.py
@@ -65,7 +71,6 @@ tests/
 ├── scripts/                         # 端到端脚本测试
 │   ├── test_e2e_extract_evidence.py
 │   └── test_e2e_standardize_entities.py
-├── services/                        # 服务层测试（预留）
 ├── utils/                           # 工具函数测试
 │   ├── test_exceptions.py
 │   ├── test_health.py

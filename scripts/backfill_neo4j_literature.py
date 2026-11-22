@@ -25,12 +25,12 @@ from loguru import logger
 from sqlalchemy import select
 
 from src.core.config import get_config
-from src.core.graph_rag.contracts import (
+from src.pipeline.graph.agents.graph_retrieval.contracts import (
     GraphEntityType,
     GraphRelationType,
     LiteratureGraphBatch,
 )
-from src.core.graph_rag.providers import Neo4jGraphProvider
+from src.pipeline.graph.agents.graph_retrieval.providers import Neo4jGraphProvider
 from src.dao.neo4j.connection import build_neo4j_driver
 from src.dao.neo4j.repository import Neo4jRepository
 from src.dao.postgresql.connection import async_session_factory, build_async_engine

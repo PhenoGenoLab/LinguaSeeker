@@ -52,7 +52,7 @@ prompts/
 ## 使用
 
 ```python
-from src.core.cross_lingual_process_and_extract_evidence.cross_lingual.translate.prompts import (
+from src.pipeline.graph.agents.translation.translate.prompts import (
     get_terminology_prompt,
     get_translate_prompt,
     get_self_review_prompt,

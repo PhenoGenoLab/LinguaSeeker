@@ -8,10 +8,10 @@ Lingua Seeker 后端是一个完整的管线编排系统，用于自动化医学
 
 | Phase | 模块 | 职责 |
 |-------|------|------|
-| Phase 1 | `src/core/ingest_and_digitize_data/` | 文献采集（在线/本地）+ MinerU 文档解析 |
-| Phase 2 | `src/core/cross_lingual_process_and_extract_evidence/` | 跨语言翻译 + 双轨证据提取 |
-| Phase 3 | `src/core/standardize_entities_and_align_knowledge/` | 实体标准化 + 术语知识对齐 |
-| Phase 4 | `src/core/visualize_evidence_with_expert_in_loop/` | 专家审核、AI 聊天、审计溯源 |
+| Phase 1 | `src/pipeline/graph/agents/acquisition/` + `src/pipeline/graph/agents/parsing/` | 文献采集（在线/本地）+ MinerU 文档解析 |
+| Phase 2 | `src/pipeline/graph/agents/translation/` + `src/pipeline/graph/agents/extraction/` | 跨语言翻译 + 双轨证据提取 |
+| Phase 3 | `src/pipeline/graph/agents/standardization/` | 实体标准化 + 术语知识对齐 |
+| Phase 4 | `src/pipeline/graph/agents/review/` | 专家审核、AI 聊天、审计溯源 |
 
 Phase 1-3 由 LangGraph 有向图编排器自动执行，Phase 4 是交互式请求-响应服务。
 
