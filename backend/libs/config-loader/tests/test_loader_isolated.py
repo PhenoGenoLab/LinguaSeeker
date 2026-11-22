@@ -17,7 +17,7 @@ def test_loader_symbol_exposed() -> None:
 
 
 def test_loader_signature_unchanged() -> None:
-    """The function signature must match the original backend/src/core/config_loader.py."""
+    """The public loader signature must stay stable for cross-repo consumers."""
     import inspect
 
     from acmg_config_loader import load_backend_config_into_env
