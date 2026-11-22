@@ -77,11 +77,26 @@ class ExtractSkill:
         tier: str = "fast",
         model: Any | None = None,
         agent_factory: Callable[[str], Any] | None = None,
+        memory: Any | None = None,
+        top_k: int | None = None,
     ) -> None:
         self._cfg = cfg
         self._tier = tier
         self._model = model
         self._agent_factory = agent_factory
+        self._memory = memory
+        if top_k is None:
+            memory_cfg = getattr(getattr(cfg, "pipeline", None), "memory", None)
+            top_k = int(getattr(memory_cfg, "top_k", 5))
+        self._top_k = top_k
+
+    def _system_prompt(self, payload: dict[str, Any]) -> str:
+        """Append reference-only ReMe recall; failures already degrade to empty."""
+        if self._memory is None:
+            return EXTRACT_PROMPT
+        query = str(payload.get("window_text") or "")[:400]
+        block = self._memory.search(query, top_k=self._top_k).as_prompt_block()
+        return f"{EXTRACT_PROMPT}\n\n{block}" if block else EXTRACT_PROMPT
 
     def _build_agent(self, window_text: str) -> Any:
         if self._agent_factory is not None:
@@ -94,7 +109,7 @@ class ExtractSkill:
             self._model = build_chat_model(self._cfg, tier=self._tier)
         return build_agent(
             name=self.name,
-            system_prompt=EXTRACT_PROMPT,
+            system_prompt=self._system_prompt({"window_text": window_text}),
             model=self._model,
             tools=window_tools(window_text),
         )

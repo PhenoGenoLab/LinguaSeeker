@@ -34,6 +34,7 @@ from src.runs.contracts import (
     validate_phase_status_transition,
 )
 from src.runs.state_persistence import SessionBoundStatePersistence
+from src.pipeline.graph.progress import NodeProgress, record_node
 
 # Upstream dependencies for single-phase mode validation
 REQUIRED_UPSTREAM: dict[int, list[int]] = {
@@ -129,6 +130,14 @@ class PipelineOrchestrator:
             # for better stack traces at the point of the logic error.
 
         setattr(state, phase_attr, new_phase_status)
+        record_node(
+            new_phase_status,
+            NodeProgress.failed(
+                f"phase_{phase}",
+                started_at=current.started_at if current else None,
+                detail=type(error).__name__,
+            ),
+        )
         state.error_message = str(error)
         state.error_phase = phase
         state.pipeline_status = PipelineStatus.FAILED
@@ -178,6 +187,8 @@ class PipelineOrchestrator:
                 state=state,
                 phase_name=phase_name,
             )
+            node_status = getattr(result, phase_attr)
+            record_node(node_status, NodeProgress.from_status(phase_name, node_status))
             await self._persistence.save(result)
             self._notify(result)
             return result
