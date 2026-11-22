@@ -1,8 +1,10 @@
+use pyo3::prelude::*;
 use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[test]
 fn compatibility_utils_match_legacy_rust_io_files_behavior() {
+    Python::initialize();
     let suffix = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -16,7 +18,7 @@ fn compatibility_utils_match_legacy_rust_io_files_behavior() {
 
     assert_eq!(fs::read(&path).unwrap(), b"abc");
     assert_eq!(
-        files_io::py::utils::compute_sha256(path_str).unwrap(),
+        Python::attach(|py| files_io::py::utils::compute_sha256(py, path_str)).unwrap(),
         "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
     );
     assert!(files_io::py::utils::validate_pdf_magic(b"%PDF-1.7").unwrap());

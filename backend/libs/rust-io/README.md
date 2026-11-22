@@ -56,33 +56,31 @@
 
 ```
 rust-io/src/
-└── lib.rs    # #[pymodule] rust_io — 注册 net 和 files 子模块
+└── lib.rs    # #[pymodule] rust_io — 挂载 net 和 files 子模块
 ```
 
 ### 子模块注册机制
 
+`net-io` 和 `files-io` 各自用 `#[pymodule(submodule)]` 声明 Python 子模块并导出自己的 API，`rust-io` 只负责挂载，不再逐个重复注册函数：
+
 ```rust
 #[pymodule]
 fn rust_io(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    // 1. 创建子模块
-    let net = PyModule::new(m.py(), "net")?;
-    // 2. 添加函数
-    net.add_function(wrap_pyfunction!(net_io::py::fetch_one, &net)?)?;
-    // ... 更多函数
-    // 3. 注册到父模块 + sys.modules
-    register_submodule(m, "rust_io.net", &net)?;
-
-    let files = PyModule::new(m.py(), "files")?;
-    files.add_class::<files_io::py::file::File>()?;
-    // ... 更多函数
-    register_submodule(m, "rust_io.files", &files)?;
+    let py = m.py();
+    let net = pyo3::wrap_pymodule!(net_io::py::net)(py);
+    register_submodule(m, "net", "rust_io.net", net.bind(py))?;
+    let files = pyo3::wrap_pymodule!(files_io::py::files)(py);
+    register_submodule(m, "files", "rust_io.files", files.bind(py))?;
     Ok(())
 }
 ```
 
-`register_submodule` 辅助函数完成两步操作：
-1. `parent.add_submodule(submodule)` — 注册到父模块
-2. `sys.modules["rust_io.net"] = submodule` — 使 `import rust_io.net` 可用
+`register_submodule` 完成三步操作：
+1. `parent.add(name, submodule)` — 挂载为父模块属性
+2. 设置 `submodule.__name__ = "rust_io.net"`（完整限定名）
+3. `sys.modules["rust_io.net"] = submodule` — 使 `import rust_io.net` 可用
+
+新增函数只需在所属 crate 的 `#[pymodule]` 中导出，门面 crate 无需改动。
 
 ## 使用示例
 
@@ -118,6 +116,5 @@ uv run maturin develop --release -m libs/rust-io/Cargo.toml
 | 依赖 | 版本 | 说明 |
 |------|------|------|
 | `pyo3` | `0.28.2` | Python 绑定（extension-module） |
-| `pyo3-async-runtimes` | `0.28` | Tokio 异步运行时集成 |
-| `net-io` | path | HTTP/Web I/O crate |
-| `files-io` | path | 文件 I/O crate |
+| `net-io` | path | HTTP/Web I/O crate（提供 `rust_io.net`） |
+| `files-io` | path | 文件 I/O crate（提供 `rust_io.files`） |

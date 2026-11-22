@@ -50,6 +50,38 @@ def test_files_facade_exports_files_io_functions():
         assert hasattr(files, name)
 
 
+def test_submodule_names_are_fully_qualified():
+    assert net_io.__name__ == "rust_io.net"
+    assert files.__name__ == "rust_io.files"
+
+
+def test_file_write_accepts_str_and_buffer_types(tmp_path):
+    path = tmp_path / "nested" / "sample.txt"
+    handle = files.File(str(path))
+
+    assert handle.path == str(path)
+    assert "sample.txt" in repr(handle)
+
+    handle.write("hello")
+    assert path.read_bytes() == b"hello"
+    assert handle.read(as_text=True) == "hello"
+
+    handle.write(bytearray(b"world"))
+    assert path.read_bytes() == b"world"
+    assert handle.content_hash() == hashlib.sha256(b"world").hexdigest()
+
+
+def test_batch_hash_reports_hashes_and_missing_files(tmp_path):
+    present = tmp_path / "present.bin"
+    present.write_bytes(b"abc")
+    missing = tmp_path / "missing.bin"
+
+    result = files.batch_hash([str(present), str(missing)])
+
+    assert result["hashes"][str(present)] == hashlib.sha256(b"abc").hexdigest()
+    assert str(missing) in result["errors"]
+
+
 @pytest.mark.asyncio
 async def test_net_io_fetch_multi_returns_failure_per_unknown_provider():
     results = await net_io.fetch_multi(["missing_a", "missing_b"], "search", {})

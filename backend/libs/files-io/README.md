@@ -15,6 +15,7 @@
 | 方法 | 签名 | 说明 |
 |------|------|------|
 | `__init__` | `(path, access_key=None, secret_key=None, endpoint=None, region=None)` | 创建文件对象，S3 路径需要 access_key/secret_key |
+| `path` | `str`（只读属性） | 创建时传入的路径 |
 | `read` | `(as_text=False) -> bytes \| str` | 读取全部内容，`as_text=True` 返回字符串 |
 | `read_chunk` | `(offset, size) -> bytes` | 分块读取 |
 | `write` | `(data: bytes \| str) -> None` | 写入文件（自动创建父目录） |
@@ -25,7 +26,7 @@
 | `remove` | `() -> None` | 删除文件 |
 | `remove_dir_all` | `() -> None` | 递归删除目录 |
 | `list_dir` | `() -> list[str]` | 列出目录内容 |
-| `content_hash` | `() -> str` | 计算 SHA-256 哈希（本地分块读取，S3 读取全部后哈希） |
+| `content_hash` | `() -> str` | 计算 SHA-256 哈希（本地分块读取并释放 GIL，S3 读取全部后哈希） |
 | `compress` | `(output_path, format) -> int` | 压缩目录（format: `zip`/`tar`/`tar.gz`/`tgz`），返回条目数 |
 | `extract` | `(output_dir) -> int` | 解压归档（自动检测格式），返回条目数 |
 | `copy_async` | `(dst) -> Coroutine` | 异步复制（在 `spawn_blocking` 中执行） |
@@ -47,7 +48,7 @@
 | 函数 | 签名 | 说明 |
 |------|------|------|
 | `check_duplicate` | `(file_path, known_hashes: list[str]) -> dict` | 检查文件是否重复，返回 `{hash, is_duplicate}` |
-| `batch_hash` | `(file_paths: list[str]) -> dict` | 批量计算哈希，返回 `{hashes: {path: hash}, errors: {path: error}}` |
+| `batch_hash` | `(file_paths: list[str]) -> dict` | 并行（rayon）计算哈希并释放 GIL，返回 `{hashes: {path: hash}, errors: {path: error}}` |
 
 ### 工具函数（`pyfunction`）
 
@@ -73,17 +74,18 @@ files-io/src/
 │   ├── zip.rs          # zip 压缩/解压
 │   └── tar_gz.rs       # tar/tar.gz 压缩/解压
 └── py/
-    ├── mod.rs          # 子模块声明
+    ├── mod.rs          # #[pymodule] files — 子模块导出
     ├── file.rs         # File pyclass — 统一文件操作入口
     ├── parallel.rs     # batch_copy/batch_compress/batch_copy_async
-    ├── dedup.rs        # check_duplicate/batch_hash
+    ├── dedup.rs        # check_duplicate/batch_hash（rayon 并行）
     └── utils.rs        # compute_sha256/write_file/validate_pdf_magic
 ```
 
 - `FileOps` trait 定义统一接口：`read_all`、`read_chunk`、`write`、`exists`、`metadata`、`rename`、`copy`、`remove`、`list_dir` 等
 - `File` 类根据路径自动分发到 `LocalBackend` 或 `S3Backend`
 - 归档支持 zip、tar、tar.gz/tgz 三种格式
-- 哈希使用 1MB 分块读取，适用于大文件
+- 哈希使用 1MB 分块读取，适用于大文件；`batch_hash` 在多核上并行，`compute_sha256`/`check_duplicate` 在计算期间释放 GIL
+- `File.write` 直接借用 `bytes`/`str` 缓冲区，不再为常见路径复制整个负载
 - 错误通过 `FileError` → `PyErr` 自动映射到 Python 异常类型
 
 ## 使用示例
@@ -125,7 +127,7 @@ print(dup["is_duplicate"])
 |------|------|------|
 | `pyo3` | `0.28.2` | Python 绑定 |
 | `pyo3-async-runtimes` | `0.28` | Tokio 异步运行时集成 |
-| `tokio` | `1` | 异步运行时（rt-multi-thread, fs） |
+| `tokio` | `1` | 异步运行时（rt-multi-thread） |
 | `aws-sdk-s3` | `1` | AWS S3 客户端 |
 | `aws-config` | `1` | AWS 配置加载 |
 | `aws-credential-types` | `1` | AWS 凭证类型 |
@@ -134,6 +136,5 @@ print(dup["is_duplicate"])
 | `flate2` | `1` | gzip 压缩 |
 | `sha2` | `0.10` | SHA-256 哈希 |
 | `hex` | `0.4` | 十六进制编码 |
-| `serde` / `serde_json` | `1` | 序列化 |
-| `pythonize` | `0.28` | Rust → Python 对象转换 |
+| `rayon` | `1` | 批量哈希并行执行 |
 | `thiserror` | `2` | 错误类型派生 |

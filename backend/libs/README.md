@@ -16,7 +16,7 @@ rust-io  (cdylib + rlib)  ← 唯一构建为 Python 扩展的 crate
 | `net-io` | `rust_io.net` | `rlib` — 静态链接到 `rust-io` |
 | `files-io` | `rust_io.files` | `rlib` — 静态链接到 `rust-io` |
 
-`net-io` 和 `files-io` **不是**独立的 Python 模块。它们通过 `#[pyfunction]` 和 `#[pyclass]` 暴露 API，由 `rust-io` 门面模块通过 `register_submodule()` 注册为 `rust_io.net` 和 `rust_io.files` 两个子模块。
+`net-io` 和 `files-io` **不是**独立的 Python 模块。它们各自通过 `#[pymodule(submodule)]` 声明子模块并导出 `#[pyfunction]` / `#[pyclass]`，由 `rust-io` 门面通过 `wrap_pymodule!` 挂载为 `rust_io.net` 和 `rust_io.files`。
 
 ## 目录结构
 

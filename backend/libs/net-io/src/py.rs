@@ -155,11 +155,8 @@ pub fn download_file<'py>(
 ) -> PyResult<Bound<'py, PyAny>> {
     pyo3_async_runtimes::tokio::future_into_py(py, async move {
         let client = HttpClient::new(timeout_ms, max_retries, proxy.as_deref())
-            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
-        let (bytes, final_url, status_code) = client
-            .get_bytes(&url)
-            .await
-            .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+            .map_err(PyErr::from)?;
+        let (bytes, final_url, status_code) = client.get_bytes(&url).await.map_err(PyErr::from)?;
         Python::attach(|py| {
             let dict = pyo3::types::PyDict::new(py);
             dict.set_item("bytes", pyo3::types::PyBytes::new(py, &bytes))?;
@@ -174,99 +171,13 @@ fn py_err(e: PyErr) -> GatewayError {
     GatewayError::Other(e.to_string())
 }
 
-fn parse_params(params: &Bound<'_, PyDict>) -> Result<FetchParams, GatewayError> {
-    let query = params
-        .get_item("query")
-        .map_err(py_err)?
-        .map(|v| v.extract::<String>())
-        .transpose()
-        .map_err(py_err)?;
-
-    let limit = params
-        .get_item("limit")
-        .map_err(py_err)?
-        .map(|v| v.extract::<u32>())
-        .transpose()
-        .map_err(py_err)?;
-
-    let raw = params
-        .get_item("raw")
-        .map_err(py_err)?
-        .map(|v| v.extract::<bool>())
-        .transpose()
-        .map_err(py_err)?;
-
-    let selected_index = params
-        .get_item("selected_index")
-        .map_err(py_err)?
-        .map(|v| v.extract::<u32>())
-        .transpose()
-        .map_err(py_err)?;
-
-    let selected_title = params
-        .get_item("selected_title")
-        .map_err(py_err)?
-        .map(|v| v.extract::<String>())
-        .transpose()
-        .map_err(py_err)?;
-
-    let detail_link = params
-        .get_item("detail_link")
-        .map_err(py_err)?
-        .map(|v| v.extract::<String>())
-        .transpose()
-        .map_err(py_err)?;
-
-    let identifiers = params
-        .get_item("identifiers")
-        .map_err(py_err)?
-        .map(|value| {
-            let dict = value
-                .cast::<PyDict>()
-                .map_err(|e| GatewayError::Other(e.to_string()))?;
-            let doi = dict
-                .get_item("doi")
-                .map_err(py_err)?
-                .map(|v| v.extract::<String>())
-                .transpose()
-                .map_err(py_err)?;
-            let pmid = dict
-                .get_item("pmid")
-                .map_err(py_err)?
-                .map(|v| v.extract::<String>())
-                .transpose()
-                .map_err(py_err)?;
-            let pmcid = dict
-                .get_item("pmcid")
-                .map_err(py_err)?
-                .map(|v| v.extract::<String>())
-                .transpose()
-                .map_err(py_err)?;
-            let issn = dict
-                .get_item("issn")
-                .map_err(py_err)?
-                .map(|v| v.extract::<String>())
-                .transpose()
-                .map_err(py_err)?;
-            Ok(crate::types::Identifiers {
-                doi,
-                pmid,
-                pmcid,
-                issn,
-            })
-        })
-        .transpose()
-        .map_err(py_err)?;
-
-    Ok(FetchParams {
-        query,
-        identifiers,
-        limit,
-        raw,
-        selected_index,
-        selected_title,
-        detail_link,
-    })
+/// Deserialize `params` into [`FetchParams`].
+///
+/// Serde treats missing `Option` fields as `None` and ignores unknown keys, so
+/// this accepts the same payloads as the previous hand-written extraction while
+/// keeping the Python-facing schema in one place (`types::FetchParams`).
+fn parse_params(params: &Bound<'_, PyDict>) -> PyResult<FetchParams> {
+    pythonize::depythonize(params.as_any()).map_err(PyErr::from)
 }
 
 async fn execute_provider(
@@ -717,21 +628,60 @@ pub fn mineru_upload_local_file<'py>(
 }
 
 // ── Python module entry point ──────────────────────────────────────────
+//
+// `submodule` skips the `PyInit_net` symbol: this crate is only ever linked
+// into `rust_io`, which exposes the module as `rust_io.net`.
 #[pymodule]
-fn net_io(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(fetch_one, m)?)?;
-    m.add_function(wrap_pyfunction!(fetch_multi, m)?)?;
-    m.add_function(wrap_pyfunction!(scrape_web, m)?)?;
-    m.add_function(wrap_pyfunction!(scrape_html, m)?)?;
-    m.add_function(wrap_pyfunction!(extract_pdf_links, m)?)?;
-    m.add_function(wrap_pyfunction!(download_file, m)?)?;
-    m.add_function(wrap_pyfunction!(mineru_create_task, m)?)?;
-    m.add_function(wrap_pyfunction!(mineru_get_result, m)?)?;
-    m.add_function(wrap_pyfunction!(mineru_batch_submit, m)?)?;
-    m.add_function(wrap_pyfunction!(mineru_batch_result, m)?)?;
-    m.add_function(wrap_pyfunction!(mineru_create_upload_url, m)?)?;
-    m.add_function(wrap_pyfunction!(mineru_create_batch_upload_urls, m)?)?;
-    m.add_function(wrap_pyfunction!(mineru_upload_local_files, m)?)?;
-    m.add_function(wrap_pyfunction!(mineru_upload_local_file, m)?)?;
-    Ok(())
+#[pyo3(name = "net", submodule)]
+pub mod net {
+    #[pymodule_export]
+    use super::{
+        download_file, extract_pdf_links, fetch_multi, fetch_one, mineru_batch_result,
+        mineru_batch_submit, mineru_create_batch_upload_urls, mineru_create_task,
+        mineru_create_upload_url, mineru_get_result, mineru_upload_local_file,
+        mineru_upload_local_files, scrape_html, scrape_web,
+    };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_params_deserializes_fields_and_ignores_extra_keys() {
+        Python::initialize();
+        Python::attach(|py| {
+            let identifiers = PyDict::new(py);
+            identifiers.set_item("doi", "10.1234/example").unwrap();
+            identifiers.set_item("pmid", "42").unwrap();
+
+            let params = PyDict::new(py);
+            params.set_item("query", "crispr").unwrap();
+            params.set_item("limit", 5).unwrap();
+            params.set_item("raw", true).unwrap();
+            params.set_item("identifiers", identifiers).unwrap();
+            params.set_item("unknown", "ignored").unwrap();
+
+            let parsed = parse_params(&params).unwrap();
+            assert_eq!(parsed.query.as_deref(), Some("crispr"));
+            assert_eq!(parsed.limit, Some(5));
+            assert_eq!(parsed.raw, Some(true));
+            let identifiers = parsed.identifiers.unwrap();
+            assert_eq!(identifiers.doi.as_deref(), Some("10.1234/example"));
+            assert_eq!(identifiers.pmid.as_deref(), Some("42"));
+            assert_eq!(identifiers.pmcid, None);
+        });
+    }
+
+    #[test]
+    fn parse_params_rejects_wrong_types() {
+        Python::initialize();
+        Python::attach(|py| {
+            let params = PyDict::new(py);
+            params.set_item("limit", "many").unwrap();
+
+            let err = parse_params(&params).unwrap_err();
+            assert!(err.is_instance_of::<pyo3::exceptions::PyTypeError>(py));
+        });
+    }
 }

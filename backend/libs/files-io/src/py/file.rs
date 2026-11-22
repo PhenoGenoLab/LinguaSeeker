@@ -2,7 +2,7 @@ use crate::backends::{FileOps, local::LocalBackend, s3::S3Backend};
 use crate::error::FileError;
 use crate::hash;
 use pyo3::prelude::*;
-use pyo3::types::{PyBytes, PyDict};
+use pyo3::types::{PyBytes, PyDict, PyString};
 
 #[derive(Clone)]
 enum Backend {
@@ -10,7 +10,7 @@ enum Backend {
     S3(S3Backend),
 }
 
-#[pyclass]
+#[pyclass(module = "rust_io.files")]
 pub struct File {
     path: String,
     backend: Backend,
@@ -56,6 +56,15 @@ impl File {
         }
     }
 
+    #[getter]
+    fn path(&self) -> &str {
+        &self.path
+    }
+
+    fn __repr__(&self) -> String {
+        format!("File({:?})", self.path)
+    }
+
     fn __enter__(slf: Py<Self>) -> Py<Self> {
         slf
     }
@@ -89,15 +98,19 @@ impl File {
     }
 
     fn write(&self, data: &Bound<'_, PyAny>) -> PyResult<()> {
-        let bytes: Vec<u8> = if let Ok(b) = data.extract::<Vec<u8>>() {
-            b
-        } else if let Ok(s) = data.extract::<String>() {
-            s.into_bytes()
-        } else {
-            return Err(PyErr::new::<pyo3::exceptions::PyTypeError, _>(
-                "write() accepts bytes or str",
-            ));
-        };
+        // Borrow the Python buffer directly instead of materializing a Vec.
+        if let Ok(bytes) = data.cast::<PyBytes>() {
+            self.ops().write(&self.path, bytes.as_bytes(), true)?;
+            return Ok(());
+        }
+        if let Ok(text) = data.cast::<PyString>() {
+            self.ops().write(&self.path, text.to_str()?.as_bytes(), true)?;
+            return Ok(());
+        }
+        // Keep accepting bytearray/memoryview (and other buffers) as before.
+        let bytes = data.extract::<Vec<u8>>().map_err(|_| {
+            PyErr::new::<pyo3::exceptions::PyTypeError, _>("write() accepts bytes or str")
+        })?;
         self.ops().write(&self.path, &bytes, true)?;
         Ok(())
     }
@@ -145,9 +158,13 @@ impl File {
         Ok(self.ops().list_dir(&self.path)?)
     }
 
-    fn content_hash(&self) -> PyResult<String> {
+    fn content_hash(&self, py: Python<'_>) -> PyResult<String> {
         match &self.backend {
-            Backend::Local(_) => Ok(hash::hash_file(std::path::Path::new(&self.path))?),
+            Backend::Local(_) => {
+                let path = self.path.clone();
+                py.detach(move || hash::hash_file(std::path::Path::new(&path)))
+                    .map_err(PyErr::from)
+            }
             Backend::S3(_) => {
                 let data = self.ops().read_all(&self.path)?;
                 Ok(hash::hash_bytes(&data))

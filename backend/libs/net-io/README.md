@@ -73,7 +73,8 @@ net-io/src/
 ### HttpClient
 
 - 基于 `reqwest`，默认浏览器 UA 模拟 Chrome，避免学术出版商 403
-- 指数退避重试（默认 3 次，上限 1s/2s/4s）
+- 客户端按 `(timeout_ms, proxy, no_proxy)` 缓存复用，跨 Python 调用保持 TCP/TLS 连接池（MinerU 轮询不再每次重新握手）
+- GET 请求对传输错误（DNS/连接/TLS）和 5xx 统一指数退避重试（默认 3 次，上限 1s/2s/4s）；`max_retries=0` 仍会执行一次请求
 - 默认超时 60s，连接超时 15s
 - 支持 SOCKS5/HTTP 代理
 - 方法：`get_json`、`get_text`、`get_bytes`、`post_json`、`put_bytes`、`get_json_with_auth`
@@ -154,6 +155,7 @@ result = await net_io.mineru_upload_local_files(
 | `pyo3` | `0.28.2` | Python 绑定 |
 | `pyo3-async-runtimes` | `0.28` | Tokio 异步运行时集成 |
 | `reqwest` | `0.13` | HTTP 客户端（rustls, gzip, socks） |
+| `bytes` | `1` | 响应字节缓冲（避免 `Bytes` → `Vec` 复制） |
 | `tokio` | `1` | 异步运行时 |
 | `futures` | `0.3` | 异步工具（join_all） |
 | `scraper` | `0.26` | HTML 解析与 CSS 选择器 |
