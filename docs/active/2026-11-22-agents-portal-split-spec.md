@@ -106,3 +106,22 @@ stages、workflow、api；`agent` 目录只剩门户 `__init__.py`。
    在旧位置因 `parents[4]` 解析到 `tests/` 而跳过；迁移后解析到 backend，真实读取
    `backend/output/.../法布雷病1例`，断言 original 页跨度 4 页、实际 3 页。涉及模块逐行
    diff 仅 import 变化，判定为 fixture 漂移，未在本次修复。
+
+## 8. 遗留：迁移代码的 23 个类型错误（未修）
+
+CI 的 mypy 在迁移前只检查 `skills/` 下的薄封装；实现搬入后，23 个既存类型错误暴露出来。
+本次未修改它们（与分层无关，且部分涉及真实签名漂移），CI 的 mypy 目标维持迁移前的覆盖面，
+并新增门户目录 `src/pipeline/graph/agents`。错误清单（`mypy 2.4.1`）：
+
+| 文件 | 行 | 错误 |
+|---|---:|---|
+| `skills/translation/config_context.py` | 59, 76 | `Any | None` 上的属性访问 |
+| `skills/translation/translate/translator.py` | 431, 536, 722, 807, 922, 997 | override 签名不兼容、5/7 元组不匹配、属性重复定义 |
+| `skills/translation/api.py` | 76 | 传入 `FormattedDocument | None` |
+| `skills/extraction/stages/clinical_context.py` | 265-266 | `object` 上无 `total/index` |
+| `skills/extraction/stages/catalog_extraction.py` | 107, 155, 412, 421-429 | list 不变性、Optional 赋值、`object` 属性 |
+| `skills/extraction/stages/review_validation.py` | 184 | Optional 赋值 |
+| `skills/extraction/workflow.py` | 130, 184 | 传入 `DocumentEvidenceMap | None` |
+
+其中 `translator.py` 的 5 vs 7 元组不匹配值得单独排查：它可能是真实的运行时缺陷，
+而不只是注解问题。已删除的 `stages/preprocessing.py` 也曾贡献 1 个错误。
