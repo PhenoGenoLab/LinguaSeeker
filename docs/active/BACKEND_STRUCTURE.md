@@ -42,13 +42,13 @@ backend/src/
 
 Contracts:
 
-- `src/agents/state.py` defines the global Pydantic state used by workflow nodes. Treat it as the single source of truth for cross-feature data flow.
+- `src/runs/contracts.py` defines the global Pydantic state used by workflow nodes. Treat it as the single source of truth for cross-feature data flow.
 - A feature node receives the global state, extracts only the fields it needs, calls feature-local core logic/providers, and returns a typed state delta.
 - `core.py` should remain pure where practical; SDK clients, model calls, Rust I/O, and database access belong in `providers.py`, `dao/`, or shared clients.
 - `supervisor.py`/workflow code wires nodes and edges only. It must not embed extraction, translation, standardization, or report-generation business logic.
 - Telemetry should wrap every node so input IDs, output IDs, warnings, errors, and duration are traceable without ad-hoc logging in each workflow edge.
 
-**Current state**: The codebase partially follows this pattern. Phases 3 and 4 feature slices use `api.py`/`core.py`/`providers.py`/`contracts.py` naming. The pipeline graph layer (`src/pipeline/graph/`) uses adapter classes (`phases/phase_*.py`) rather than a single `supervisor.py`. Phase 1 and Phase 2 features use more descriptive internal naming (e.g., `workflow.py`, `orchestrator.py`) rather than the standard `core.py` convention.
+**Current state**: `src/pipeline/graph/` holds the LangGraph topology plus one adapter per stage (`phases/{acquisition,parsing,fact_chain,standardization}.py`). Agent implementations live in `src/pipeline/skills/<stage>/`; deterministic tooling and contracts live in `src/core/tools/<stage>/`.
 
 ## 2. Directory Structure
 
@@ -63,7 +63,7 @@ backend/
 │   │   ├── state_persistence.py                        # PostgreSQL state save/load
 │   │   ├── processing_cache.py                         # Two-level cache (Redis + PostgreSQL)
 │   │   ├── content_hash.py                             # Content hashing for dedup
-│   │   └── phase_5_factory.py                          # Phase5ServiceFactory — creates Phase 5 (interactive review) services
+│   │   └── review_factory.py                           # ReviewServiceFactory — creates the interactive review services
 │   ├── pipeline/                                       # Pipeline domain layer
 │   │   ├── graph/
 │   │   │   ├── topology.py                             # PipelineOrchestrator — LangGraph graph wiring
@@ -89,123 +89,16 @@ backend/
 │   │       └── delta_audit.py                          # Delta audit endpoints
 │   ├── core/
 │   │   ├── config.py                                   # Core config (pydantic-settings)
-│   │   ├── ingest_and_digitize_data/                   # Phase 1
-│   │   │   ├── document_acquisition/
-│   │   │   │   ├── contracts.py                        # Search/fetch contracts
-│   │   │   │   ├── service.py                          # Top-level acquisition service
-│   │   │   │   ├── local_upload/
-│   │   │   │   │   ├── contracts.py
-│   │   │   │   │   ├── service.py                      # Upload validation/storage
-│   │   │   │   │   └── workflow.py                     # Upload → parse workflow
-│   │   │   │   └── online_acquisition/
-│   │   │   │       ├── contracts.py                    # Search/fetch contracts
-│   │   │   │       ├── gateway.py                      # Provider gateway via rust_io
-│   │   │   │       ├── search_service.py
-│   │   │   │       ├── pubmed_service.py
-│   │   │   │       ├── doi_fallback.py
-│   │   │   │       ├── normalizers.py
-│   │   │   │       ├── literature_type_classifier.py
-│   │   │   │       ├── provider_health.py
-│   │   │   │       ├── relevance_gate.py
-│   │   │   │       ├── workflow.py
-│   │   │   │       ├── web/
-│   │   │   │       │   ├── base.py
-│   │   │   │       │   ├── cyberleninka.py
-│   │   │   │       │   ├── hans_publishers.py
-│   │   │   │       │   ├── pubscholar.py
-│   │   │   │       │   ├── chinaxiv.py
-│   │   │   │       │   ├── koreascience.py
-│   │   │   │       │   ├── redalyc.py
-│   │   │   │       │   └── locators.py
-│   │   │   │       └── web_search/
-│   │   │   │           ├── adapter.py
-│   │   │   │           └── firecrawl_adapter.py
-│   │   │   └── parse_document/
-│   │   │       ├── base.py                             # Base parser interface
-│   │   │       ├── contracts.py                        # Parse contracts
-│   │   │       ├── exceptions.py                       # Parse-specific exceptions
-│   │   │       ├── orchestrator.py                     # Parse orchestration
-│   │   │       ├── service.py                          # Parse service entry point
-│   │   │       ├── common/
-│   │   │       │   ├── converters.py                   # Format converters
-│   │   │       │   └── parsers.py                      # Shared parsing utilities
-│   │   │       ├── local/
-│   │   │       │   ├── parser.py                       # Local file parser (MinerU)
-│   │   │       │   └── helpers.py
-│   │   │       └── remote/
-│   │   │           └── parser.py                       # Remote API parser (MinerU)
-│   │   ├── cross_lingual_process_and_extract_evidence/ # Phase 3
-│   │   │   ├── contracts.py                            # Dual extraction contracts
-│   │   │   ├── config_context.py                       # Phase 3 config resolution
-│   │   │   ├── workflow.py                             # Phase 3 workflow definition
-│   │   │   ├── router.py                               # Phase 3 internal routing
-│   │   │   ├── persistence.py                          # Phase 3 persistence helpers
-│   │   │   ├── cross_lingual/
-│   │   │   │   ├── format/
-│   │   │   │   │   ├── base.py                         # Base formatter interface
-│   │   │   │   │   ├── formatter.py                    # Document formatting
-│   │   │   │   │   └── segmenter.py                    # Text segmentation
-│   │   │   │   └── translate/
-│   │   │   │       ├── base.py                         # Base translator interface
-│   │   │   │       ├── blocks.py                       # Translation block handling
-│   │   │   │       ├── translator.py                   # Main translator
-│   │   │   │       ├── language_detector.py            # Language detection
-│   │   │   │       ├── postprocess.py                  # Post-translation cleanup
-│   │   │   │       ├── providers.py                    # LLM provider adapters
-│   │   │   │       ├── exceptions.py                   # Translation exceptions
-│   │   │   │       ├── prompts/
-│   │   │   │       │   ├── format.py                   # Formatting prompts
-│   │   │   │       │   ├── terminology.py              # Terminology prompts
-│   │   │   │       │   └── translate.py                # Translation prompts
-│   │   │   │       └── validator/
-│   │   │   │           ├── core.py                     # Validation core logic
-│   │   │   │           ├── normalize.py                # Output normalization
-│   │   │   │           ├── artifacts.py                # Artifact validation
-│   │   │   │           └── redacted.py                 # PII/sensitive data redaction
-│   │   │   └── extract_evidence/
-│   │   │       ├── api.py                              # Orchestrator-facing node adapter
-│   │   │       ├── core.py                             # Extraction domain logic
-│   │   │       ├── providers.py                        # LLM/external service adapters
-│   │   │       ├── contracts.py                        # Extraction contracts
-│   │   │       ├── catalog.py                          # Evidence category catalog
-│   │   │       ├── chunking.py                         # Text chunking for extraction
-│   │   │       ├── config_context.py                   # Extraction config resolution
-│   │   │       ├── normalization.py                    # Evidence value normalization
-│   │   │       ├── prompts.py                          # Extraction prompts
-│   │   │       ├── workflow.py                         # Extraction workflow
-│   │   │       └── stages/
-│   │   │           ├── catalog_extraction.py           # Catalog-based extraction stage
-│   │   │           ├── evidence_map.py                 # Evidence mapping stage
-│   │   │           ├── group_assignment.py             # Evidence group assignment
-│   │   │           ├── quality_validation.py           # Extraction quality checks
-│   │   │           ├── source_grounding.py             # Source anchor grounding
-│   │   │           └── special_evidence.py             # Special evidence type handling
-│   │   ├── standardize_entities_and_align_knowledge/   # Phase 4
-│   │   │   ├── api.py                                  # Orchestrator-facing node adapter
-│   │   │   ├── core.py                                 # Standardization domain logic
-│   │   │   ├── contracts.py                            # Standardization contracts
-│   │   │   ├── adapters.py                             # External DB adapters
-│   │   │   ├── importers.py                            # Reference data importers
-│   │   │   ├── matchers.py                             # Entity matching orchestrator
-│   │   │   ├── normalizers.py                          # Value normalization
-│   │   │   ├── providers.py                            # External service adapters
-│   │   │   ├── repositories.py                         # Standardization data access
-│   │   │   ├── precise_match/
-│   │   │   │   └── core.py                             # Exact/synonym matching
-│   │   │   └── similarity_match/
-│   │   │       ├── core.py                             # Fuzzy/vector matching
-│   │   │       ├── contracts.py                        # Similarity match contracts
-│   │   │       ├── indexer.py                          # Vector index management
-│   │   │       ├── providers.py                        # Embedding service adapters
-│   │   │       └── repositories.py                     # Similarity data access
-│   │   └── visualize_evidence_with_expert_in_loop/     # Phase 5
-│   │       ├── contracts.py                            # Phase 5 contracts
-│   │       ├── providers.py                            # Phase 5 service adapters
-│   │       ├── chat_service.py                         # Chat session persistence and SSE streaming
-│   │       ├── search_service.py                       # Evidence/knowledge search
-│   │       ├── feedback_service.py                     # Structured expert feedback
-│   │       ├── delta_audit_service.py                  # Per-task field modification history
-│   │       └── source_linker.py                        # Original/translated anchor ↔ evidence linking
+│   │   ├── foundation/                                 # Cross-cutting primitives (auth)
+│   │   ├── shared/                                     # Deterministic tools + cross-layer contracts
+│   │   │   ├── tools/fact_chain/                       # Fact-chain contracts, windows, validation
+│   │   │   └── contracts/skill_io.py                   # SkillRequest / SkillResult
+│   │   ├── tools/                                      # Concrete tools the skills call
+│   │   │   ├── builtin/  task/                         # AgentScope tool definitions
+│   │   │   ├── acquisition/  parsing/                  # Deterministic stage tooling
+│   │   │   ├── extraction/  standardization/  translation/
+│   │   │   └── review/  graph_retrieval/
+│   │   └── adapters/mcp/                               # External service adapters (ReMe)
 │   ├── dao/
 │   │   ├── postgresql/
 │   │   │   ├── connection.py                           # Async SQLAlchemy engine/session
@@ -226,12 +119,9 @@ backend/
 │       ├── observability.py                            # Telemetry/tracing utilities
 │       ├── text.py                                     # Text processing utilities
 │       ├── llm_adapter.py                              # Unified LLM client adapter
-│       ├── llm_params.py                               # LLM parameter resolution
 │       └── rust_io.py                                  # Rust IO Python bridge
 ├── libs/
-│   ├── rust-io/                                        # Literature search/download PyO3 crate
-│   ├── files-io/                                       # Unified file I/O PyO3 crate
-│   └── net-io/                                         # Network I/O + MinerU PyO3 crate
+│   └── config-loader/                                  # Layered YAML config loader (pure Python)
 ├── alembic/versions/                                   # Database migrations
 ├── tests/
 ├── .old_version/                                       # Preserved legacy codebase
@@ -274,16 +164,16 @@ Runtime behavior:
 - SSE chat streaming and processing progress via FastAPI `StreamingResponse` (no WebSocket dependency, no Vercel AI SDK).
 - Completed metadata/results persist including chat sessions and delta logs.
 
-### 3.3 Phases 1-2: Acquisition, Upload, and Parsing
+### 3.3 acquisition: acquisition, upload and parsing
 
-The acquisition layer is split into `document_acquisition/` with two sub-packages:
+The acquisition tooling lives in `core/tools/acquisition/` with two sub-packages:
 
 - **`local_upload/`**: Handles PDF/DOCX file uploads. Validation, storage, and upload-to-parse workflow (`workflow.py`).
-- **`online_acquisition/`**: Literature search and download. The gateway (`gateway.py`) calls `rust_io` as the canonical Rust middle layer. Rust handles transport and file primitives; Python owns search strategy and workflow policy. Web providers for non-standard sources live in `web/` (CyberLeninka, Hans Publishers, PubScholar, ChinaXiv, KoreaScience, Redalyc). Web search adapters live in `web_search/` (Firecrawl).
+- **`core/tools/acquisition/online_acquisition/`**: Literature search and download. The gateway (`gateway.py`) calls `rust_io` as the canonical Rust middle layer. Rust handles transport and file primitives; Python owns search strategy and workflow policy. Web providers for non-standard sources live in `web/` (CyberLeninka, Hans Publishers, PubScholar, ChinaXiv, KoreaScience, Redalyc). Web search adapters live in `web_search/` (Firecrawl).
 
 Key online acquisition modules: `search_service.py` (multi-provider search), `pubmed_service.py` (PubMed-specific logic), `doi_fallback.py` (DOI resolution fallback), `normalizers.py` (result normalization), `literature_type_classifier.py` (literature type detection), `provider_health.py` (provider availability tracking), `relevance_gate.py` (result relevance filtering).
 
-The parsing layer (`parse_document/`) handles document-to-structured-text conversion:
+The parsing tooling (`core/tools/parsing/`) handles document-to-structured-text conversion:
 
 - `orchestrator.py` coordinates the parse workflow.
 - `service.py` is the entry point.
@@ -299,11 +189,11 @@ Parsing requirements:
 - Layout analysis must preserve table rows/cells and figure regions for later evidence highlighting.
 - Long text chunking must preserve source span mapping.
 
-### 3.4 Phase 3: Cross-Lingual Dual Evidence Extraction
+### 3.4 fact_chain: extraction, verification and fact English
 
-Phase 3 is organized into two main sub-packages:
+fact_chain spans `pipeline/skills/extraction` (stages, prompts, workflow) and `core/tools/extraction` (contracts, rules, reconcile, projection); translation lives in `pipeline/skills/translation`.
 
-**`cross_lingual/`** handles document formatting and translation:
+**`pipeline/skills/translation/`** handles document formatting and translation:
 
 - `format/`: Document formatting (formatter, segmenter) for preparing text for translation.
 - `translate/`: Translation pipeline with LLM-based translator, language detection, post-processing, block-level translation, validation (normalization, artifact detection, PII redaction), and prompt management (format, terminology, translate prompts).
@@ -328,9 +218,9 @@ The dual extraction pipeline must output:
 - *(Planned)* Reconciliation status: `agreed`, `native_only`, `translated_only`, `conflict`, or `manually_corrected`.
 - *(Planned)* Reconciliation rationale.
 
-### 3.5 Phase 4: Entity Standardization
+### 3.5 standardization: entity standardization and alignment
 
-Phase 4 follows the vertical slice pattern with `api.py`, `core.py`, `providers.py`, and `contracts.py`.
+Standardization rules live in `core/tools/standardization`; the service facade is `pipeline/skills/standardization/api.py`.
 
 Key modules:
 
@@ -352,17 +242,17 @@ Matching order:
 
 Supported sources include HGNC, ClinVar, dbSNP, OMIM, HPO, ClinGen, and gnomAD where available. Standardization must preserve original extracted value, translated extracted value, standardized value, source database, match status, and match rationale.
 
-### 3.6 Phase 5: Bilingual Review, Feedback, and Reports
+### 3.6 review: bilingual review, feedback and reports
 
-Phase 5 provides review, search, and feedback services:
+review provides request/response services over persisted evidence:
 
 - `chat_service.py`: Chat session persistence and SSE streaming.
 - `search_service.py`: Evidence/knowledge search across persisted data.
 - `feedback_service.py`: Structured expert feedback capture.
 - `delta_audit_service.py`: Per-task field modification history logging.
 - `source_linker.py`: Original/translated anchor to evidence linking.
-- `contracts.py`: Phase 5 typed contracts.
-- `providers.py`: Phase 5 service adapters (LLM, DB, external).
+- `contracts.py`: review typed contracts.
+- `providers.py`: review service adapters (LLM, DB, external).
 
 User modifications to evidence cards are silently recorded as delta entries. Current-stage feedback does not directly mutate evidence rows unless a reviewed correction workflow is implemented.
 
@@ -639,44 +529,37 @@ GET  /api/v1/health                                        # Health check
 | MinerU API | Cloud/API parser | PDF | Markdown/HTML + layout JSON + bbox/source anchors |
 | DOCX parser | Local parser | DOCX | Text/tables/images + source anchors compatible with evidence linking |
 
-MinerU is the sole document parsing engine. Local file parsing and remote API parsing are handled by `parse_document/local/parser.py` and `parse_document/remote/parser.py` respectively.
+MinerU is the sole document parsing engine. Local file parsing and remote API parsing are handled by `core/tools/parsing/local/parser.py` and `core/tools/parsing/remote/parser.py` respectively.
 
-### 6.3 Rust Native Extensions
+### 6.3 Rust Native Extension
 
-| Crate | Python module | Purpose |
-|---|---|---|
-| `rust-io` | `rust_io` | Literature search/download via providers (Crossref, OpenAlex, EuropePMC, PMC, DOAJ, JStage, Unpaywall). Also `files` submodule for SHA256, file write, PDF validation. |
-| `files-io` | `files_io` | Unified local + S3 file I/O. Dedup, parallel ops, archive (zip/tar/gzip). |
-| `net-io` | `rust_io.net` | Literature search/download via providers + MinerU document parsing API. Same provider set as rust-io, newer architecture. |
+The extension is the published `rust-io` wheel (`rust-io>=0.3.0,<1.0.0`), not a crate in this repo:
+
+| Python module | Purpose |
+|---|---|
+| `rust_io.net` | Literature search/download via 15 providers + MinerU document parsing API |
+| `rust_io.files` | Local + S3 file I/O, dedup, archive, SHA-256 |
+
+`src/utils/rust_io.py` imports both lazily and degrades to pure-Python fallbacks when the wheel is absent.
 
 ## 7. Testing Strategy
 
 ```text
 tests/
-├── agents/                                         # Orchestrator layer tests
-├── api/                                            # API endpoint tests
+├── api/                 # API endpoint tests
+├── benchmark/           # Benchmark and evaluation tests
 ├── core/
-│   ├── ingest_and_digitize_data/
-│   │   ├── document_acquisition/
-│   │   │   ├── local_upload/
-│   │   │   └── online_acquisition/
-│   │   ├── parse_document/
-│   │   ├── literature_acquisition/
-│   │   └── user_upload/
-│   ├── cross_lingual_process_and_extract_evidence/
-│   │   └── extract_evidence/
-│   ├── standardize_entities_and_align_knowledge/
-│   └── visualize_evidence_with_expert_in_loop/
-├── dao/
-│   ├── postgresql/
-│   └── redis/
+│   ├── auth/            # Password auth tests
+│   ├── source_fact_chain/
+│   ├── tools/           # Tests for core/tools/<agent> (need rust_io/langchain)
+│   └── test_*.py        # Config, contracts, layer boundaries
+├── dao/                 # postgresql/ redis/ neo4j/
+├── integration/         # App startup, literature profile e2e
+├── pipeline/            # Boundary tests, skills wiring, search service
+├── runs/                # Runtime, persistence, stage adapters
+├── scripts/             # End-to-end script tests
 ├── utils/
-├── online_acquisition/                             # Online acquisition integration tests
-├── phase5/                                         # Phase 5 service tests
-├── scripts/                                        # Script tests
-├── services/                                       # Service layer tests
-├── integration/                                    # Cross-module integration tests
-└── output/                                         # Test output artifacts
+└── output/              # Test output artifacts (git-ignored)
 ```
 
 Verification commands:
@@ -701,17 +584,3 @@ Phase-specific tests should cover:
 - Delta audit log recording.
 - Source link creation and retrieval.
 - Chat session persistence and SSE streaming.
-
-## 8. Old Version Reference
-
-| Old Path | New Target | Reuse |
-|---|---|---|
-| `src/agents/supervisor.py` | `src/pipeline/graph/topology.py` | LangGraph workflow |
-| `src/agents/extraction/node.py` | Phase 2 `extract_evidence/` | Evidence extraction logic |
-| `src/agents/parsing/translation_tool.py` | Phase 2 `cross_lingual/translate/` | Adapt between native and translated extraction passes |
-| `src/domain/agent/prompts.py` | Phase 2 `extract_evidence/prompts.py` | Native extraction, translated extraction prompts; reconciliation prompts (planned) |
-| `src/domain/agent/workflow.py` | Phase 2 `workflow.py` | EvidenceAgent patterns |
-| `src/domain/variant/` | Phase 3 | ClinVar/ClinGen clients |
-| `src/infrastructure/` | `dao/` layer | PostgreSQL patterns; Redis/Neo4j deferred |
-| `src/tools/external/` | Phase 3 `adapters.py` | External DB tools |
-| `src/config.py` | `src/core/config.py` | Config patterns |

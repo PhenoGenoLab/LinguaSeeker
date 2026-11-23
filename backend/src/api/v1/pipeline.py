@@ -39,6 +39,8 @@ from src.core.tools.acquisition.contracts import (
 )
 
 from src.runs.contracts import (
+    stage_output_field,
+    stage_status_field,
     PhaseStatus,
     PhaseStatusDetail,
     PipelineGraphState,
@@ -123,10 +125,10 @@ def _build_source_key(body: PipelineRunRequest, content_hash: str | None = None)
 def _determine_current_phase(state: PipelineGraphState) -> str | None:
     """Determine which phase is currently running."""
     phase_map = {
-        "phase_1": state.phase_1_status,
-        "phase_2": state.phase_2_status,
-        "phase_3": state.phase_3_status,
-        "phase_4": state.phase_4_status,
+        "acquisition": state.acquisition_status,
+        "parsing": state.parsing_status,
+        "fact_chain": state.fact_chain_status,
+        "standardization": state.standardization_status,
     }
     for name, detail in phase_map.items():
         if detail.status == PhaseStatus.RUNNING:
@@ -199,10 +201,10 @@ def _prepare_phase_rerun_state(
         "completed_at": None,
     }
     for phase_num in range(target_phase, 5):
-        updates[f"phase_{phase_num}_status"] = PhaseStatusDetail()
-        updates[f"phase_{phase_num}_output"] = None
+        updates[stage_status_field(phase_num)] = PhaseStatusDetail()
+        updates[stage_output_field(phase_num)] = None
     if target_phase <= 3:
-        updates["skip_phase_4_reason"] = None
+        updates["skip_standardization_reason"] = None
     return existing_state.model_copy(deep=True, update=updates)
 
 
@@ -575,10 +577,10 @@ async def get_pipeline_status(
         job_status = await jq.get_status(processing_run_id, owner_user_id=account.owner_user_id)
         if job_status == "queued":
             _empty_phases = PipelinePhasesResponse(
-                phase_1=PhaseStatusResponse(status="pending"),
-                phase_2=PhaseStatusResponse(status="pending"),
-                phase_3=PhaseStatusResponse(status="pending"),
-                phase_4=PhaseStatusResponse(status="pending"),
+                acquisition=PhaseStatusResponse(status="pending"),
+                parsing=PhaseStatusResponse(status="pending"),
+                fact_chain=PhaseStatusResponse(status="pending"),
+                standardization=PhaseStatusResponse(status="pending"),
             )
             return PipelineStatusResponse(
                 processing_run_id=processing_run_id,
@@ -596,10 +598,10 @@ async def get_pipeline_status(
         )
 
     phases = PipelinePhasesResponse(
-        phase_1=_phase_detail_to_response(state.phase_1_status),
-        phase_2=_phase_detail_to_response(state.phase_2_status),
-        phase_3=_phase_detail_to_response(state.phase_3_status),
-        phase_4=_phase_detail_to_response(state.phase_4_status),
+        acquisition=_phase_detail_to_response(state.acquisition_status),
+        parsing=_phase_detail_to_response(state.parsing_status),
+        fact_chain=_phase_detail_to_response(state.fact_chain_status),
+        standardization=_phase_detail_to_response(state.standardization_status),
     )
 
     elapsed = _compute_elapsed(state.started_at, state.completed_at)
@@ -610,7 +612,7 @@ async def get_pipeline_status(
         source_document_id=state.source_document_id,
         pipeline_status=state.pipeline_status.value,
         current_phase=_determine_current_phase(state),
-        skip_phase_4_reason=state.skip_phase_4_reason.value if state.skip_phase_4_reason else None,
+        skip_standardization_reason=state.skip_standardization_reason.value if state.skip_standardization_reason else None,
         phases=phases,
         error_message=state.error_message,
         error_phase=state.error_phase,

@@ -6,11 +6,11 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.runs.phase_5_factory import Phase5ServiceFactory
+from src.runs.review_factory import ReviewServiceFactory
 from src.api.wiring import get_session_factory
 from src.dao.neo4j.repository import Neo4jRepository
 
-_phase5_factory: Phase5ServiceFactory | None = None
+_review_factory: ReviewServiceFactory | None = None
 _neo4j_repository: Neo4jRepository | None = None
 
 
@@ -27,17 +27,17 @@ def get_neo4j_repository() -> Neo4jRepository:
     return _neo4j_repository
 
 
-def set_phase5_factory(factory: Phase5ServiceFactory) -> None:
-    """Set the global Phase5ServiceFactory (called from lifespan startup)."""
-    global _phase5_factory
-    _phase5_factory = factory
+def set_review_factory(factory: ReviewServiceFactory) -> None:
+    """Set the global ReviewServiceFactory (called from lifespan startup)."""
+    global _review_factory
+    _review_factory = factory
 
 
-def get_phase5_factory() -> Phase5ServiceFactory:
-    """Return the global Phase5ServiceFactory (raises if not initialized)."""
-    if _phase5_factory is None:
-        raise RuntimeError("Phase5ServiceFactory not initialized")
-    return _phase5_factory
+def get_review_factory() -> ReviewServiceFactory:
+    """Return the global ReviewServiceFactory (raises if not initialized)."""
+    if _review_factory is None:
+        raise RuntimeError("ReviewServiceFactory not initialized")
+    return _review_factory
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:

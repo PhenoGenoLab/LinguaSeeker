@@ -12,7 +12,7 @@
 api/
 ├── wiring.py              # 依赖注入和服务组装（应用启动时调用一次）
 ├── auth.py                # API Key + HMAC 会话认证
-├── deps.py                # FastAPI 依赖项（数据库会话、Phase5ServiceFactory）
+├── deps.py                # FastAPI 依赖项（数据库会话、ReviewServiceFactory）
 ├── body_size_limit.py     # 请求体大小限制 ASGI 中间件
 ├── rate_limit.py          # Redis/内存限流器
 ├── v1/                    # V1 API 路由
@@ -38,13 +38,13 @@ api/
 cfg → engine → session_factory
   → Redis client → DocumentProcessingCacheService
   → DocumentAcquisitionService + ParseDocumentService
-  → SourceFactChainService（Phase 3：分窗→抽取→核验→事实英译→双语行）
+  → SourceFactChainService（fact_chain：分窗→抽取→核验→事实英译→双语行）
   → EntityStandardizationService
   → AcquisitionAdapter + ParsingAdapter + FactChainAdapter
   → SessionBoundStatePersistence
   → PipelineOrchestrator → PipelineRunner
   → SingleJobDispatcher
-  → Phase5ServiceFactory
+  → ReviewServiceFactory
   → JobQueueRepository
 ```
 
@@ -70,7 +70,7 @@ async def handler(_api_key: str | None = Depends(require_api_key)):
 | 依赖 | 说明 |
 |------|------|
 | `get_db_session()` | 提供异步数据库会话（自动 commit/rollback） |
-| `get_phase5_factory()` | 返回全局 Phase5ServiceFactory 实例 |
+| `get_review_factory()` | 返回全局 ReviewServiceFactory 实例 |
 
 ### `body_size_limit.py` — 请求体限制
 
@@ -114,7 +114,7 @@ async def handler(session: AsyncSession = Depends(get_db_session)):
     result = await session.execute(select(Model))
 ```
 
-### 路由中访问 Phase 4 服务
+### 路由中访问 standardization 服务
 
 ```python
 async def handler(session: AsyncSession = Depends(get_db_session)):

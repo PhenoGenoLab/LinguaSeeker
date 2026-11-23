@@ -61,10 +61,10 @@ async def test_phase_1_adapter_success(sample_state: PipelineGraphState):
 
     result_state = await adapter.run(sample_state)
 
-    assert result_state.phase_1_output is not None
-    assert result_state.phase_1_output.pdf_path == "/tmp/test.pdf"
-    assert isinstance(result_state.phase_1_output, AcquisitionOutput)
-    assert result_state.phase_1_status.status == PhaseStatus.COMPLETED
+    assert result_state.acquisition_output is not None
+    assert result_state.acquisition_output.pdf_path == "/tmp/test.pdf"
+    assert isinstance(result_state.acquisition_output, AcquisitionOutput)
+    assert result_state.acquisition_status.status == PhaseStatus.COMPLETED
     mock_acquisition.acquire.assert_awaited_once()
 
 
@@ -131,4 +131,4 @@ async def test_phase_1_adapter_reads_upload_file_as_bytes(tmp_path):
     assert captured_request["content"] == b"%PDF-1.4 fake content"
     assert captured_request["filename"] == "test.pdf"
     assert isinstance(captured_request["content"], bytes)
-    assert result_state.phase_1_output is not None
+    assert result_state.acquisition_output is not None

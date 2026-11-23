@@ -28,7 +28,7 @@ from src.runs.contracts import (
     PhaseStatus,
     PhaseStatusDetail,
     PipelineGraphState,
-    SkipPhase4Reason,
+    SkipStandardizationReason,
     TranslationExtractionOutput,
     build_retryable_errors,
     classify_phase_error,
@@ -96,23 +96,23 @@ class FactChainAdapter:
         persisted run and call the provider again.
         """
         logger.info("Phase 3 started: run={}", state.processing_run_id)
-        state.phase_3_status = PhaseStatusDetail(
+        state.fact_chain_status = PhaseStatusDetail(
             status=PhaseStatus.RUNNING,
             started_at=datetime.now().isoformat(),
         )
 
         try:
-            if state.phase_2_output is None:
+            if state.parsing_output is None:
                 raise PermanentPhaseError("Phase 2 output not found in state", phase=3)
 
-            async with aiofiles.open(state.phase_2_output.metadata_path, encoding="utf-8") as handle:
+            async with aiofiles.open(state.parsing_output.metadata_path, encoding="utf-8") as handle:
                 parse_data = json.loads(await handle.read())
             pages = parse_data.get("pages", []) or []
             content_blocks = parse_data.get("content_blocks", []) or []
 
             source_text, page_ranges = _join_pages(pages)
             if not source_text.strip():
-                source_text = await asyncio.to_thread(Path(state.phase_2_output.md_path).read_text, encoding="utf-8")
+                source_text = await asyncio.to_thread(Path(state.parsing_output.md_path).read_text, encoding="utf-8")
                 page_ranges = [(0, len(source_text), 1)]
             if not source_text.strip():
                 raise PermanentPhaseError("Phase 2 produced no document text", phase=3)
@@ -124,7 +124,7 @@ class FactChainAdapter:
             base = self._output_root
             if base is None:
                 base = Path(__file__).resolve().parents[5] / "data" / "pipeline"
-            doc_dir = Path(base) / state.processing_run_id / "phase_3" / state.source_document_id
+            doc_dir = Path(base) / state.processing_run_id / "fact_chain" / state.source_document_id
             doc_dir.mkdir(parents=True, exist_ok=True)
 
             chain_run_path = doc_dir / "chain_run.json"
@@ -195,13 +195,13 @@ class FactChainAdapter:
 
             supported = self._chain.supported_fact_count(run)
             if supported == 0:
-                state.skip_phase_4_reason = SkipPhase4Reason.NOT_RELEVANT
+                state.skip_standardization_reason = SkipStandardizationReason.NOT_RELEVANT
             else:
                 # A retry may have produced supported facts after an earlier
                 # empty run; a stale NOT_RELEVANT must not skip Phase 4.
-                state.skip_phase_4_reason = None
+                state.skip_standardization_reason = None
 
-            state.phase_3_output = TranslationExtractionOutput(
+            state.fact_chain_output = TranslationExtractionOutput(
                 output_dir=str(doc_dir),
                 original_json_path=str(original_path),
                 translated_json_path=str(translated_path),
@@ -215,8 +215,8 @@ class FactChainAdapter:
                 source_facts_path=str(doc_dir / "facts.jsonl"),
                 chain_run_path=str(chain_run_path),
             )
-            state.phase_3_status = PhaseStatusDetail.complete(
-                started_at=state.phase_3_status.started_at,
+            state.fact_chain_status = PhaseStatusDetail.complete(
+                started_at=state.fact_chain_status.started_at,
                 summary={
                     "route": "source_fact_chain",
                     "windows": len(run.windows),

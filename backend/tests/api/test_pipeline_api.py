@@ -15,7 +15,7 @@ from src.runs.contracts import (
     SourceType,
     PipelineStatus,
     PhaseStatusDetail,
-    SkipPhase4Reason,
+    SkipStandardizationReason,
 )
 
 
@@ -166,13 +166,13 @@ async def test_get_pipeline_status(async_client: AsyncClient):
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
         pipeline_status=PipelineStatus.RUNNING,
-        phase_1_status=PhaseStatusDetail(
+        acquisition_status=PhaseStatusDetail(
             status=PhaseStatus.COMPLETED,
             started_at="2026-05-29T10:00:00",
             completed_at="2026-05-29T10:01:00",
             duration_seconds=60.0,
         ),
-        phase_2_status=PhaseStatusDetail(
+        parsing_status=PhaseStatusDetail(
             status=PhaseStatus.RUNNING,
             started_at="2026-05-29T10:01:01",
         ),
@@ -189,29 +189,29 @@ async def test_get_pipeline_status(async_client: AsyncClient):
         data = response.json()
         assert data["processing_run_id"] == "run-123"
         assert data["pipeline_status"] == "running"
-        assert data["phases"]["phase_1"]["status"] == "completed"
-        assert data["phases"]["phase_1"]["duration_seconds"] == 60.0
-        assert data["phases"]["phase_2"]["status"] == "running"
-        assert data["current_phase"] == "phase_2"
+        assert data["phases"]["acquisition"]["status"] == "completed"
+        assert data["phases"]["acquisition"]["duration_seconds"] == 60.0
+        assert data["phases"]["parsing"]["status"] == "running"
+        assert data["current_phase"] == "parsing"
 
 
 @pytest.mark.asyncio
 async def test_get_pipeline_status_shows_skip_reason(async_client: AsyncClient):
-    """Status response includes skip_phase_4_reason when set."""
+    """Status response includes skip_standardization_reason when set."""
     mock_state = PipelineGraphState(
         processing_run_id="run-123",
         source_document_id="doc-456",
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
         pipeline_status=PipelineStatus.COMPLETED,
-        phase_1_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
-        phase_2_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
-        phase_3_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
-        phase_4_status=PhaseStatusDetail(
+        acquisition_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
+        parsing_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
+        fact_chain_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
+        standardization_status=PhaseStatusDetail(
             status=PhaseStatus.SKIPPED,
             summary={"reason": "not_relevant"},
         ),
-        skip_phase_4_reason=SkipPhase4Reason.NOT_RELEVANT,
+        skip_standardization_reason=SkipStandardizationReason.NOT_RELEVANT,
     )
 
     with patch("src.api.v1.pipeline.get_pipeline_runner") as mock_get_runner:
@@ -223,9 +223,9 @@ async def test_get_pipeline_status_shows_skip_reason(async_client: AsyncClient):
 
         assert response.status_code == 200
         data = response.json()
-        assert data["skip_phase_4_reason"] == "not_relevant"
-        assert data["phases"]["phase_4"]["status"] == "skipped"
-        assert data["phases"]["phase_4"]["summary"]["reason"] == "not_relevant"
+        assert data["skip_standardization_reason"] == "not_relevant"
+        assert data["phases"]["standardization"]["status"] == "skipped"
+        assert data["phases"]["standardization"]["summary"]["reason"] == "not_relevant"
 
 
 @pytest.mark.asyncio
@@ -269,10 +269,10 @@ async def test_post_pipeline_run_phase_rerun_resets_target_phase(async_client: A
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
         pipeline_status=PipelineStatus.FAILED,
-        phase_1_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
-        phase_2_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
-        phase_3_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
-        phase_4_status=PhaseStatusDetail(
+        acquisition_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
+        parsing_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
+        fact_chain_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
+        standardization_status=PhaseStatusDetail(
             status=PhaseStatus.FAILED,
             started_at="2026-06-23T09:00:00",
             completed_at="2026-06-23T09:01:00",
@@ -285,20 +285,20 @@ async def test_post_pipeline_run_phase_rerun_resets_target_phase(async_client: A
             ),
             summary={"matches": 0},
         ),
-        phase_1_output=AcquisitionOutput(pdf_path="/tmp/input.pdf"),
-        phase_2_output=ParseOutput(
+        acquisition_output=AcquisitionOutput(pdf_path="/tmp/input.pdf"),
+        parsing_output=ParseOutput(
             md_path="/tmp/output.md",
             metadata_path="/tmp/metadata.json",
-            output_dir="/tmp/phase_2",
+            output_dir="/tmp/parsing",
         ),
-        phase_3_output=TranslationExtractionOutput(
-            output_dir="/tmp/phase_3",
+        fact_chain_output=TranslationExtractionOutput(
+            output_dir="/tmp/fact_chain",
             original_json_path="/tmp/original.json",
             translated_json_path="/tmp/translated.json",
             source_language="zh",
             extraction_result_path="/tmp/extraction_result.json",
         ),
-        phase_4_output=StandardizationOutput(
+        standardization_output=StandardizationOutput(
             match_count=1,
             standardized_count=1,
             ambiguous_count=0,
@@ -328,15 +328,15 @@ async def test_post_pipeline_run_phase_rerun_resets_target_phase(async_client: A
     assert response.status_code == 202
     initial_state = mock_runner.start.call_args[0][0]
     assert initial_state.pipeline_status == PipelineStatus.PENDING
-    assert initial_state.phase_1_status.status == PhaseStatus.COMPLETED
-    assert initial_state.phase_2_status.status == PhaseStatus.COMPLETED
-    assert initial_state.phase_3_status == PhaseStatusDetail()
-    assert initial_state.phase_4_status == PhaseStatusDetail()
-    assert initial_state.phase_1_output == existing_state.phase_1_output
-    assert initial_state.phase_2_output == existing_state.phase_2_output
-    assert initial_state.phase_3_output is None
-    assert initial_state.phase_4_output is None
-    assert initial_state.skip_phase_4_reason is None
+    assert initial_state.acquisition_status.status == PhaseStatus.COMPLETED
+    assert initial_state.parsing_status.status == PhaseStatus.COMPLETED
+    assert initial_state.fact_chain_status == PhaseStatusDetail()
+    assert initial_state.standardization_status == PhaseStatusDetail()
+    assert initial_state.acquisition_output == existing_state.acquisition_output
+    assert initial_state.parsing_output == existing_state.parsing_output
+    assert initial_state.fact_chain_output is None
+    assert initial_state.standardization_output is None
+    assert initial_state.skip_standardization_reason is None
     assert initial_state.error_message is None
     assert initial_state.error_phase is None
     assert initial_state.completed_at is None

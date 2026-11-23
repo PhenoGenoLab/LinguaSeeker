@@ -10,5 +10,5 @@ export type ProcessingStatus =
   | "failed"
   | "skipped";
 
-/** Phase identifier in the 4-phase pipeline. */
-export type PhaseId = "phase_1" | "phase_2" | "phase_3" | "phase_4";
+/** Stage identifier in the evidence pipeline. */
+export type PhaseId = "acquisition" | "parsing" | "fact_chain" | "standardization" | "review";

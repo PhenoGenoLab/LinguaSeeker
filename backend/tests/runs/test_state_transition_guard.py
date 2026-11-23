@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.runs.contracts import (
+    stage_status_field,
     InvalidStateTransitionError,
     PhaseStatus,
     PhaseStatusDetail,
@@ -157,7 +158,7 @@ class TestValidateAllPhaseTransitions:
         for phase_num, status in phase_statuses.items():
             setattr(
                 state,
-                f"phase_{phase_num}_status",
+                stage_status_field(phase_num),
                 PhaseStatusDetail(status=status),
             )
         return state
@@ -186,7 +187,7 @@ class TestValidateAllPhaseTransitions:
         new = self._make_state({1: PhaseStatus.RUNNING, 2: PhaseStatus.PENDING, 3: PhaseStatus.PENDING})
         with pytest.raises(InvalidStateTransitionError) as exc_info:
             validate_all_phase_transitions(old, new)
-        assert "phase_1" in str(exc_info.value)
+        assert "acquisition" in str(exc_info.value)
 
     def test_invalid_phase_3_jump(self):
         """Phase 3 jumping from PENDING to COMPLETED → raises."""
@@ -194,7 +195,7 @@ class TestValidateAllPhaseTransitions:
         new = self._make_state({1: PhaseStatus.COMPLETED, 2: PhaseStatus.COMPLETED, 3: PhaseStatus.COMPLETED})
         with pytest.raises(InvalidStateTransitionError) as exc_info:
             validate_all_phase_transitions(old, new)
-        assert "phase_3" in str(exc_info.value)
+        assert "fact_chain" in str(exc_info.value)
 
 
 # ── Persistence layer integration tests (with DB session) ────────────────────
@@ -206,9 +207,9 @@ class TestDirectStatePersistenceTransitionGuard:
     def _make_state(
         self,
         pipeline_status: PipelineStatus = PipelineStatus.PENDING,
-        phase_1: PhaseStatus = PhaseStatus.PENDING,
-        phase_2: PhaseStatus = PhaseStatus.PENDING,
-        phase_3: PhaseStatus = PhaseStatus.PENDING,
+        acquisition: PhaseStatus = PhaseStatus.PENDING,
+        parsing: PhaseStatus = PhaseStatus.PENDING,
+        fact_chain: PhaseStatus = PhaseStatus.PENDING,
     ) -> PipelineGraphState:
         state = PipelineGraphState(
             processing_run_id=str(uuid.uuid4()),
@@ -217,9 +218,9 @@ class TestDirectStatePersistenceTransitionGuard:
             source_type=SourceType.LOCAL,
             pipeline_status=pipeline_status,
         )
-        state.phase_1_status = PhaseStatusDetail(status=phase_1)
-        state.phase_2_status = PhaseStatusDetail(status=phase_2)
-        state.phase_3_status = PhaseStatusDetail(status=phase_3)
+        state.acquisition_status = PhaseStatusDetail(status=acquisition)
+        state.parsing_status = PhaseStatusDetail(status=parsing)
+        state.fact_chain_status = PhaseStatusDetail(status=fact_chain)
         return state
 
     @pytest.mark.asyncio
@@ -267,18 +268,18 @@ class TestDirectStatePersistenceTransitionGuard:
         persistence = DirectStatePersistence(db_session)
         state = self._make_state(
             pipeline_status=PipelineStatus.RUNNING,
-            phase_1=PhaseStatus.PENDING,
+            acquisition=PhaseStatus.PENDING,
         )
         await persistence.save(state)
 
-        state.phase_1_status = PhaseStatusDetail(status=PhaseStatus.RUNNING)
+        state.acquisition_status = PhaseStatusDetail(status=PhaseStatus.RUNNING)
         await persistence.save(state)
 
-        state.phase_1_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
+        state.acquisition_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
         await persistence.save(state)
 
         loaded = await persistence.load(state.processing_run_id)
-        assert loaded.phase_1_status.status == PhaseStatus.COMPLETED
+        assert loaded.acquisition_status.status == PhaseStatus.COMPLETED
 
     @pytest.mark.asyncio
     async def test_invalid_phase_transition_raises(self, db_session: AsyncSession):
@@ -286,11 +287,11 @@ class TestDirectStatePersistenceTransitionGuard:
         persistence = DirectStatePersistence(db_session)
         state = self._make_state(
             pipeline_status=PipelineStatus.RUNNING,
-            phase_1=PhaseStatus.COMPLETED,
+            acquisition=PhaseStatus.COMPLETED,
         )
         await persistence.save(state)
 
-        state.phase_1_status = PhaseStatusDetail(status=PhaseStatus.RUNNING)
+        state.acquisition_status = PhaseStatusDetail(status=PhaseStatus.RUNNING)
         with pytest.raises(InvalidStateTransitionError):
             await persistence.save(state)
 
@@ -312,8 +313,8 @@ class TestDirectStatePersistenceTransitionGuard:
         persistence = DirectStatePersistence(db_session)
         state = self._make_state(
             pipeline_status=PipelineStatus.FAILED,
-            phase_1=PhaseStatus.FAILED,
-            phase_2=PhaseStatus.COMPLETED,
+            acquisition=PhaseStatus.FAILED,
+            parsing=PhaseStatus.COMPLETED,
         )
         state.error_message = "something broke"
         state.error_phase = 1
@@ -321,14 +322,14 @@ class TestDirectStatePersistenceTransitionGuard:
 
         # Phase rerun: reset pipeline and target phase to PENDING
         state.pipeline_status = PipelineStatus.PENDING
-        state.phase_1_status = PhaseStatusDetail(status=PhaseStatus.PENDING)
+        state.acquisition_status = PhaseStatusDetail(status=PhaseStatus.PENDING)
         state.error_message = None
         state.error_phase = None
         await persistence.save(state)  # Should not raise
 
         loaded = await persistence.load(state.processing_run_id)
         assert loaded.pipeline_status == PipelineStatus.PENDING
-        assert loaded.phase_1_status.status == PhaseStatus.PENDING
+        assert loaded.acquisition_status.status == PhaseStatus.PENDING
 
     @pytest.mark.asyncio
     async def test_full_lifecycle_succeeds(self, db_session: AsyncSession):
@@ -338,24 +339,24 @@ class TestDirectStatePersistenceTransitionGuard:
         await persistence.save(state)
 
         state.pipeline_status = PipelineStatus.RUNNING
-        state.phase_1_status = PhaseStatusDetail(status=PhaseStatus.RUNNING)
+        state.acquisition_status = PhaseStatusDetail(status=PhaseStatus.RUNNING)
         await persistence.save(state)
 
-        state.phase_1_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
-        state.phase_2_status = PhaseStatusDetail(status=PhaseStatus.RUNNING)
+        state.acquisition_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
+        state.parsing_status = PhaseStatusDetail(status=PhaseStatus.RUNNING)
         await persistence.save(state)
 
-        state.phase_2_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
-        state.phase_3_status = PhaseStatusDetail(status=PhaseStatus.RUNNING)
+        state.parsing_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
+        state.fact_chain_status = PhaseStatusDetail(status=PhaseStatus.RUNNING)
         await persistence.save(state)
 
-        state.phase_3_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
+        state.fact_chain_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
         state.pipeline_status = PipelineStatus.COMPLETED
         await persistence.save(state)
 
         loaded = await persistence.load(state.processing_run_id)
         assert loaded.pipeline_status == PipelineStatus.COMPLETED
-        assert loaded.phase_1_status.status == PhaseStatus.COMPLETED
+        assert loaded.acquisition_status.status == PhaseStatus.COMPLETED
 
 
 # ── SessionBoundStatePersistence guard tests (mocked) ─────────────────────

@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from src.runs.contracts import (
+    stage_name,
+    stage_status_field,
     PermanentPhaseError,
     PhaseStatus,
     PhaseStatusDetail,
@@ -28,7 +30,7 @@ def _state() -> PipelineGraphState:
 
 
 def _orchestrator(retry: MagicMock) -> PipelineOrchestrator:
-    adapters = {f"phase_{n}": MagicMock(run=AsyncMock()) for n in range(1, 5)}
+    adapters = {stage_name(n): MagicMock(run=AsyncMock()) for n in range(1, 5)}
     persistence = MagicMock(save=AsyncMock())
     return PipelineOrchestrator(adapters, persistence, retry)
 
@@ -36,13 +38,13 @@ def _orchestrator(retry: MagicMock) -> PipelineOrchestrator:
 def test_record_node_preserves_existing_summary() -> None:
     status = PhaseStatusDetail(status=PhaseStatus.COMPLETED, summary={"facts": 2})
 
-    record_node(status, NodeProgress(node="phase_1", status="completed", detail="ok"))
+    record_node(status, NodeProgress(node="acquisition", status="completed", detail="ok"))
 
     assert status.summary == {
         "facts": 2,
         "nodes": [
             {
-                "node": "phase_1",
+                "node": "acquisition",
                 "status": "completed",
                 "started_at": None,
                 "completed_at": None,
@@ -55,14 +57,14 @@ def test_record_node_preserves_existing_summary() -> None:
 
 def test_record_node_appends_multiple_entries() -> None:
     status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
-    record_node(status, NodeProgress(node="phase_1", status="completed"))
-    record_node(status, NodeProgress(node="phase_1", status="completed"))
+    record_node(status, NodeProgress(node="acquisition", status="completed"))
+    record_node(status, NodeProgress(node="acquisition", status="completed"))
 
     assert [node["status"] for node in status.summary["nodes"]] == ["completed", "completed"]
 
 
 def test_failed_node_tolerates_malformed_started_at() -> None:
-    node = NodeProgress.failed("phase_1", started_at="not-a-timestamp", detail="PermanentPhaseError")
+    node = NodeProgress.failed("acquisition", started_at="not-a-timestamp", detail="PermanentPhaseError")
 
     assert node.duration_seconds is None
     assert node.completed_at is not None
@@ -71,7 +73,7 @@ def test_failed_node_tolerates_malformed_started_at() -> None:
 @pytest.mark.asyncio
 async def test_successful_phase_records_completed_node() -> None:
     result = _state()
-    result.phase_1_status = PhaseStatusDetail(
+    result.acquisition_status = PhaseStatusDetail(
         status=PhaseStatus.COMPLETED,
         started_at="2026-11-18T10:00:00",
         completed_at="2026-11-18T10:00:01",
@@ -81,12 +83,12 @@ async def test_successful_phase_records_completed_node() -> None:
     retry = MagicMock(execute_with_retry=AsyncMock(return_value=result))
     orchestrator = _orchestrator(retry)
 
-    updated = await orchestrator._node_phase_1(_state())
+    updated = await orchestrator._node_acquisition(_state())
 
-    nodes = updated.phase_1_status.summary["nodes"]
+    nodes = updated.acquisition_status.summary["nodes"]
     assert nodes == [
         {
-            "node": "phase_1",
+            "node": "acquisition",
             "status": "completed",
             "started_at": "2026-11-18T10:00:00",
             "completed_at": "2026-11-18T10:00:01",
@@ -94,7 +96,7 @@ async def test_successful_phase_records_completed_node() -> None:
             "detail": "",
         }
     ]
-    assert updated.phase_1_status.summary["pdf"] == "/tmp/a.pdf"
+    assert updated.acquisition_status.summary["pdf"] == "/tmp/a.pdf"
 
 
 @pytest.mark.asyncio
@@ -103,7 +105,7 @@ async def test_full_run_records_one_node_per_phase() -> None:
     for phase in range(1, 5):
         setattr(
             state,
-            f"phase_{phase}_status",
+            stage_status_field(phase),
             PhaseStatusDetail.complete(started_at="2026-11-18T10:00:00", summary={"phase": phase}),
         )
     retry = MagicMock(execute_with_retry=AsyncMock(return_value=state))
@@ -113,9 +115,9 @@ async def test_full_run_records_one_node_per_phase() -> None:
 
     assert updated.pipeline_status.value == "completed"
     for phase in range(1, 5):
-        summary = getattr(updated, f"phase_{phase}_status").summary
+        summary = getattr(updated, stage_status_field(phase)).summary
         assert summary["phase"] == phase
-        assert [node["node"] for node in summary["nodes"]] == [f"phase_{phase}"]
+        assert [node["node"] for node in summary["nodes"]] == [stage_name(phase)]
         assert summary["nodes"][0]["status"] == "completed"
 
 
@@ -124,10 +126,10 @@ async def test_failed_phase_records_failed_node() -> None:
     retry = MagicMock(execute_with_retry=AsyncMock(side_effect=PermanentPhaseError("boom", phase=1)))
     orchestrator = _orchestrator(retry)
 
-    updated = await orchestrator._node_phase_1(_state())
+    updated = await orchestrator._node_acquisition(_state())
 
-    assert updated.phase_1_status.status == PhaseStatus.FAILED
-    node = updated.phase_1_status.summary["nodes"][0]
-    assert node["node"] == "phase_1"
+    assert updated.acquisition_status.status == PhaseStatus.FAILED
+    node = updated.acquisition_status.summary["nodes"][0]
+    assert node["node"] == "acquisition"
     assert node["status"] == "failed"
     assert node["detail"] == "PermanentPhaseError"

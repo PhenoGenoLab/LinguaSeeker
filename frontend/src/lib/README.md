@@ -122,7 +122,7 @@ bunx vitest run tests/api/responseCache.test.tsx
 
 #### `common.ts`
 - `ProcessingStatus` — 处理状态：`pending` / `running` / `completed` / `failed` / `skipped`
-- `PhaseId` — 阶段标识：`phase_1` / `phase_2` / `phase_3`
+- `PhaseId` — 阶段标识：`acquisition` / `parsing` / `fact_chain` / `standardization` / `review`
 
 #### `evidence.ts`
 - `ReviewStatusValue` — 审阅状态：`provisional` / `approved` / `corrected` / `rejected`

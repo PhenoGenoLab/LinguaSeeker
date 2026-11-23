@@ -17,7 +17,7 @@ src/
 │   ├── tools/                   # 具体工具（builtin/、task/、acquisition/、parsing/、extraction/ …）
 │   └── adapters/                # L3 外部协议适配（mcp）
 ├── pipeline/            # pipeline 领域层
-│   ├── graph/                   # LangGraph 拓扑与 Phase 1-4 适配器
+│   ├── graph/                   # LangGraph 拓扑与阶段适配器（acquisition/parsing/fact_chain/standardization）
 │   └── skills/                  # 专业 agent 实现（prompt、模型调用、编排）+ runtime
 ├── runs/                # 一次 run 的生命周期（runner、dispatcher、状态持久化）
 │   ├── runner.py                # 后台管线运行器
@@ -27,7 +27,7 @@ src/
 │   ├── processing_cache.py      # 两级缓存（L1 Redis + L2 PostgreSQL）
 │   ├── content_hash.py          # 内容哈希去重
 │   ├── concurrency.py           # 信号量和重试执行器
-│   └── phase_5_factory.py       # Phase 5 服务工厂
+│   └── review_factory.py        # 审核（review）服务工厂
 ├── api/                 # HTTP API 层
 │   ├── wiring.py                # 依赖注入和服务组装
 │   ├── auth.py                  # API Key 和会话认证
@@ -61,16 +61,18 @@ app.main → src.api.wiring → src.runs.* → src.pipeline.* / src.core.*
            src.utils.* (日志、LLM 适配器、异常)
 ```
 
-### 管线架构（Phase 1-4）
+### 管线架构
 
-| Phase | 模块 | 职责 |
-|-------|------|------|
-| Phase 1 | `pipeline/skills/acquisition/` + `pipeline/skills/parsing/` | 文献采集 + MinerU 文档解析 |
-| Phase 2 | `pipeline/skills/translation/` + `pipeline/skills/extraction/` | 跨语言翻译 + 双轨证据提取 |
-| Phase 3 | `pipeline/skills/standardization/` | 实体标准化 + 术语知识对齐 |
-| Phase 4 | `pipeline/skills/review/` | 专家审核、聊天、审计、溯源 |
+| 阶段 | 模块 | 职责 |
+|------|------|------|
+| acquisition | `pipeline/skills/acquisition/` + `core/tools/acquisition/` | 文献采集 |
+| parsing | `pipeline/skills/parsing/` + `core/tools/parsing/` | MinerU 文档解析 |
+| fact_chain | `pipeline/skills/extraction/`（+`translation/`） + `core/tools/extraction/` | 分窗 → 抽取 → 核验 → 事实英译 |
+| standardization | `pipeline/skills/standardization/` + `core/tools/standardization/` | 实体标准化 + 术语对齐 |
+| review | `pipeline/skills/review/` + `core/tools/review/` | 审核、聊天、审计、溯源（非图节点） |
 
-Phase 1-4 由 `pipeline/graph/topology.py`（LangGraph）编排为有向图；Phase 5 是独立的请求-响应式交互服务（`pipeline/skills/review/` + `runs/phase_5_factory.py`）。
+前四个阶段由 `pipeline/graph/topology.py`（LangGraph）编排为有向图，对应 `graph/phases/{acquisition,parsing,fact_chain,standardization}.py`；
+review 是独立的请求-响应式服务，由 `runs/review_factory.py` 创建。
 
 ## Usage / Patterns
 

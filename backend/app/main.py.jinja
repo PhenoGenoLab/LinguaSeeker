@@ -106,7 +106,7 @@ async def lifespan(app: FastAPI):
         phase5_factory = get_phase5_factory()
         await phase5_factory.close()
     except Exception:
-        logger.warning("Phase5ServiceFactory close failed during shutdown")
+        logger.warning("ReviewServiceFactory close failed during shutdown")
     finally:
         try:
             await _wiring.dispose_redis()

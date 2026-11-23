@@ -36,7 +36,7 @@ async def test_file_not_found_is_not_retried_by_executor():
     async def failing_phase(state):
         nonlocal call_count
         call_count += 1
-        raise FileNotFoundError("No such file: phase_1/metadata.json")
+        raise FileNotFoundError("No such file: acquisition/metadata.json")
 
     # FileNotFoundError is caught by phase adapters as PermanentPhaseError
     # before reaching the executor, but if it reaches the executor directly
@@ -45,7 +45,7 @@ async def test_file_not_found_is_not_retried_by_executor():
         await executor.execute_with_retry(
             operation=failing_phase,
             state=None,
-            phase_name="phase_2",
+            phase_name="parsing",
         )
 
     assert call_count == 1

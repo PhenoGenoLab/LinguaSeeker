@@ -3,6 +3,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from src.runs.contracts import (
+    stage_name,
+    stage_status_field,
     PipelineGraphState,
     PipelineMode,
     SourceType,
@@ -11,14 +13,14 @@ from src.runs.contracts import (
     PhaseStatusDetail,
     AcquisitionOutput,
     ParseOutput,
-    SkipPhase4Reason,
+    SkipStandardizationReason,
 )
 from src.pipeline.graph.topology import PipelineOrchestrator
 from src.runs.concurrency import RetryablePhaseExecutor
 
 
 def _make_adapters(**returns) -> dict:
-    adapters = {f"phase_{i}": MagicMock(run=AsyncMock()) for i in range(1, 5)}
+    adapters = {stage_name(i): MagicMock(run=AsyncMock()) for i in range(1, 5)}
     for name, state in returns.items():
         adapters[name].run.return_value = state
     return adapters
@@ -27,17 +29,17 @@ def _make_adapters(**returns) -> dict:
 def _state_after(state: PipelineGraphState, phase: int) -> PipelineGraphState:
     """Copy of state with phases 1..phase COMPLETED (with outputs)."""
     new = state.model_copy(deep=True)
-    new.phase_1_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
-    new.phase_1_output = AcquisitionOutput(pdf_path="/tmp/test.pdf")
+    new.acquisition_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
+    new.acquisition_output = AcquisitionOutput(pdf_path="/tmp/test.pdf")
     if phase >= 2:
-        new.phase_2_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
-        new.phase_2_output = ParseOutput(
+        new.parsing_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
+        new.parsing_output = ParseOutput(
             md_path="/tmp/test.md",
             metadata_path="/tmp/test.json",
             output_dir="/tmp/output",
         )
     for p in range(3, phase + 1):
-        setattr(new, f"phase_{p}_status", PhaseStatusDetail(status=PhaseStatus.COMPLETED))
+        setattr(new, stage_status_field(p), PhaseStatusDetail(status=PhaseStatus.COMPLETED))
     return new
 
 
@@ -63,7 +65,7 @@ async def test_graph_compiles_and_routes():
         source_type=SourceType.LOCAL,
     )
 
-    assert initial_state.phase_1_status.status == PhaseStatus.PENDING
+    assert initial_state.acquisition_status.status == PhaseStatus.PENDING
     assert initial_state.pipeline_status == PipelineStatus.PENDING
 
 
@@ -92,7 +94,7 @@ async def test_upstream_validation_rejects_missing_prerequisites():
 
     assert result.pipeline_status == PipelineStatus.FAILED
     assert "upstream" in result.error_message.lower()
-    mock_adapters["phase_3"].run.assert_not_called()
+    mock_adapters["fact_chain"].run.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -111,10 +113,10 @@ async def test_persistence_called_after_each_phase():
     state_after_4 = _state_after(state, 4)
 
     mock_adapters = _make_adapters(
-        phase_1=state_after_1,
-        phase_2=state_after_2,
-        phase_3=state_after_3,
-        phase_4=state_after_4,
+        acquisition=state_after_1,
+        parsing=state_after_2,
+        fact_chain=state_after_3,
+        standardization=state_after_4,
     )
     mock_persistence = MagicMock(save=AsyncMock())
     retry_executor = RetryablePhaseExecutor(max_retries=0, backoff_base=0.01)
@@ -132,8 +134,8 @@ async def test_persistence_called_after_each_phase():
 
 
 @pytest.mark.asyncio
-async def test_skip_phase_4_reason_flows_through():
-    """skip_phase_4_reason set by Phase 3 flows to Phase 4 adapter."""
+async def test_skip_standardization_reason_flows_through():
+    """skip_standardization_reason set by Phase 3 flows to Phase 4 adapter."""
     state = PipelineGraphState(
         processing_run_id="test-run",
         source_document_id="test-doc",
@@ -145,19 +147,19 @@ async def test_skip_phase_4_reason_flows_through():
     state_after_2 = _state_after(state, 2)
 
     state_after_3 = state_after_2.model_copy(deep=True)
-    state_after_3.skip_phase_4_reason = SkipPhase4Reason.NOT_RELEVANT
+    state_after_3.skip_standardization_reason = SkipStandardizationReason.NOT_RELEVANT
 
     state_after_4 = state_after_3.model_copy(deep=True)
-    state_after_4.phase_4_status = PhaseStatusDetail(
+    state_after_4.standardization_status = PhaseStatusDetail(
         status=PhaseStatus.SKIPPED,
         summary={"reason": "not_relevant"},
     )
 
     mock_adapters = _make_adapters(
-        phase_1=state_after_1,
-        phase_2=state_after_2,
-        phase_3=state_after_3,
-        phase_4=state_after_4,
+        acquisition=state_after_1,
+        parsing=state_after_2,
+        fact_chain=state_after_3,
+        standardization=state_after_4,
     )
     mock_persistence = MagicMock(save=AsyncMock())
     retry_executor = RetryablePhaseExecutor(max_retries=0, backoff_base=0.01)
@@ -170,5 +172,5 @@ async def test_skip_phase_4_reason_flows_through():
 
     result = await orchestrator.run(state)
 
-    assert result.skip_phase_4_reason == SkipPhase4Reason.NOT_RELEVANT
-    assert result.phase_4_status.status == PhaseStatus.SKIPPED
+    assert result.skip_standardization_reason == SkipStandardizationReason.NOT_RELEVANT
+    assert result.standardization_status.status == PhaseStatus.SKIPPED

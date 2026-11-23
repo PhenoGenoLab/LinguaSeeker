@@ -47,7 +47,7 @@ async def test_retry_executor_retries_on_retryable_error():
     result = await executor.execute_with_retry(
         operation=flaky_operation,
         state=MagicMock(),
-        phase_name="phase_1",
+        phase_name="acquisition",
     )
 
     assert call_count == 2
@@ -67,7 +67,7 @@ async def test_retry_executor_passes_through_permanent_errors():
         await executor.execute_with_retry(
             operation=permanent_failure,
             state=MagicMock(),
-            phase_name="phase_2",
+            phase_name="parsing",
         )
 
 
@@ -87,7 +87,7 @@ async def test_retry_executor_exhausts_retries():
         await executor.execute_with_retry(
             operation=always_fails,
             state=MagicMock(),
-            phase_name="phase_1",
+            phase_name="acquisition",
         )
 
     assert call_count == 3  # initial + 2 retries

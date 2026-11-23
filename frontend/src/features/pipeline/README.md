@@ -102,4 +102,4 @@ pipeline/
 - `PhaseStatus` — 阶段状态（status、duration_seconds、PhaseNode 子节点）
 - `PipelineRunSummary` — 运行历史摘要
 - `ProcessingStatus` — 状态枚举：`pending` / `running` / `completed` / `failed` / `skipped`
-- `PhaseId` — 阶段标识：`phase_1` / `phase_2` / `phase_3`
+- `PhaseId` — 阶段标识：`acquisition` / `parsing` / `fact_chain` / `standardization` / `review`

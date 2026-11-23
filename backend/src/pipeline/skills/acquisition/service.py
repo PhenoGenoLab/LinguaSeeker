@@ -17,7 +17,7 @@ from src.pipeline.skills.runtime import messages
 class AcquisitionSkill:
     """Bounded agent for Phase 1: one tool, one request, one result."""
 
-    name = "phase_1_acquisition"
+    name = "acquisition"
     system_prompt = (
         "You acquire one document for a clinical-genetics pipeline.\n"
         "Call the `acquire_document` tool exactly once, then reply with a one-line summary."

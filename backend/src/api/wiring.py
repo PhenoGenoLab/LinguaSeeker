@@ -135,10 +135,10 @@ def wire_dependencies() -> None:
     engine → session_factory → adapters → orchestrator → runner → factory.
     """
     from src.runs.concurrency import PipelineSemaphore, RetryablePhaseExecutor
-    from src.runs.phase_5_factory import Phase5ServiceFactory
+    from src.runs.review_factory import ReviewServiceFactory
     from src.runs.runner import PipelineRunner
     from src.runs.state_persistence import SessionBoundStatePersistence
-    from src.api.deps import set_neo4j_repository, set_phase5_factory
+    from src.api.deps import set_neo4j_repository, set_review_factory
     from src.api.v1.pipeline import set_pipeline_runner
     from src.pipeline.skills.graph_retrieval.api import GraphRagService
     from src.core.tools.parsing.local.parser import (
@@ -231,10 +231,10 @@ def wire_dependencies() -> None:
     # ── Phase adapters ──
 
     phase_adapters = {
-        "phase_1": AcquisitionAdapter(acquisition_skill),
-        "phase_2": ParsingAdapter(parsing_skill),
-        "phase_3": FactChainAdapter(source_fact_chain),
-        "phase_4": StandardizationAdapter(standardization_skill, session_factory),
+        "acquisition": AcquisitionAdapter(acquisition_skill),
+        "parsing": ParsingAdapter(parsing_skill),
+        "fact_chain": FactChainAdapter(source_fact_chain),
+        "standardization": StandardizationAdapter(standardization_skill, session_factory),
     }
 
     # ── Orchestrator + Runner ──
@@ -265,7 +265,7 @@ def wire_dependencies() -> None:
 
     # ── Phase 5 factory (interactive review layer) ──
 
-    phase5_factory = Phase5ServiceFactory(cfg=cfg, session_factory=session_factory)
+    review_factory = ReviewServiceFactory(cfg=cfg, session_factory=session_factory)
 
     # ── Job queue + dispatcher ──
 
@@ -283,7 +283,7 @@ def wire_dependencies() -> None:
     # ── Inject into global registries (consumed by API routes) ──
 
     set_pipeline_runner(runner)
-    set_phase5_factory(phase5_factory)
+    set_review_factory(review_factory)
     set_job_queue(job_queue)
     if _neo4j_repository is not None:
         set_neo4j_repository(_neo4j_repository)

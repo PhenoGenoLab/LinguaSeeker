@@ -14,7 +14,7 @@ from src.runs.contracts import (
     PhaseStatusDetail,
     PipelineGraphState,
     PipelineMode,
-    SkipPhase4Reason,
+    SkipStandardizationReason,
     SourceType,
 )
 from src.pipeline.graph.phases.fact_chain import FactChainAdapter
@@ -106,7 +106,7 @@ def parsed_state(tmp_path: Path) -> PipelineGraphState:
         source_document_id="doc-1",
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
-        phase_2_output=ParseOutput(
+        parsing_output=ParseOutput(
             md_path=str(md_path),
             metadata_path=str(metadata_path),
             output_dir=str(tmp_path),
@@ -146,8 +146,8 @@ async def test_adapter_runs_chain_and_persists_bilingual_artifacts(
 
     state = await adapter.run(parsed_state)
 
-    assert state.phase_3_status.status == PhaseStatus.COMPLETED
-    output = state.phase_3_output
+    assert state.fact_chain_status.status == PhaseStatus.COMPLETED
+    output = state.fact_chain_output
     assert output is not None
     assert output.source_language == "zh"
     assert output.translated_text is None
@@ -167,11 +167,11 @@ async def test_adapter_runs_chain_and_persists_bilingual_artifacts(
     translated = {item.field_id: item.value for item in extraction.translated_result.evidence_items}
     assert translated["B.clinical_phenotypes"] == "EN:严重肌张力低下"
 
-    assert state.phase_3_status.summary is not None
-    assert state.phase_3_status.summary["route"] == "source_fact_chain"
-    assert state.phase_3_status.summary["facts"] == 2
-    assert state.phase_3_status.summary["supported_facts"] == 2
-    assert state.skip_phase_4_reason is None
+    assert state.fact_chain_status.summary is not None
+    assert state.fact_chain_status.summary["route"] == "source_fact_chain"
+    assert state.fact_chain_status.summary["facts"] == 2
+    assert state.fact_chain_status.summary["supported_facts"] == 2
+    assert state.skip_standardization_reason is None
     assert provider.calls.count("translate") >= 1  # non-English source translates presented facts
 
 
@@ -184,13 +184,13 @@ async def test_adapter_retry_reuses_persisted_chain_run(
     state = await adapter.run(parsed_state)
     first_calls = len(provider.calls)
 
-    state.phase_3_status = PhaseStatusDetail()
+    state.fact_chain_status = PhaseStatusDetail()
     state = await adapter.run(state)
 
     assert len(provider.calls) == first_calls
-    assert state.phase_3_output is not None
-    assert state.phase_3_status.summary is not None
-    assert state.phase_3_status.summary["facts"] == 2
+    assert state.fact_chain_output is not None
+    assert state.fact_chain_status.summary is not None
+    assert state.fact_chain_status.summary["facts"] == 2
 
 
 @pytest.mark.asyncio
@@ -202,11 +202,11 @@ async def test_adapter_marks_document_not_relevant_when_no_supported_fact(
 
     state = await adapter.run(parsed_state)
 
-    assert state.phase_3_status.status == PhaseStatus.COMPLETED
-    assert state.skip_phase_4_reason == SkipPhase4Reason.NOT_RELEVANT
-    assert state.phase_3_output is not None
+    assert state.fact_chain_status.status == PhaseStatus.COMPLETED
+    assert state.skip_standardization_reason == SkipStandardizationReason.NOT_RELEVANT
+    assert state.fact_chain_output is not None
     extraction = DualEvidenceExtractionResult.model_validate_json(
-        Path(state.phase_3_output.extraction_result_path).read_text(encoding="utf-8")
+        Path(state.fact_chain_output.extraction_result_path).read_text(encoding="utf-8")
     )
     assert extraction.original_result.evidence_items == []
 
@@ -218,16 +218,16 @@ async def test_adapter_rebuilds_empty_persisted_run_and_clears_skip_reason(
 ) -> None:
     empty_adapter, _ = build_adapter(tmp_path, [])
     state = await empty_adapter.run(parsed_state)
-    assert state.skip_phase_4_reason == SkipPhase4Reason.NOT_RELEVANT
+    assert state.skip_standardization_reason == SkipStandardizationReason.NOT_RELEVANT
 
     adapter, provider = build_adapter(tmp_path, sample_facts())
-    state.phase_3_status = PhaseStatusDetail()
+    state.fact_chain_status = PhaseStatusDetail()
     state = await adapter.run(state)
 
     assert provider.calls  # an empty run is never reused
-    assert state.phase_3_status.summary is not None
-    assert state.phase_3_status.summary["supported_facts"] == 2
-    assert state.skip_phase_4_reason is None
+    assert state.fact_chain_status.summary is not None
+    assert state.fact_chain_status.summary["supported_facts"] == 2
+    assert state.skip_standardization_reason is None
 
 
 @pytest.mark.asyncio
@@ -239,12 +239,12 @@ async def test_adapter_rebuilds_when_chain_config_changes(
     state = await first_adapter.run(parsed_state)
 
     adapter, provider = build_adapter(tmp_path, sample_facts(), window_chars=400)
-    state.phase_3_status = PhaseStatusDetail()
+    state.fact_chain_status = PhaseStatusDetail()
     state = await adapter.run(state)
 
     assert provider.calls
-    assert state.phase_3_status.summary is not None
-    assert state.phase_3_status.summary["supported_facts"] == 2
+    assert state.fact_chain_status.summary is not None
+    assert state.fact_chain_status.summary["supported_facts"] == 2
 
 
 @pytest.mark.asyncio
@@ -264,20 +264,20 @@ async def test_adapter_rebuilds_when_source_changes(
         "subject_id": None,
         "quote": "先证者携带TP53变异。",
     }
-    assert state.phase_2_output is not None
-    Path(state.phase_2_output.metadata_path).write_text(
+    assert state.parsing_output is not None
+    Path(state.parsing_output.metadata_path).write_text(
         json.dumps({"pages": [{"page_number": 1, "markdown": new_text}], "content_blocks": []}),
         encoding="utf-8",
     )
-    Path(state.phase_2_output.md_path).write_text(new_text, encoding="utf-8")
+    Path(state.parsing_output.md_path).write_text(new_text, encoding="utf-8")
 
     adapter, provider = build_adapter(tmp_path, [new_fact])
-    state.phase_3_status = PhaseStatusDetail()
+    state.fact_chain_status = PhaseStatusDetail()
     state = await adapter.run(state)
 
     assert provider.calls
     extraction = DualEvidenceExtractionResult.model_validate_json(
-        Path(state.phase_3_output.extraction_result_path).read_text(encoding="utf-8")
+        Path(state.fact_chain_output.extraction_result_path).read_text(encoding="utf-8")
     )
     assert [item.value for item in extraction.original_result.evidence_items] == ["TP53"]
 
@@ -289,16 +289,16 @@ async def test_adapter_regenerates_jsonl_artifacts_on_reuse(
 ) -> None:
     adapter, provider = build_adapter(tmp_path, sample_facts())
     state = await adapter.run(parsed_state)
-    assert state.phase_3_output is not None
+    assert state.fact_chain_output is not None
     artifacts = [
-        Path(state.phase_3_output.source_facts_path),
-        Path(state.phase_3_output.bilingual_rows_path),
+        Path(state.fact_chain_output.source_facts_path),
+        Path(state.fact_chain_output.bilingual_rows_path),
     ]
     for artifact in artifacts:
         artifact.unlink()
     first_calls = len(provider.calls)
 
-    state.phase_3_status = PhaseStatusDetail()
+    state.fact_chain_status = PhaseStatusDetail()
     state = await adapter.run(state)
 
     assert len(provider.calls) == first_calls  # persisted run reused
@@ -314,8 +314,8 @@ async def test_adapter_force_rebuild_reruns_provider(
     state = await adapter.run(parsed_state)
     first_calls = len(provider.calls)
 
-    state.phase_3_status = PhaseStatusDetail()
+    state.fact_chain_status = PhaseStatusDetail()
     state = await adapter.run(state, force_rebuild=True)
 
     assert len(provider.calls) > first_calls
-    assert state.skip_phase_4_reason is None
+    assert state.skip_standardization_reason is None

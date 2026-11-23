@@ -6,14 +6,15 @@
 
 Lingua Seeker 后端是一个完整的管线编排系统，用于自动化医学遗传学文献的采集、解析、翻译、证据提取、实体标准化和专家审核。核心架构是一个 4 阶段管线：
 
-| Phase | 模块 | 职责 |
-|-------|------|------|
-| Phase 1 | `src/pipeline/skills/acquisition/` + `src/pipeline/skills/parsing/` | 文献采集（在线/本地）+ MinerU 文档解析 |
-| Phase 2 | `src/pipeline/skills/translation/` + `src/pipeline/skills/extraction/` | 跨语言翻译 + 双轨证据提取 |
-| Phase 3 | `src/pipeline/skills/standardization/` | 实体标准化 + 术语知识对齐 |
-| Phase 4 | `src/pipeline/skills/review/` | 专家审核、AI 聊天、审计溯源 |
+| 阶段 | 模块 | 职责 |
+|------|------|------|
+| acquisition | `src/pipeline/skills/acquisition/` + `src/core/tools/acquisition/` | 文献采集（在线/本地） |
+| parsing | `src/pipeline/skills/parsing/` + `src/core/tools/parsing/` | MinerU 文档解析 |
+| fact_chain | `src/pipeline/skills/extraction/`（+`translation/`） + `src/core/tools/extraction/` | 翻译 + 双轨证据提取 + 事实英译 |
+| standardization | `src/pipeline/skills/standardization/` + `src/core/tools/standardization/` | 实体标准化 + 术语知识对齐 |
+| review | `src/pipeline/skills/review/` + `src/core/tools/review/` | 专家审核、AI 聊天、审计溯源（请求-响应服务） |
 
-Phase 1-3 由 LangGraph 有向图编排器自动执行，Phase 4 是交互式请求-响应服务。
+前四个阶段由 LangGraph 有向图编排器自动执行，review 是交互式请求-响应服务。
 
 ## Structure
 
@@ -27,8 +28,9 @@ backend/
 │   ├── vault/               #   敏感信息（git-ignored）
 │   └── templates/           #   配置渲染模板
 ├── src/                     # 核心源码
-│   ├── core/                #   业务逻辑（Phase 1-4 实现）
-│   ├── agents/              #   管线编排（LangGraph、运行器、调度器）
+│   ├── core/                #   配置 + 共享层 + 具体工具
+│   ├── pipeline/            #   LangGraph 拓扑 + 阶段适配器 + agent 实现（skills/）
+│   ├── runs/                #   运行时（运行器、调度器、状态持久化）
 │   ├── api/                 #   HTTP API（路由、认证、限流）
 │   ├── dao/                 #   数据访问（PostgreSQL、Redis）
 │   └── utils/               #   工具函数（日志、LLM 适配、异常）
@@ -50,16 +52,17 @@ backend/
 
 ```mermaid
 graph LR
-    A[Phase 1<br/>采集+解析] --> B[Phase 2<br/>翻译+提取]
-    B --> C[Phase 3<br/>标准化]
-    C --> D[Phase 4<br/>专家审核]
+    A[acquisition<br/>采集] --> B[parsing<br/>解析]
+    B --> C[fact_chain<br/>抽取+事实英译]
+    C --> D[standardization<br/>标准化]
+    D --> E[review<br/>专家审核]
 ```
 
-- **编排器** (`src/pipeline/graph/topology.py`) — LangGraph StateGraph，4 阶段有向图
-- **运行器** (`src/agents/runner.py`) — asyncio 后台任务管理，内存缓存 + DB 持久化
-- **调度器** (`src/agents/dispatcher.py`) — 单任务轮询，`SELECT FOR UPDATE SKIP LOCKED`
-- **状态持久化** (`src/agents/state_persistence.py`) — 崩溃恢复，状态转换守卫
-- **处理缓存** (`src/agents/processing_cache.py`) — L1 Redis + L2 PostgreSQL 两级缓存
+- **编排器** (`src/pipeline/graph/topology.py`) — LangGraph StateGraph，四阶段有向图
+- **运行器** (`src/runs/runner.py`) — asyncio 后台任务管理，内存缓存 + DB 持久化
+- **调度器** (`src/runs/dispatcher.py`) — 单任务轮询，`SELECT FOR UPDATE SKIP LOCKED`
+- **状态持久化** (`src/runs/state_persistence.py`) — 崩溃恢复，状态转换守卫
+- **处理缓存** (`src/runs/processing_cache.py`) — L1 Redis + L2 PostgreSQL 两级缓存
 
 ### API 层
 

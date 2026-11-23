@@ -3,7 +3,7 @@
 Architecture:
 - 4 phase adapter nodes (Phase 1 acquisition, 2 parsing, 3 source-fact chain, 4 standardization)
 - The interactive review layer (evidence review, chat, audit) is NOT a graph node —
-  it operates via its own services (phase_5_factory.py)
+  it operates via its own services (review_factory.py)
 - After Phase 4 completes, pipeline_status is set to COMPLETED
 - State persisted to PostgreSQL after each phase for crash recovery
 - Upstream dependency validation for single-phase mode
@@ -21,6 +21,9 @@ from loguru import logger
 
 from src.runs.concurrency import RetryablePhaseExecutor
 from src.runs.contracts import (
+    stage_name,
+    stage_number,
+    stage_status_field,
     InvalidStateTransitionError,
     PhaseErrorDetail,
     PhaseStatus,
@@ -91,7 +94,7 @@ class PipelineOrchestrator:
             attempt=attempt,
             max_retries=max_retries,
         )
-        phase_attr = f"phase_{phase}_status"
+        phase_attr = stage_status_field(phase)
         current = getattr(state, phase_attr)
         new_phase_status = PhaseStatusDetail(
             status=PhaseStatus.FAILED,
@@ -108,7 +111,7 @@ class PipelineOrchestrator:
             validate_phase_status_transition(
                 current.status,
                 PhaseStatus.FAILED,
-                context=f"phase_{phase} failure handling",
+                context=f"{stage_name(phase)} failure handling",
             )
             validate_pipeline_status_transition(
                 state.pipeline_status,
@@ -133,7 +136,7 @@ class PipelineOrchestrator:
         record_node(
             new_phase_status,
             NodeProgress.failed(
-                f"phase_{phase}",
+                stage_name(phase),
                 started_at=current.started_at if current else None,
                 detail=type(error).__name__,
             ),
@@ -166,8 +169,8 @@ class PipelineOrchestrator:
         # Phase entry: mark RUNNING and persist so the transition guard
         # observes a legal PENDING -> RUNNING step before the adapter
         # produces a terminal status.
-        phase_num = int(phase_name.rsplit("_", 1)[-1])
-        phase_attr = f"phase_{phase_num}_status"
+        phase_num = stage_number(phase_name)
+        phase_attr = stage_status_field(phase_num)
         current_detail = getattr(state, phase_attr)
         if current_detail.status == PhaseStatus.PENDING:
             setattr(
@@ -215,33 +218,33 @@ class PipelineOrchestrator:
                 max_retries=0,
             )
 
-    async def _node_phase_1(self, state: PipelineGraphState) -> PipelineGraphState:
+    async def _node_acquisition(self, state: PipelineGraphState) -> PipelineGraphState:
         """Execute Phase 1: literature/document acquisition."""
-        return await self._execute_phase(self._adapters["phase_1"], state, "phase_1")
+        return await self._execute_phase(self._adapters["acquisition"], state, "acquisition")
 
-    async def _node_phase_2(self, state: PipelineGraphState) -> PipelineGraphState:
+    async def _node_parsing(self, state: PipelineGraphState) -> PipelineGraphState:
         """Execute Phase 2: document parsing."""
-        return await self._execute_phase(self._adapters["phase_2"], state, "phase_2")
+        return await self._execute_phase(self._adapters["parsing"], state, "parsing")
 
-    async def _node_phase_3(self, state: PipelineGraphState) -> PipelineGraphState:
+    async def _node_fact_chain(self, state: PipelineGraphState) -> PipelineGraphState:
         """Execute Phase 3: window -> source extraction -> verification -> fact English."""
-        return await self._execute_phase(self._adapters["phase_3"], state, "phase_3")
+        return await self._execute_phase(self._adapters["fact_chain"], state, "fact_chain")
 
-    async def _node_phase_4(self, state: PipelineGraphState) -> PipelineGraphState:
+    async def _node_standardization(self, state: PipelineGraphState) -> PipelineGraphState:
         """Execute Phase 4: entity standardization."""
-        return await self._execute_phase(self._adapters["phase_4"], state, "phase_4")
+        return await self._execute_phase(self._adapters["standardization"], state, "standardization")
 
     def _route_entry(self, state: PipelineGraphState) -> str:
         """Route entry point: start at target phase in phase mode, or phase 1 in full mode."""
         if state.mode == PipelineMode.PHASE and state.target_phase is not None:
-            return f"phase_{state.target_phase}"
-        return "phase_1"
+            return stage_name(state.target_phase)
+        return "acquisition"
 
     def _route_after_phase(self, phase: int) -> Callable[[PipelineGraphState], str]:
         """Build a router for the edge leaving the given phase."""
 
         def _route(state: PipelineGraphState) -> str:
-            detail = getattr(state, f"phase_{phase}_status")
+            detail = getattr(state, stage_status_field(phase))
             if detail.status == PhaseStatus.FAILED:
                 logger.error("Phase {} failed, stopping pipeline", phase)
                 return "end"
@@ -249,7 +252,7 @@ class PipelineOrchestrator:
                 return "end"
             if phase == len(REQUIRED_UPSTREAM):  # last phase
                 return "end"
-            return f"phase_{phase + 1}"
+            return stage_name(phase + 1)
 
         return _route
 
@@ -257,38 +260,38 @@ class PipelineOrchestrator:
         """Build the LangGraph state machine with 4 phase nodes."""
         graph = StateGraph(PipelineGraphState)
 
-        graph.add_node("phase_1", self._node_phase_1)
-        graph.add_node("phase_2", self._node_phase_2)
-        graph.add_node("phase_3", self._node_phase_3)
-        graph.add_node("phase_4", self._node_phase_4)
+        graph.add_node("acquisition", self._node_acquisition)
+        graph.add_node("parsing", self._node_parsing)
+        graph.add_node("fact_chain", self._node_fact_chain)
+        graph.add_node("standardization", self._node_standardization)
 
         graph.set_conditional_entry_point(
             self._route_entry,
             {
-                "phase_1": "phase_1",
-                "phase_2": "phase_2",
-                "phase_3": "phase_3",
-                "phase_4": "phase_4",
+                "acquisition": "acquisition",
+                "parsing": "parsing",
+                "fact_chain": "fact_chain",
+                "standardization": "standardization",
             },
         )
 
         graph.add_conditional_edges(
-            "phase_1",
+            "acquisition",
             self._route_after_phase(1),
-            {"phase_2": "phase_2", "end": END},
+            {"parsing": "parsing", "end": END},
         )
         graph.add_conditional_edges(
-            "phase_2",
+            "parsing",
             self._route_after_phase(2),
-            {"phase_3": "phase_3", "end": END},
+            {"fact_chain": "fact_chain", "end": END},
         )
         graph.add_conditional_edges(
-            "phase_3",
+            "fact_chain",
             self._route_after_phase(3),
-            {"phase_4": "phase_4", "end": END},
+            {"standardization": "standardization", "end": END},
         )
         graph.add_conditional_edges(
-            "phase_4",
+            "standardization",
             self._route_after_phase(4),
             {"end": END},
         )
@@ -306,12 +309,12 @@ class PipelineOrchestrator:
 
         required = REQUIRED_UPSTREAM.get(target, [])
         for upstream_phase in required:
-            phase_attr = f"phase_{upstream_phase}_status"
+            phase_attr = stage_status_field(upstream_phase)
             phase_status = getattr(state, phase_attr)
             if phase_status.status != PhaseStatus.COMPLETED:
                 state.pipeline_status = PipelineStatus.FAILED
                 state.error_message = (
-                    f"Upstream phase {upstream_phase} has not completed "
+                    f"Upstream stage {stage_name(upstream_phase)} has not completed "
                     f"(status={phase_status.status.value}). "
                     f"Phase {target} requires phases {required} to be completed first."
                 )

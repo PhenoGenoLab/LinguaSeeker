@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from src.core.config import Settings
 
 
-class Phase5ServiceFactory:
+class ReviewServiceFactory:
     """Creates Phase 5 services with per-request sessions.
 
     Long-lived dependencies (cfg, providers) are injected at construction time.

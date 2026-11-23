@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.auth import get_current_account
-from src.api.deps import get_db_session, get_phase5_factory
+from src.api.deps import get_db_session, get_review_factory
 from src.core.foundation.auth.contracts import AuthContext
 from src.core.tools.review.contracts import (
     DeltaEntry,
@@ -35,7 +35,7 @@ async def list_audit_events(
     account: AuthContext = Depends(get_current_account),
 ) -> list[ReviewAuditEventResponse]:
     """List review audit events with optional filters."""
-    service = get_phase5_factory().delta_audit
+    service = get_review_factory().delta_audit
     events = await service.list_audit_events(
         session,
         canonical_evidence_id=canonical_evidence_id,

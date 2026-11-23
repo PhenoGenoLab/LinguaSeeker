@@ -15,7 +15,7 @@ from src.runs.contracts import (
     PhaseError,
     RetryablePhaseError,
     PermanentPhaseError,
-    SkipPhase4Reason,
+    SkipStandardizationReason,
 )
 
 
@@ -29,10 +29,10 @@ def test_pipeline_graph_state_creation():
     )
     assert state.processing_run_id == "run-123"
     assert state.source_document_id == "doc-456"
-    assert state.phase_1_status.status == PhaseStatus.PENDING
-    assert state.phase_2_status.status == PhaseStatus.PENDING
-    assert state.phase_3_status.status == PhaseStatus.PENDING
-    assert state.phase_4_status.status == PhaseStatus.PENDING
+    assert state.acquisition_status.status == PhaseStatus.PENDING
+    assert state.parsing_status.status == PhaseStatus.PENDING
+    assert state.fact_chain_status.status == PhaseStatus.PENDING
+    assert state.standardization_status.status == PhaseStatus.PENDING
     assert state.error_message is None
     assert state.pipeline_status == PipelineStatus.PENDING
 
@@ -45,7 +45,7 @@ def test_pipeline_graph_state_with_structured_error():
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
     )
-    state.phase_1_status = PhaseStatusDetail(
+    state.acquisition_status = PhaseStatusDetail(
         status=PhaseStatus.FAILED,
         error=PhaseErrorDetail(
             message="Acquisition failed: PDF download timeout",
@@ -54,9 +54,9 @@ def test_pipeline_graph_state_with_structured_error():
             max_retries=2,
         ),
     )
-    assert state.phase_1_status.status == PhaseStatus.FAILED
-    assert state.phase_1_status.error.retryable is True
-    assert state.phase_1_status.error.attempt == 2
+    assert state.acquisition_status.status == PhaseStatus.FAILED
+    assert state.acquisition_status.error.retryable is True
+    assert state.acquisition_status.error.attempt == 2
 
 
 def test_pipeline_graph_state_serialization():
@@ -69,7 +69,7 @@ def test_pipeline_graph_state_serialization():
     )
     data = state.model_dump()
     assert data["processing_run_id"] == "run-123"
-    assert data["phase_1_status"]["status"] == "pending"
+    assert data["acquisition_status"]["status"] == "pending"
 
 
 def test_phase_status_enum():
@@ -89,11 +89,11 @@ def test_pipeline_status_enum():
     assert PipelineStatus.FAILED == "failed"
 
 
-def test_skip_phase_4_reason_enum():
-    """SkipPhase4Reason enum captures all skip conditions."""
-    assert SkipPhase4Reason.NOT_RELEVANT == "not_relevant"
-    assert SkipPhase4Reason.NO_ENTITIES == "no_entities"
-    assert SkipPhase4Reason.NO_CANDIDATES == "no_candidates"
+def test_skip_standardization_reason_enum():
+    """SkipStandardizationReason enum captures all skip conditions."""
+    assert SkipStandardizationReason.NOT_RELEVANT == "not_relevant"
+    assert SkipStandardizationReason.NO_ENTITIES == "no_entities"
+    assert SkipStandardizationReason.NO_CANDIDATES == "no_candidates"
 
 
 def test_phase1_output_typed():
@@ -107,7 +107,7 @@ def test_phase2_output_typed():
     output = ParseOutput(
         md_path="/tmp/test.md",
         metadata_path="/tmp/test.json",
-        output_dir="/tmp/phase_2",
+        output_dir="/tmp/parsing",
         images_dir="/tmp/images",
     )
     assert output.metadata_path == "/tmp/test.json"
@@ -116,7 +116,7 @@ def test_phase2_output_typed():
 def test_phase3_output_typed():
     """TranslationExtractionOutput (Phase 3) is a typed model, not a bare dict."""
     output = TranslationExtractionOutput(
-        output_dir="/tmp/phase_3",
+        output_dir="/tmp/fact_chain",
         original_json_path="/tmp/original.json",
         translated_json_path="/tmp/translated.json",
         extraction_result_path="/tmp/extraction.json",

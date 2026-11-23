@@ -11,7 +11,7 @@ from src.runs.contracts import (
     SourceType,
     TranslationExtractionOutput,
     StandardizationOutput,
-    SkipPhase4Reason,
+    SkipStandardizationReason,
 )
 from src.pipeline.graph.phases.standardization import StandardizationAdapter
 
@@ -25,7 +25,7 @@ def sample_state(tmp_path) -> PipelineGraphState:
         source_document_id="doc-456",
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
-        phase_3_output=TranslationExtractionOutput(
+        fact_chain_output=TranslationExtractionOutput(
             output_dir="/tmp/phase2/output",
             original_json_path="/tmp/phase2/output/original.json",
             translated_json_path="/tmp/phase2/output/translated.json",
@@ -73,15 +73,15 @@ async def test_phase_4_adapter_success(sample_state: PipelineGraphState):
         result_state = await adapter.run(sample_state)
 
     mock_session.commit.assert_awaited_once()
-    assert result_state.phase_4_output is not None
-    assert result_state.phase_4_output.match_count == 10
-    assert isinstance(result_state.phase_4_output, StandardizationOutput)
+    assert result_state.standardization_output is not None
+    assert result_state.standardization_output.match_count == 10
+    assert isinstance(result_state.standardization_output, StandardizationOutput)
 
 
 @pytest.mark.asyncio
 async def test_phase_4_adapter_skipped_not_relevant(sample_state: PipelineGraphState):
-    """Phase 4 adapter skips when skip_phase_4_reason is NOT_RELEVANT."""
-    sample_state.skip_phase_4_reason = SkipPhase4Reason.NOT_RELEVANT
+    """Phase 4 adapter skips when skip_standardization_reason is NOT_RELEVANT."""
+    sample_state.skip_standardization_reason = SkipStandardizationReason.NOT_RELEVANT
 
     mock_standardization = MagicMock()
     mock_standardization.run_dual_result = AsyncMock()
@@ -94,15 +94,15 @@ async def test_phase_4_adapter_skipped_not_relevant(sample_state: PipelineGraphS
 
     result_state = await adapter.run(sample_state)
 
-    assert result_state.phase_4_status.status == PhaseStatus.SKIPPED
-    assert result_state.phase_4_status.summary == {"reason": "not_relevant"}
+    assert result_state.standardization_status.status == PhaseStatus.SKIPPED
+    assert result_state.standardization_status.summary == {"reason": "not_relevant"}
     mock_standardization.run_dual_result.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_phase_4_adapter_skipped_no_entities(sample_state: PipelineGraphState):
-    """Phase 4 adapter skips when skip_phase_4_reason is NO_ENTITIES."""
-    sample_state.skip_phase_4_reason = SkipPhase4Reason.NO_ENTITIES
+    """Phase 4 adapter skips when skip_standardization_reason is NO_ENTITIES."""
+    sample_state.skip_standardization_reason = SkipStandardizationReason.NO_ENTITIES
 
     mock_standardization = MagicMock()
 
@@ -114,8 +114,8 @@ async def test_phase_4_adapter_skipped_no_entities(sample_state: PipelineGraphSt
 
     result_state = await adapter.run(sample_state)
 
-    assert result_state.phase_4_status.status == PhaseStatus.SKIPPED
-    assert result_state.phase_4_status.summary == {"reason": "no_entities"}
+    assert result_state.standardization_status.status == PhaseStatus.SKIPPED
+    assert result_state.standardization_status.summary == {"reason": "no_entities"}
 
 
 @pytest.mark.asyncio
@@ -158,9 +158,9 @@ async def test_phase_4_adapter_skipped_when_zero_standardized(
         result_state = await adapter.run(sample_state)
 
     mock_session.commit.assert_awaited_once()
-    assert result_state.phase_4_status.status == PhaseStatus.COMPLETED
-    assert result_state.skip_phase_4_reason == SkipPhase4Reason.NO_CANDIDATES
-    assert result_state.phase_4_status.summary["skip_reason"] == "no_candidates"
+    assert result_state.standardization_status.status == PhaseStatus.COMPLETED
+    assert result_state.skip_standardization_reason == SkipStandardizationReason.NO_CANDIDATES
+    assert result_state.standardization_status.summary["skip_reason"] == "no_candidates"
 
 
 @pytest.mark.asyncio
@@ -176,9 +176,9 @@ async def test_phase_4_does_not_skip_when_ambiguous_entities_exist(
         unmapped_count=0,
     )
 
-    assert result_state.skip_phase_4_reason is None
-    assert result_state.phase_4_status.status == PhaseStatus.COMPLETED
-    assert result_state.phase_4_status.summary["ambiguous_count"] == 1
+    assert result_state.skip_standardization_reason is None
+    assert result_state.standardization_status.status == PhaseStatus.COMPLETED
+    assert result_state.standardization_status.summary["ambiguous_count"] == 1
 
 
 @pytest.mark.asyncio
@@ -194,9 +194,9 @@ async def test_phase_4_does_not_skip_when_unmapped_entities_exist(
         unmapped_count=1,
     )
 
-    assert result_state.skip_phase_4_reason is None
-    assert result_state.phase_4_status.status == PhaseStatus.COMPLETED
-    assert result_state.phase_4_status.summary["unmapped_count"] == 1
+    assert result_state.skip_standardization_reason is None
+    assert result_state.standardization_status.status == PhaseStatus.COMPLETED
+    assert result_state.standardization_status.summary["unmapped_count"] == 1
 
 
 async def _run_phase_4_with_counts(

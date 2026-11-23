@@ -3,6 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from src.runs.contracts import (
+    stage_status_field,
     PipelineGraphState,
     PhaseStatus,
     PipelineMode,
@@ -11,7 +12,7 @@ from src.runs.contracts import (
     PhaseStatusDetail,
     AcquisitionOutput,
     ParseOutput,
-    SkipPhase4Reason,
+    SkipStandardizationReason,
     PermanentPhaseError,
 )
 from src.pipeline.graph.topology import PipelineOrchestrator
@@ -36,10 +37,10 @@ def sample_state() -> PipelineGraphState:
 @pytest.fixture
 def mock_adapters():
     return {
-        "phase_1": MagicMock(run=AsyncMock()),
-        "phase_2": MagicMock(run=AsyncMock()),
-        "phase_3": MagicMock(run=AsyncMock()),
-        "phase_4": MagicMock(run=AsyncMock()),
+        "acquisition": MagicMock(run=AsyncMock()),
+        "parsing": MagicMock(run=AsyncMock()),
+        "fact_chain": MagicMock(run=AsyncMock()),
+        "standardization": MagicMock(run=AsyncMock()),
     }
 
 
@@ -56,13 +57,13 @@ def mock_retry_executor():
 def _completed(sample_state: PipelineGraphState, phase: int) -> PipelineGraphState:
     """Return a copy of the state with phases 1..phase marked COMPLETED (with outputs)."""
     state = sample_state.model_copy(deep=True)
-    state.phase_1_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
-    state.phase_1_output = AcquisitionOutput(pdf_path="/tmp/test.pdf")
+    state.acquisition_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
+    state.acquisition_output = AcquisitionOutput(pdf_path="/tmp/test.pdf")
     if phase >= 2:
-        state.phase_2_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
-        state.phase_2_output = PARSE_OUTPUT
+        state.parsing_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
+        state.parsing_output = PARSE_OUTPUT
     for p in range(3, phase + 1):
-        setattr(state, f"phase_{p}_status", PhaseStatusDetail(status=PhaseStatus.COMPLETED))
+        setattr(state, stage_status_field(p), PhaseStatusDetail(status=PhaseStatus.COMPLETED))
     return state
 
 
@@ -74,10 +75,10 @@ async def test_orchestrator_runs_all_phases(sample_state, mock_adapters, mock_pe
     state_after_3 = _completed(sample_state, 3)
     state_after_4 = _completed(sample_state, 4)
 
-    mock_adapters["phase_1"].run.return_value = state_after_1
-    mock_adapters["phase_2"].run.return_value = state_after_2
-    mock_adapters["phase_3"].run.return_value = state_after_3
-    mock_adapters["phase_4"].run.return_value = state_after_4
+    mock_adapters["acquisition"].run.return_value = state_after_1
+    mock_adapters["parsing"].run.return_value = state_after_2
+    mock_adapters["fact_chain"].run.return_value = state_after_3
+    mock_adapters["standardization"].run.return_value = state_after_4
 
     async def _pass_through(**kw):
         return await kw["operation"](kw["state"])
@@ -92,10 +93,10 @@ async def test_orchestrator_runs_all_phases(sample_state, mock_adapters, mock_pe
 
     result_state = await orchestrator.run(sample_state)
 
-    assert result_state.phase_1_status.status == PhaseStatus.COMPLETED
-    assert result_state.phase_2_status.status == PhaseStatus.COMPLETED
-    assert result_state.phase_3_status.status == PhaseStatus.COMPLETED
-    assert result_state.phase_4_status.status == PhaseStatus.COMPLETED
+    assert result_state.acquisition_status.status == PhaseStatus.COMPLETED
+    assert result_state.parsing_status.status == PhaseStatus.COMPLETED
+    assert result_state.fact_chain_status.status == PhaseStatus.COMPLETED
+    assert result_state.standardization_status.status == PhaseStatus.COMPLETED
     assert result_state.pipeline_status == PipelineStatus.COMPLETED
 
 
@@ -103,21 +104,21 @@ async def test_orchestrator_runs_all_phases(sample_state, mock_adapters, mock_pe
 async def test_orchestrator_skips_phase_4_when_not_relevant(
     sample_state, mock_adapters, mock_persistence, mock_retry_executor
 ):
-    """Orchestrator skips Phase 4 when skip_phase_4_reason is set by Phase 3."""
+    """Orchestrator skips Phase 4 when skip_standardization_reason is set by Phase 3."""
     state_after_1 = _completed(sample_state, 1)
     state_after_2 = _completed(sample_state, 2)
 
     state_after_3 = state_after_2.model_copy(deep=True)
-    state_after_3.phase_3_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
-    state_after_3.skip_phase_4_reason = SkipPhase4Reason.NOT_RELEVANT
+    state_after_3.fact_chain_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
+    state_after_3.skip_standardization_reason = SkipStandardizationReason.NOT_RELEVANT
 
     state_after_4 = state_after_3.model_copy(deep=True)
-    state_after_4.phase_4_status = PhaseStatusDetail(status=PhaseStatus.SKIPPED)
+    state_after_4.standardization_status = PhaseStatusDetail(status=PhaseStatus.SKIPPED)
 
-    mock_adapters["phase_1"].run.return_value = state_after_1
-    mock_adapters["phase_2"].run.return_value = state_after_2
-    mock_adapters["phase_3"].run.return_value = state_after_3
-    mock_adapters["phase_4"].run.return_value = state_after_4
+    mock_adapters["acquisition"].run.return_value = state_after_1
+    mock_adapters["parsing"].run.return_value = state_after_2
+    mock_adapters["fact_chain"].run.return_value = state_after_3
+    mock_adapters["standardization"].run.return_value = state_after_4
 
     async def _pass_through(**kw):
         return await kw["operation"](kw["state"])
@@ -132,8 +133,8 @@ async def test_orchestrator_skips_phase_4_when_not_relevant(
 
     result_state = await orchestrator.run(sample_state)
 
-    assert result_state.phase_4_status.status == PhaseStatus.SKIPPED
-    mock_adapters["phase_4"].run.assert_called_once()
+    assert result_state.standardization_status.status == PhaseStatus.SKIPPED
+    mock_adapters["standardization"].run.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -141,7 +142,7 @@ async def test_orchestrator_stops_on_permanent_failure(
     sample_state, mock_adapters, mock_persistence, mock_retry_executor
 ):
     """Orchestrator stops execution when a phase raises PermanentPhaseError."""
-    mock_adapters["phase_1"].run.side_effect = PermanentPhaseError("Acquisition failed", phase=1)
+    mock_adapters["acquisition"].run.side_effect = PermanentPhaseError("Acquisition failed", phase=1)
 
     async def _pass_through(**kw):
         return await kw["operation"](kw["state"])
@@ -156,11 +157,11 @@ async def test_orchestrator_stops_on_permanent_failure(
 
     result_state = await orchestrator.run(sample_state)
 
-    assert result_state.phase_1_status.status == PhaseStatus.FAILED
+    assert result_state.acquisition_status.status == PhaseStatus.FAILED
     assert result_state.pipeline_status == PipelineStatus.FAILED
-    mock_adapters["phase_2"].run.assert_not_called()
-    mock_adapters["phase_3"].run.assert_not_called()
-    mock_adapters["phase_4"].run.assert_not_called()
+    mock_adapters["parsing"].run.assert_not_called()
+    mock_adapters["fact_chain"].run.assert_not_called()
+    mock_adapters["standardization"].run.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -172,8 +173,8 @@ async def test_orchestrator_validates_upstream_for_phase_mode(mock_adapters, moc
         mode=PipelineMode.PHASE,
         source_type=SourceType.LOCAL,
         target_phase=3,
-        phase_1_status=PhaseStatusDetail(status=PhaseStatus.PENDING),
-        phase_2_status=PhaseStatusDetail(status=PhaseStatus.PENDING),
+        acquisition_status=PhaseStatusDetail(status=PhaseStatus.PENDING),
+        parsing_status=PhaseStatusDetail(status=PhaseStatus.PENDING),
     )
 
     async def _pass_through(**kw):
@@ -200,10 +201,10 @@ async def test_orchestrator_persists_state_after_each_phase(
     """Orchestrator calls state_persistence.save() after each phase completes."""
     state_after_1 = _completed(sample_state, 1)
 
-    mock_adapters["phase_1"].run.return_value = state_after_1
-    mock_adapters["phase_2"].run.return_value = state_after_1
-    mock_adapters["phase_3"].run.return_value = state_after_1
-    mock_adapters["phase_4"].run.return_value = state_after_1
+    mock_adapters["acquisition"].run.return_value = state_after_1
+    mock_adapters["parsing"].run.return_value = state_after_1
+    mock_adapters["fact_chain"].run.return_value = state_after_1
+    mock_adapters["standardization"].run.return_value = state_after_1
 
     async def _pass_through(**kw):
         return await kw["operation"](kw["state"])
@@ -231,10 +232,10 @@ async def test_orchestrator_notifies_on_state_change(
     state_after_3 = _completed(sample_state, 3)
     state_after_4 = _completed(sample_state, 4)
 
-    mock_adapters["phase_1"].run.return_value = state_after_1
-    mock_adapters["phase_2"].run.return_value = state_after_2
-    mock_adapters["phase_3"].run.return_value = state_after_3
-    mock_adapters["phase_4"].run.return_value = state_after_4
+    mock_adapters["acquisition"].run.return_value = state_after_1
+    mock_adapters["parsing"].run.return_value = state_after_2
+    mock_adapters["fact_chain"].run.return_value = state_after_3
+    mock_adapters["standardization"].run.return_value = state_after_4
 
     async def _pass_through(**kw):
         return await kw["operation"](kw["state"])
@@ -265,7 +266,7 @@ async def test_phase_mode_target_1_stops_after_phase_1(
     """Phase mode with target_phase=1 runs only Phase 1 and stops."""
     state = sample_state.model_copy(update={"mode": PipelineMode.PHASE, "target_phase": 1})
     state_after_1 = _completed(state, 1)
-    mock_adapters["phase_1"].run.return_value = state_after_1
+    mock_adapters["acquisition"].run.return_value = state_after_1
 
     async def _pass_through(**kw):
         return await kw["operation"](kw["state"])
@@ -275,11 +276,11 @@ async def test_phase_mode_target_1_stops_after_phase_1(
 
     result = await orchestrator.run(state)
 
-    assert result.phase_1_status.status == PhaseStatus.COMPLETED
+    assert result.acquisition_status.status == PhaseStatus.COMPLETED
     assert result.pipeline_status == PipelineStatus.COMPLETED
-    mock_adapters["phase_2"].run.assert_not_called()
-    mock_adapters["phase_3"].run.assert_not_called()
-    mock_adapters["phase_4"].run.assert_not_called()
+    mock_adapters["parsing"].run.assert_not_called()
+    mock_adapters["fact_chain"].run.assert_not_called()
+    mock_adapters["standardization"].run.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -293,14 +294,14 @@ async def test_phase_mode_target_2_starts_at_phase_2_when_upstream_complete(
         mode=PipelineMode.PHASE,
         source_type=SourceType.LOCAL,
         target_phase=2,
-        phase_1_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
-        phase_1_output=AcquisitionOutput(pdf_path="/tmp/test.pdf"),
+        acquisition_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
+        acquisition_output=AcquisitionOutput(pdf_path="/tmp/test.pdf"),
     )
 
     state_after_2 = state.model_copy(deep=True)
-    state_after_2.phase_2_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
-    state_after_2.phase_2_output = PARSE_OUTPUT
-    mock_adapters["phase_2"].run.return_value = state_after_2
+    state_after_2.parsing_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
+    state_after_2.parsing_output = PARSE_OUTPUT
+    mock_adapters["parsing"].run.return_value = state_after_2
 
     async def _pass_through(**kw):
         return await kw["operation"](kw["state"])
@@ -310,9 +311,9 @@ async def test_phase_mode_target_2_starts_at_phase_2_when_upstream_complete(
 
     result = await orchestrator.run(state)
 
-    assert result.phase_2_status.status == PhaseStatus.COMPLETED
+    assert result.parsing_status.status == PhaseStatus.COMPLETED
     assert result.pipeline_status == PipelineStatus.COMPLETED
-    mock_adapters["phase_1"].run.assert_not_called()
-    mock_adapters["phase_2"].run.assert_called_once()
-    mock_adapters["phase_3"].run.assert_not_called()
-    mock_adapters["phase_4"].run.assert_not_called()
+    mock_adapters["acquisition"].run.assert_not_called()
+    mock_adapters["parsing"].run.assert_called_once()
+    mock_adapters["fact_chain"].run.assert_not_called()
+    mock_adapters["standardization"].run.assert_not_called()

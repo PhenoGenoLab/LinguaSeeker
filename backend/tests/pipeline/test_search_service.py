@@ -142,7 +142,7 @@ async def test_search_evidence_includes_document_title_and_source_language():
     run_states = [
         _cei(
             source_document_id=source_document_id,
-            state_json={"phase_2_output": {"source_language": "ZH"}},
+            state_json={"parsing_output": {"source_language": "ZH"}},
         ),
     ]
 
@@ -420,7 +420,7 @@ async def test_get_group_detail_ignores_stale_untranslated_db_render_payload(tmp
     group_id = "gene=['MECP2']"
     stale_chinese_text = "雷特氏症是一種複雜性神經發展疾病，常見於小女孩。"
     english_text = "Rett syndrome is a complex neurodevelopmental disorder, commonly seen in girls."
-    output_dir = tmp_path / "phase_2" / str(source_document_id)
+    output_dir = tmp_path / "parsing" / str(source_document_id)
     output_dir.mkdir(parents=True)
     (output_dir / "translated.json").write_text(
         json.dumps(
@@ -471,7 +471,7 @@ async def test_get_group_detail_ignores_stale_untranslated_db_render_payload(tmp
                         )
                     ]
                 ),
-                _FakeResult(scalar={"phase_2_output": {"output_dir": str(output_dir), "source_language": "zh"}}),
+                _FakeResult(scalar={"parsing_output": {"output_dir": str(output_dir), "source_language": "zh"}}),
             ]
         )
     )
@@ -489,7 +489,7 @@ async def test_get_group_detail_includes_translation_alignment_span_pairs(tmp_pa
     source_document_id = uuid4()
     evidence_id = uuid4()
     group_id = "gene=['MECP2']|variant=['c.194delC']"
-    output_dir = tmp_path / "phase_2" / str(source_document_id)
+    output_dir = tmp_path / "parsing" / str(source_document_id)
     output_dir.mkdir(parents=True)
     (output_dir / "metadata.json").write_text(
         json.dumps(
@@ -554,7 +554,7 @@ async def test_get_group_detail_includes_translation_alignment_span_pairs(tmp_pa
                 _FakeResult(rows=rows),
                 _FakeResult(scalars=[]),
                 _FakeResult(rows=[({"title": "MECP2 case report"}, None, None, None, None)]),
-                _FakeResult(scalar={"phase_2_output": {"output_dir": str(output_dir)}}),
+                _FakeResult(scalar={"parsing_output": {"output_dir": str(output_dir)}}),
             ]
         )
     )

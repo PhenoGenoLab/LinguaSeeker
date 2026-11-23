@@ -914,7 +914,7 @@ class StandardizationRepository:
                 processing_run_id=processing_run_id,
                 source_document_id=source_document_id,
                 owner_user_id=owner_id,
-                standardization_version="phase3_e2e",
+                standardization_version="standardization_e2e",
                 input_artifacts={"source": "standardize_entities_e2e"},
                 output_artifacts={},
                 run_status="completed",

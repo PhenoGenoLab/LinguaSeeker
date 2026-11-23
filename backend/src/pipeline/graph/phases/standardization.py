@@ -1,7 +1,7 @@
 """Standardization adapter: entity standardization and knowledge alignment.
 
 Raises classified errors for orchestrator-level retry decisions.
-Sets skip_phase_4_reason when standardized_count == 0.
+Sets skip_standardization_reason when standardized_count == 0.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from src.runs.contracts import (
     PhaseStatusDetail,
     PipelineGraphState,
     PermanentPhaseError,
-    SkipPhase4Reason,
+    SkipStandardizationReason,
     build_retryable_errors,
     classify_phase_error,
 )
@@ -50,39 +50,39 @@ class StandardizationAdapter:
     async def run(self, state: PipelineGraphState) -> PipelineGraphState:
         """Execute Phase 4: standardize entities.
 
-        Returns updated state with phase_4_output set on success.
-        Returns state with SKIPPED status if skip_phase_4_reason is set.
-        Sets skip_phase_4_reason=NO_CANDIDATES if standardized_count == 0.
+        Returns updated state with standardization_output set on success.
+        Returns state with SKIPPED status if skip_standardization_reason is set.
+        Sets skip_standardization_reason=NO_CANDIDATES if standardized_count == 0.
         Raises RetryablePhaseError or PermanentPhaseError on failure.
         """
         logger.info("Phase 4 started: run={}", state.processing_run_id)
 
         # Skip if Phase 3 set a skip reason
-        if state.skip_phase_4_reason is not None:
-            logger.info("Phase 4 skipped: reason={}", state.skip_phase_4_reason.value)
-            state.phase_4_status = PhaseStatusDetail(
+        if state.skip_standardization_reason is not None:
+            logger.info("Phase 4 skipped: reason={}", state.skip_standardization_reason.value)
+            state.standardization_status = PhaseStatusDetail(
                 status=PhaseStatus.SKIPPED,
                 started_at=datetime.now().isoformat(),
                 completed_at=datetime.now().isoformat(),
-                summary={"reason": state.skip_phase_4_reason.value},
+                summary={"reason": state.skip_standardization_reason.value},
             )
             return state
 
-        state.phase_4_status = PhaseStatusDetail(
+        state.standardization_status = PhaseStatusDetail(
             status=PhaseStatus.RUNNING,
             started_at=datetime.now().isoformat(),
         )
 
         try:
             # Load extraction result from Phase 3 output
-            if state.phase_3_output is None:
+            if state.fact_chain_output is None:
                 raise PermanentPhaseError(
                     "Phase 3 output not found in state",
                     phase=3,
                 )
 
             # Read the original extraction JSON
-            extraction_path = state.phase_3_output.extraction_result_path
+            extraction_path = state.fact_chain_output.extraction_result_path
             async with aiofiles.open(extraction_path, "r") as f:
                 extraction_data = json.loads(await f.read())
 
@@ -112,7 +112,7 @@ class StandardizationAdapter:
                 )
                 await session.commit()
 
-            state.phase_4_output = StandardizationOutput(
+            state.standardization_output = StandardizationOutput(
                 match_count=standardization_result.match_count,
                 standardized_count=standardization_result.standardized_count,
                 ambiguous_count=standardization_result.ambiguous_count,
@@ -126,9 +126,9 @@ class StandardizationAdapter:
                 + standardization_result.unmapped_count
             )
             if candidate_count == 0:
-                state.skip_phase_4_reason = SkipPhase4Reason.NO_CANDIDATES
-                state.phase_4_status = PhaseStatusDetail.complete(
-                    started_at=state.phase_4_status.started_at,
+                state.skip_standardization_reason = SkipStandardizationReason.NO_CANDIDATES
+                state.standardization_status = PhaseStatusDetail.complete(
+                    started_at=state.standardization_status.started_at,
                     summary={
                         "match_count": standardization_result.match_count,
                         "standardized_count": standardization_result.standardized_count,
@@ -143,8 +143,8 @@ class StandardizationAdapter:
                 )
                 return state
 
-            state.phase_4_status = PhaseStatusDetail.complete(
-                started_at=state.phase_4_status.started_at,
+            state.standardization_status = PhaseStatusDetail.complete(
+                started_at=state.standardization_status.started_at,
                 summary={
                     "match_count": standardization_result.match_count,
                     "standardized_count": standardization_result.standardized_count,

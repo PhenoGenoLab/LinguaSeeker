@@ -125,10 +125,10 @@ class PhaseStatusResponse(BaseModel):
 class PipelinePhasesResponse(BaseModel):
     """Pipeline phases keyed by stable phase id."""
 
-    phase_1: PhaseStatusResponse
-    phase_2: PhaseStatusResponse
-    phase_3: PhaseStatusResponse
-    phase_4: PhaseStatusResponse
+    acquisition: PhaseStatusResponse
+    parsing: PhaseStatusResponse
+    fact_chain: PhaseStatusResponse
+    standardization: PhaseStatusResponse
 
 
 class PipelineRunResponse(BaseModel):
@@ -198,7 +198,7 @@ class PipelineStatusResponse(BaseModel):
     source_document_id: str
     pipeline_status: str
     current_phase: str | None = None
-    skip_phase_4_reason: str | None = None
+    skip_standardization_reason: str | None = None
     phases: PipelinePhasesResponse
     error_message: str | None = None
     error_phase: int | None = None

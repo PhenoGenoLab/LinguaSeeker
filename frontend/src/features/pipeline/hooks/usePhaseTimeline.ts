@@ -4,10 +4,10 @@ import type { PipelineStatusResponse, PhaseTimelineStep } from "../types/pipelin
 
 function getPhaseLabels(t: (key: string) => string): Record<string, string> {
   return {
-    phase_1: t("pipeline.phase.acquisition"),
-    phase_2: t("pipeline.phase.parsing"),
-    phase_3: t("pipeline.phase.extraction"),
-    phase_4: t("pipeline.phase.standardization"),
+    acquisition: t("pipeline.phase.acquisition"),
+    parsing: t("pipeline.phase.parsing"),
+    fact_chain: t("pipeline.phase.extraction"),
+    standardization: t("pipeline.phase.standardization"),
   };
 }
 
@@ -26,11 +26,11 @@ export function usePhaseTimeline(
   return useMemo(() => {
     if (!status?.phases) return [];
 
-    const phaseOrder: Array<"phase_1" | "phase_2" | "phase_3" | "phase_4"> = [
-      "phase_1",
-      "phase_2",
-      "phase_3",
-      "phase_4",
+    const phaseOrder: Array<"acquisition" | "parsing" | "fact_chain" | "standardization"> = [
+      "acquisition",
+      "parsing",
+      "fact_chain",
+      "standardization",
     ];
 
     return phaseOrder

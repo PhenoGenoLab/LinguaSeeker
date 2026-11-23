@@ -21,10 +21,6 @@ RUNS_ROOT = SRC_ROOT / "runs"
 # AST check also guards against re-introducing a legacy module.
 REMOVED_LEGACY_MODULES = (
     "src.agents.orchestrator",
-    "src.agents.phase_1_adapter",
-    "src.agents.phase_2_adapter",
-    "src.agents.phase_3_adapter",
-    "src.agents.phase_4_adapter",
     "src.core.source_fact_chain",
     # skills/tools/mcp/contracts were split: tools, mcp and contracts now live
     # in src/core, only the orchestration and the agents stay in src/pipeline.
@@ -199,11 +195,11 @@ def test_core_does_not_import_pipeline() -> None:
 def test_phase_modules_resolve_default_output_root_to_app_root() -> None:
     """Phase modules must keep ``<app root>/data/pipeline`` as the default.
 
-    ``phase_2.py`` and ``phase_3.py`` derive the data directory from their own
+    ``parsing.py`` and ``fact_chain.py`` derive the data directory from their own
     location.  Moving them one level deeper must come with an explicit depth
     change, otherwise artifacts silently land in ``src/data``.
     """
-    for name in ("phase_2.py", "phase_3.py"):
+    for name in ("parsing.py", "fact_chain.py"):
         module_path = PIPELINE_ROOT / "graph" / "phases" / name
         assert module_path.resolve().parents[5] == BACKEND_ROOT.parent, (
             f"{name} no longer sits four levels below the app root; update its parents[] depth"

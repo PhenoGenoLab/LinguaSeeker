@@ -15,7 +15,7 @@ from src.pipeline.skills.runtime import messages
 class ParsingSkill:
     """Bounded agent for Phase 2: one tool that parses and saves artifacts."""
 
-    name = "phase_2_parsing"
+    name = "parsing"
     system_prompt = (
         "You parse one document for a clinical-genetics pipeline.\n"
         "Call the `parse_document` tool exactly once, then reply with a one-line summary."

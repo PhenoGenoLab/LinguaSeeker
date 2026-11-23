@@ -17,10 +17,10 @@ interface PhaseDetailCardProps {
 }
 
 const PHASE_ICON_COLOR: Record<string, React.CSSProperties> = {
-  phase_1: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
-  phase_2: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
-  phase_3: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
-  phase_4: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
+  acquisition: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
+  parsing: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
+  fact_chain: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
+  standardization: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
 };
 
 const DEFAULT_HEADER_STYLE: React.CSSProperties = { borderBottom: "1px solid var(--color-border)" };
@@ -49,17 +49,17 @@ const progressBarBg = (status: ProcessingStatus): string => {
 };
 
 const PHASE_TITLE_KEYS: Record<string, string> = {
-  phase_1: "pipeline.phase.acquisition",
-  phase_2: "pipeline.phase.parsing",
-  phase_3: "pipeline.phase.extraction",
-  phase_4: "pipeline.phase.standardization",
+  acquisition: "pipeline.phase.acquisition",
+  parsing: "pipeline.phase.parsing",
+  fact_chain: "pipeline.phase.extraction",
+  standardization: "pipeline.phase.standardization",
 };
 
 const PHASE_DESC_KEYS: Record<string, string> = {
-  phase_1: "pipeline.phase.acquisitionDesc",
-  phase_2: "pipeline.phase.parsingDesc",
-  phase_3: "pipeline.phase.extractionDesc",
-  phase_4: "pipeline.phase.standardizationDesc",
+  acquisition: "pipeline.phase.acquisitionDesc",
+  parsing: "pipeline.phase.parsingDesc",
+  fact_chain: "pipeline.phase.extractionDesc",
+  standardization: "pipeline.phase.standardizationDesc",
 };
 
 export function PhaseDetailCard({ phaseId, phase, index = 0 }: PhaseDetailCardProps) {

@@ -6,7 +6,7 @@
 
 ## Overview
 
-`runs/` 实现 Lingua Seeker 管线的**外层运行时**：后台运行器、作业调度器、PostgreSQL 状态持久化和作业队列。4 阶段有向图（Phase 1 文献获取 → Phase 2 文档解析 → Phase 3 翻译+证据提取 → Phase 4 实体标准化）的拓扑与各 Phase 适配器已在阶段 1 目录迁移中移到 `src/pipeline/graph/`；本目录不再包含编排器实现。Phase 5 不是图节点——它是独立的请求-响应式交互服务（证据审核、对话、审计），通过 `Phase5ServiceFactory` 在 API 层创建。
+`runs/` 实现 Lingua Seeker 管线的**外层运行时**：后台运行器、作业调度器、PostgreSQL 状态持久化和作业队列。四阶段有向图（acquisition → parsing → fact_chain → standardization）的拓扑与阶段适配器在 `src/pipeline/graph/`；本目录不再包含编排器实现。review 不是图节点——它是独立的请求-响应式交互服务（证据审核、对话、审计），通过 `ReviewServiceFactory` 在 API 层创建。
 
 ## Structure
 
@@ -19,12 +19,12 @@ runs/
 ├── processing_cache.py      # 两级文档处理缓存（L1 Redis + L2 PostgreSQL）
 ├── content_hash.py          # 内容哈希计算（SHA-256 去重）
 ├── concurrency.py           # 并发控制（信号量 + 重试执行器）
-├── phase_5_factory.py       # Phase 5 服务工厂（交互审核层，API 层边界）
+├── review_factory.py        # 审核服务工厂（交互审核层，API 层边界）
 └── __init__.py
 
-# 编排器与 Phase 1-4 适配器：
+# 编排器与阶段适配器：
 src/pipeline/graph/topology.py
-src/pipeline/graph/phases/phase_{1..4}.py
+src/pipeline/graph/phases/{acquisition,parsing,fact_chain,standardization}.py
 ```
 
 ## Key Components
@@ -34,11 +34,11 @@ src/pipeline/graph/phases/phase_{1..4}.py
 基于 LangGraph 的管线编排器，构建 4 节点有向图（实现位于 pipeline 领域层）：
 
 ```
-Phase 1 (文献获取) → Phase 2 (文档解析) → Phase 3 (翻译+提取) → Phase 4 (标准化) → END
+acquisition → parsing → fact_chain → standardization → END
 ```
 
 - 每个 Phase 完成后状态持久化到 PostgreSQL（崩溃恢复）
-- 单阶段模式支持上游依赖验证（Phase 2 需要 Phase 1，Phase 3 需要 Phase 1+2，Phase 4 需要 Phase 1+2+3）
+- 单阶段模式支持上游依赖验证（parsing 需要 acquisition，fact_chain 需要 acquisition+parsing，standardization 需要前三者）
 - 适配器抛出分类错误，编排器决定重试或终止
 - 使用 `RetryablePhaseExecutor` 实现指数退避重试
 
@@ -66,7 +66,7 @@ Phase 1 (文献获取) → Phase 2 (文档解析) → Phase 3 (翻译+提取) �
 管线编排状态的核心 Pydantic 模型，包含：
 
 - `pipeline_status` — 管线整体状态（PENDING → RUNNING → COMPLETED/FAILED）
-- `phase_1` / `phase_2` / `phase_3` — 各阶段的 `PhaseStatusDetail`
+- `acquisition_status` / `parsing_status` / `fact_chain_status` / `standardization_status` — 各阶段的 `PhaseStatusDetail`
 - `pipeline_mode` — 运行模式（FULL / PHASE）
 - `source_type` — 文档来源（LOCAL / ONLINE）
 - 状态转换守卫（`validate_pipeline_status_transition`、`validate_phase_status_transition`）
@@ -89,7 +89,7 @@ PostgreSQL 状态持久化层：
 - `load_state()` — 加载最新状态
 - `list_runs()` — 列出运行摘要（分页）
 - `has_active_source_key()` — 检查是否有活跃运行处理同一文档
-- 处理 Phase 2 重跑时的旧数据清理
+- 处理 parsing 重跑时的旧数据清理
 - 自动维护 `source_documents` 和 `literature_profiles` 表
 
 ### `DocumentProcessingCacheService` (processing_cache.py)
@@ -101,9 +101,9 @@ PostgreSQL 状态持久化层：
 - 读路径：L1 → L2（回填 L1）→ miss
 - 写路径：L2 upsert → L1 set
 
-### `Phase5ServiceFactory` (phase_5_factory.py)
+### `ReviewServiceFactory` (review_factory.py)
 
-Phase 5 服务工厂（交互审核层），作为 API 层和核心服务之间的边界：
+审核服务工厂（交互审核层），作为 API 层和核心服务之间的边界：
 
 - 长生命周期依赖（config、providers）在构造时注入
 - 短生命周期依赖（AsyncSession）每次方法调用传入
@@ -132,7 +132,7 @@ state = PipelineGraphState(
     pipeline_mode=PipelineMode.PHASE,
     phase_to_run=2,
     source_document_id="...",
-    # Phase 1 已完成的输出
+    # acquisition 阶段的输出
 )
 task = await runner.start(state)
 ```
@@ -141,7 +141,7 @@ task = await runner.start(state)
 
 ```python
 state = await runner.get_last_state(processing_run_id)
-print(state.pipeline_status, state.phase_2.status)
+print(state.pipeline_status, state.parsing_status.status)
 ```
 
 ## Dependencies
@@ -152,6 +152,6 @@ print(state.pipeline_status, state.phase_2.status)
 | SQLAlchemy | 状态持久化 |
 | Redis (asyncio) | L1 缓存 |
 | loguru | 结构化日志 |
-| `src.pipeline.graph.*` | LangGraph 拓扑与 Phase 1-4 适配器 |
-| `src.core.*` | Phase 1-4 业务逻辑服务 |
+| `src.pipeline.graph.*` | LangGraph 拓扑与阶段适配器 |
+| `src.core.tools` / `src.pipeline.skills` | 各阶段工具与 agent 实现 |
 | `src.dao.postgresql.*` | 数据库模型和仓储 |

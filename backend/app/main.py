@@ -227,7 +227,7 @@ async def lifespan(app: FastAPI):
         if phase5_factory is not None:
             await phase5_factory.close()
     except Exception as exc:
-        logger.debug("Phase5ServiceFactory close failed during shutdown: {}", exc)
+        logger.debug("ReviewServiceFactory close failed during shutdown: {}", exc)
     finally:
         try:
             await _wiring.dispose_neo4j()

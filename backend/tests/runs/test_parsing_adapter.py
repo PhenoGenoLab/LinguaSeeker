@@ -25,7 +25,7 @@ def sample_state(tmp_path) -> PipelineGraphState:
         source_document_id="doc-456",
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
-        phase_1_output=AcquisitionOutput(pdf_path=str(tmp_path / "test.pdf")),
+        acquisition_output=AcquisitionOutput(pdf_path=str(tmp_path / "test.pdf")),
     )
 
 
@@ -58,7 +58,7 @@ def _make_parse_result():
 
 @pytest.mark.asyncio
 async def test_phase_2_adapter_success(sample_state: PipelineGraphState):
-    """Phase 2 adapter parses the Phase 1 PDF and writes the phase_2 output dir."""
+    """Phase 2 adapter parses the Phase 1 PDF and writes the parsing output dir."""
     mock_parse = MagicMock()
     mock_parse.parse_local_files_and_save = AsyncMock(return_value=_make_parse_result())
 
@@ -66,23 +66,23 @@ async def test_phase_2_adapter_success(sample_state: PipelineGraphState):
 
     result_state = await adapter.run(sample_state)
 
-    assert result_state.phase_2_output is not None
-    assert isinstance(result_state.phase_2_output, ParseOutput)
-    assert result_state.phase_2_output.md_path == "/tmp/test.md"
-    assert result_state.phase_2_output.metadata_path == "/tmp/test.json"
-    assert result_state.phase_2_output.images_dir == "/tmp/images"
-    assert result_state.phase_2_status.status == PhaseStatus.COMPLETED
+    assert result_state.parsing_output is not None
+    assert isinstance(result_state.parsing_output, ParseOutput)
+    assert result_state.parsing_output.md_path == "/tmp/test.md"
+    assert result_state.parsing_output.metadata_path == "/tmp/test.json"
+    assert result_state.parsing_output.images_dir == "/tmp/images"
+    assert result_state.parsing_status.status == PhaseStatus.COMPLETED
 
     mock_parse.parse_local_files_and_save.assert_awaited_once()
     kwargs = mock_parse.parse_local_files_and_save.call_args.kwargs
-    assert kwargs["file_paths"] == [sample_state.phase_1_output.pdf_path]
-    assert kwargs["output_dir"].endswith(f"data/pipeline/{sample_state.processing_run_id}/phase_2")
+    assert kwargs["file_paths"] == [sample_state.acquisition_output.pdf_path]
+    assert kwargs["output_dir"].endswith(f"data/pipeline/{sample_state.processing_run_id}/parsing")
 
 
 @pytest.mark.asyncio
-async def test_phase_2_adapter_raises_permanent_without_phase_1_output(sample_state: PipelineGraphState):
+async def test_phase_2_adapter_raises_permanent_without_acquisition_output(sample_state: PipelineGraphState):
     """Phase 2 adapter raises PermanentPhaseError when Phase 1 produced no PDF."""
-    state = sample_state.model_copy(update={"phase_1_output": AcquisitionOutput(pdf_path="")})
+    state = sample_state.model_copy(update={"acquisition_output": AcquisitionOutput(pdf_path="")})
 
     mock_parse = MagicMock()
     adapter = ParsingAdapter(parse_service=mock_parse)
@@ -158,13 +158,13 @@ async def test_phase_2_adapter_writes_pre_parsed_markdown(tmp_path):
     # MinerU is bypassed entirely for pre-parsed markdown
     mock_parse.parse_local_files_and_save.assert_not_called()
 
-    assert result.phase_2_output is not None
-    assert result.phase_2_output.md_path.endswith("output.md")
-    assert result.phase_2_status.status == PhaseStatus.COMPLETED
+    assert result.parsing_output is not None
+    assert result.parsing_output.md_path.endswith("output.md")
+    assert result.parsing_status.status == PhaseStatus.COMPLETED
 
-    written = Path(result.phase_2_output.md_path).read_text(encoding="utf-8")
+    written = Path(result.parsing_output.md_path).read_text(encoding="utf-8")
     assert "MECP2 c.473C>T" in written
 
-    meta = json.loads(Path(result.phase_2_output.metadata_path).read_text(encoding="utf-8"))
+    meta = json.loads(Path(result.parsing_output.metadata_path).read_text(encoding="utf-8"))
     assert meta["title"] == "Rett Syndrome Study"
     assert meta["pages"][0]["markdown"] == markdown

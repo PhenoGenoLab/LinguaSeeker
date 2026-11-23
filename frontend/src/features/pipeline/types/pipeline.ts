@@ -74,8 +74,8 @@ export interface PipelineStatusResponse {
   source_document_id: string;
   pipeline_status: ProcessingStatus;
   current_phase?: string | null;
-  skip_phase_4_reason?: string | null;
-  /** Dict keyed by phase_id ("phase_1", "phase_2", "phase_3", "phase_4"). */
+  skip_standardization_reason?: string | null;
+  /** Dict keyed by phase_id ("acquisition", "parsing", "fact_chain", "standardization"). */
   phases: Record<string, PhaseStatus>;
   error_message?: string | null;
   error_phase?: number | null;

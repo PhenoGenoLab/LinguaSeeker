@@ -39,11 +39,11 @@ def sample_state() -> PipelineGraphState:
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
     )
-    state.phase_1_status = PhaseStatusDetail(
+    state.acquisition_status = PhaseStatusDetail(
         status=PhaseStatus.COMPLETED,
         started_at="2026-05-29T10:00:00",
     )
-    state.phase_2_status = PhaseStatusDetail(
+    state.parsing_status = PhaseStatusDetail(
         status=PhaseStatus.RUNNING,
     )
     return state
@@ -58,8 +58,8 @@ async def test_save_state(db_session: AsyncSession, sample_state: PipelineGraphS
     loaded = await service.load(sample_state.processing_run_id)
     assert loaded is not None
     assert loaded.processing_run_id == sample_state.processing_run_id
-    assert loaded.phase_1_status.status == PhaseStatus.COMPLETED
-    assert loaded.phase_2_status.status == PhaseStatus.RUNNING
+    assert loaded.acquisition_status.status == PhaseStatus.COMPLETED
+    assert loaded.parsing_status.status == PhaseStatus.RUNNING
 
 
 @pytest.mark.asyncio
@@ -76,21 +76,21 @@ async def test_save_state_idempotent(db_session: AsyncSession, sample_state: Pip
     service = DirectStatePersistence(db_session)
     await service.save(sample_state)
 
-    sample_state.phase_2_status = PhaseStatusDetail(
+    sample_state.parsing_status = PhaseStatusDetail(
         status=PhaseStatus.COMPLETED,
         duration_seconds=120.0,
     )
     await service.save(sample_state)
 
     loaded = await service.load(sample_state.processing_run_id)
-    assert loaded.phase_2_status.status == PhaseStatus.COMPLETED
-    assert loaded.phase_2_status.duration_seconds == 120.0
+    assert loaded.parsing_status.status == PhaseStatus.COMPLETED
+    assert loaded.parsing_status.duration_seconds == 120.0
 
 
 @pytest.mark.asyncio
 async def test_save_preserves_structured_errors(db_session: AsyncSession, sample_state: PipelineGraphState):
     """Structured error details survive round-trip through database."""
-    sample_state.phase_1_status = PhaseStatusDetail(
+    sample_state.acquisition_status = PhaseStatusDetail(
         status=PhaseStatus.FAILED,
         error=PhaseErrorDetail(
             message="API timeout",
@@ -104,9 +104,9 @@ async def test_save_preserves_structured_errors(db_session: AsyncSession, sample
     await service.save(sample_state)
 
     loaded = await service.load(sample_state.processing_run_id)
-    assert loaded.phase_1_status.error is not None
-    assert loaded.phase_1_status.error.retryable is True
-    assert loaded.phase_1_status.error.attempt == 2
+    assert loaded.acquisition_status.error is not None
+    assert loaded.acquisition_status.error.retryable is True
+    assert loaded.acquisition_status.error.attempt == 2
 
 
 @pytest.mark.asyncio
@@ -165,13 +165,13 @@ async def test_session_bound_save_does_not_mutate_inline_phase3_payload():
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
         pipeline_status=PipelineStatus.RUNNING,
-        phase_3_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
-        phase_3_output=TranslationExtractionOutput(
-            output_dir="/tmp/phase_3",
-            original_json_path="/tmp/phase_3/original.json",
-            translated_json_path="/tmp/phase_3/translated.json",
+        fact_chain_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
+        fact_chain_output=TranslationExtractionOutput(
+            output_dir="/tmp/fact_chain",
+            original_json_path="/tmp/fact_chain/original.json",
+            translated_json_path="/tmp/fact_chain/translated.json",
             source_language="zh",
-            extraction_result_path="/tmp/phase_3/extraction_result.json",
+            extraction_result_path="/tmp/fact_chain/extraction_result.json",
             original_text="original text",
             translated_text="translated text",
             original_blocks=[{"type": "text", "text": "original"}],
@@ -181,11 +181,11 @@ async def test_session_bound_save_does_not_mutate_inline_phase3_payload():
 
     await persistence.save(state)
 
-    assert state.phase_3_output is not None
-    assert state.phase_3_output.original_text == "original text"
-    assert state.phase_3_output.translated_text == "translated text"
-    assert state.phase_3_output.original_blocks == [{"type": "text", "text": "original"}]
-    assert state.phase_3_output.translated_blocks == [{"type": "text", "text": "translated"}]
+    assert state.fact_chain_output is not None
+    assert state.fact_chain_output.original_text == "original text"
+    assert state.fact_chain_output.translated_text == "translated text"
+    assert state.fact_chain_output.original_blocks == [{"type": "text", "text": "original"}]
+    assert state.fact_chain_output.translated_blocks == [{"type": "text", "text": "translated"}]
 
 
 @pytest.mark.asyncio
@@ -259,7 +259,7 @@ async def test_build_raw_metadata_extracts_title(tmp_path):
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
     )
-    state.phase_2_output = ParseOutput(
+    state.parsing_output = ParseOutput(
         md_path=str(tmp_path / "output.md"),
         metadata_path=str(meta_path),
         output_dir=str(tmp_path),
@@ -282,7 +282,7 @@ async def test_build_raw_metadata_handles_missing_file(tmp_path):
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
     )
-    state.phase_2_output = ParseOutput(
+    state.parsing_output = ParseOutput(
         md_path="",
         metadata_path=str(tmp_path / "nonexistent.json"),
         output_dir=str(tmp_path),
@@ -292,7 +292,7 @@ async def test_build_raw_metadata_handles_missing_file(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_build_raw_metadata_no_phase_2_output():
+async def test_build_raw_metadata_no_parsing_output():
     """When Phase 2 has not run, raw_metadata is empty (no crash)."""
     from src.runs.state_persistence import _build_raw_metadata
 
@@ -322,7 +322,7 @@ async def test_direct_persistence_persists_title_to_source_document(db_session: 
         source_type=SourceType.LOCAL,
         pipeline_status=PipelineStatus.RUNNING,
     )
-    state.phase_2_output = ParseOutput(
+    state.parsing_output = ParseOutput(
         md_path=str(tmp_path / "output.md"),
         metadata_path=str(meta_path),
         output_dir=str(tmp_path),
@@ -359,7 +359,7 @@ async def test_direct_persistence_updates_title_on_existing_source_document(db_s
     # Second save: Phase 2 completed — title should now be merged in.
     meta_path = tmp_path / "metadata.json"
     meta_path.write_text(json.dumps({"title": "Late Title"}), encoding="utf-8")
-    state.phase_2_output = ParseOutput(
+    state.parsing_output = ParseOutput(
         md_path=str(tmp_path / "output.md"),
         metadata_path=str(meta_path),
         output_dir=str(tmp_path),
@@ -384,13 +384,13 @@ async def test_direct_persistence_phase3_rerun_refreshes_document_text_and_block
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
         pipeline_status=PipelineStatus.RUNNING,
-        phase_3_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
-        phase_3_output=TranslationExtractionOutput(
-            output_dir="/tmp/phase_3",
-            original_json_path="/tmp/phase_3/original.json",
-            translated_json_path="/tmp/phase_3/translated.json",
+        fact_chain_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
+        fact_chain_output=TranslationExtractionOutput(
+            output_dir="/tmp/fact_chain",
+            original_json_path="/tmp/fact_chain/original.json",
+            translated_json_path="/tmp/fact_chain/translated.json",
             source_language="zh",
-            extraction_result_path="/tmp/phase_3/extraction_result.json",
+            extraction_result_path="/tmp/fact_chain/extraction_result.json",
             original_text="old original",
             translated_text="old translated",
             original_blocks=[{"text": "old original"}],
@@ -403,12 +403,12 @@ async def test_direct_persistence_phase3_rerun_refreshes_document_text_and_block
     state.mode = PipelineMode.PHASE
     state.target_phase = 3
     state.pipeline_status = PipelineStatus.RUNNING
-    state.phase_3_output = TranslationExtractionOutput(
-        output_dir="/tmp/phase_3",
-        original_json_path="/tmp/phase_3/original.json",
-        translated_json_path="/tmp/phase_3/translated.json",
+    state.fact_chain_output = TranslationExtractionOutput(
+        output_dir="/tmp/fact_chain",
+        original_json_path="/tmp/fact_chain/original.json",
+        translated_json_path="/tmp/fact_chain/translated.json",
         source_language="zh",
-        extraction_result_path="/tmp/phase_3/extraction_result.json",
+        extraction_result_path="/tmp/fact_chain/extraction_result.json",
         original_text="new original",
         translated_text="new translated",
         original_blocks=[{"text": "new original"}],
@@ -451,13 +451,13 @@ async def test_direct_persistence_full_run_refreshes_untranslated_translation_ca
         mode=PipelineMode.FULL,
         source_type=SourceType.LOCAL,
         pipeline_status=PipelineStatus.RUNNING,
-        phase_3_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
-        phase_3_output=TranslationExtractionOutput(
-            output_dir="/tmp/phase_3",
-            original_json_path="/tmp/phase_3/original.json",
-            translated_json_path="/tmp/phase_3/translated.json",
+        fact_chain_status=PhaseStatusDetail(status=PhaseStatus.COMPLETED),
+        fact_chain_output=TranslationExtractionOutput(
+            output_dir="/tmp/fact_chain",
+            original_json_path="/tmp/fact_chain/original.json",
+            translated_json_path="/tmp/fact_chain/translated.json",
             source_language="zh",
-            extraction_result_path="/tmp/phase_3/extraction_result.json",
+            extraction_result_path="/tmp/fact_chain/extraction_result.json",
             original_text=stale_chinese_text,
             translated_text="Rett syndrome is a complex neurodevelopmental disorder, commonly seen in girls.",
             original_blocks=[{"type": "text", "text": stale_chinese_text}],

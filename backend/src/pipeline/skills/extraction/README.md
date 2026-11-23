@@ -1,4 +1,4 @@
-# fact_chain — 原文事实链（Phase 3）
+# fact_chain — 原文事实链
 
 > 实现分两层：确定性能力在 `src/core/shared/tools/fact_chain`（契约、校验、窗口、投影），
 > prompt、阶段编排与服务门面在本目录 `src/pipeline/skills/fact_chain`。`tools`/`contracts`
@@ -6,7 +6,7 @@
 > 的 re-export shim 已删除。
 >
 > 把解析后的原文按窗口切分，只从原文抽取事实，先核验再只翻译展示字段，最终产出
-> 双语事实行和 Phase 4 可消费的双轨投影。全流程不再翻译整篇文档，也不再从译文
+> 双语事实行和 standardization 可消费的双轨投影。全流程不再翻译整篇文档，也不再从译文
 > 独立抽取第二套事实。
 
 ## Quick Start
@@ -23,10 +23,10 @@ document = service.build_document(
 )
 run = await service.run_async(document)
 print(len(run.facts), len(run.bilingual_rows()))
-service.write_outputs(run, "data/pipeline/run-1/phase_3/doc-1")
+service.write_outputs(run, "data/pipeline/run-1/fact_chain/doc-1")
 ```
 
-Phase 3 适配器已使用该服务；通常不需要直接调用。
+fact_chain 适配器已使用该服务；通常不需要直接调用。
 
 ## Architecture
 
@@ -67,7 +67,7 @@ bilingual rows + dual-track projection (Phase 4)
 - `facts=0` 的运行默认**不复用**：provider 瞬时返回合法空列表不应变成永久空证据。
 - `FactChainAdapter.run(state, force_rebuild=True)` 可显式忽略已持久化运行并重新调用模型。
 - 复用分支同样重写 `chain_run.json` 与全部 JSONL，修复“chain_run 之后、JSONL 之前
-  崩溃”的不可恢复状态；`supported > 0` 时会清除遗留的 `skip_phase_4_reason`。
+  崩溃”的不可恢复状态；`supported > 0` 时会清除遗留的 `skip_standardization_reason`。
 
 ## Public API
 
@@ -126,7 +126,7 @@ bilingual rows + dual-track projection (Phase 4)
 
 ```bash
 cd backend
-uv run pytest tests/core/source_fact_chain tests/agents/test_phase_3_adapter.py
+uv run pytest tests/core/source_fact_chain tests/runs/test_fact_chain_adapter.py
 ```
 
 覆盖：窗口全覆盖、重叠去重、引句/原子性/主体/字段拒绝、实体引句与归一化歧义、

@@ -51,7 +51,7 @@ class AcquisitionAdapter:
     async def run(self, state: PipelineGraphState) -> PipelineGraphState:
         """Execute Phase 1: acquire document.
 
-        Returns updated state with phase_1_output set on success.
+        Returns updated state with acquisition_output set on success.
         Raises RetryablePhaseError or PermanentPhaseError on failure.
         """
         logger.info(
@@ -61,7 +61,7 @@ class AcquisitionAdapter:
             state.pre_parsed_markdown is not None,
         )
 
-        state.phase_1_status = PhaseStatusDetail(
+        state.acquisition_status = PhaseStatusDetail(
             status=PhaseStatus.RUNNING,
             started_at=datetime.now().isoformat(),
         )
@@ -69,10 +69,10 @@ class AcquisitionAdapter:
         try:
             # Fast path: pre-parsed markdown needs no acquisition at all
             if state.pre_parsed_markdown:
-                state.phase_1_output = AcquisitionOutput(pdf_path="")
-                state.phase_1_status = PhaseStatusDetail(
+                state.acquisition_output = AcquisitionOutput(pdf_path="")
+                state.acquisition_status = PhaseStatusDetail(
                     status=PhaseStatus.SKIPPED,
-                    started_at=state.phase_1_status.started_at,
+                    started_at=state.acquisition_status.started_at,
                     completed_at=datetime.now().isoformat(),
                     summary={"reason": "pre_parsed_markdown"},
                 )
@@ -130,7 +130,7 @@ class AcquisitionAdapter:
                     phase=1,
                 )
 
-            state.phase_1_output = AcquisitionOutput(pdf_path=pdf_path)
+            state.acquisition_output = AcquisitionOutput(pdf_path=pdf_path)
 
             # If the acquisition pipeline already parsed the PDF (multilingual
             # workflow's early MinerU batch), hand the markdown to Phase 2 so
@@ -142,8 +142,8 @@ class AcquisitionAdapter:
             summary: dict = {"pdf_path": pdf_path}
             if pre_parsed:
                 summary["pre_parsed_by_acquisition"] = True
-            state.phase_1_status = PhaseStatusDetail.complete(
-                started_at=state.phase_1_status.started_at,
+            state.acquisition_status = PhaseStatusDetail.complete(
+                started_at=state.acquisition_status.started_at,
                 summary=summary,
             )
 

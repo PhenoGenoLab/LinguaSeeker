@@ -575,8 +575,8 @@ async def test_runner_error_state_preserves_latest_phase_outputs(sample_state, m
     from src.runs.contracts import AcquisitionOutput, PhaseStatus, PhaseStatusDetail
 
     latest = sample_state.model_copy(deep=True)
-    latest.phase_1_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
-    latest.phase_1_output = AcquisitionOutput(pdf_path="/tmp/a.pdf")
+    latest.acquisition_status = PhaseStatusDetail(status=PhaseStatus.COMPLETED)
+    latest.acquisition_output = AcquisitionOutput(pdf_path="/tmp/a.pdf")
 
     orch = MagicMock()
     orch.run = AsyncMock(side_effect=RuntimeError("boom"))
@@ -595,8 +595,8 @@ async def test_runner_error_state_preserves_latest_phase_outputs(sample_state, m
 
     final_state = runner.get_last_state_cached(sample_state.processing_run_id)
     assert final_state is not None
-    assert final_state.phase_1_output == latest.phase_1_output
-    assert final_state.phase_1_status.status == PhaseStatus.COMPLETED
+    assert final_state.acquisition_output == latest.acquisition_output
+    assert final_state.acquisition_status.status == PhaseStatus.COMPLETED
     assert final_state.pipeline_status == PipelineStatus.FAILED
 
 

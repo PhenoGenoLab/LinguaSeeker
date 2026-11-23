@@ -46,7 +46,7 @@ class ParsingAdapter:
     async def run(self, state: PipelineGraphState) -> PipelineGraphState:
         """Execute Phase 2: parse document into markdown + metadata.
 
-        Returns updated state with phase_2_output set on success.
+        Returns updated state with parsing_output set on success.
         Raises RetryablePhaseError or PermanentPhaseError on failure.
         """
         logger.info(
@@ -55,7 +55,7 @@ class ParsingAdapter:
             state.pre_parsed_markdown is not None,
         )
 
-        state.phase_2_status = PhaseStatusDetail(
+        state.parsing_status = PhaseStatusDetail(
             status=PhaseStatus.RUNNING,
             started_at=datetime.now().isoformat(),
         )
@@ -66,19 +66,19 @@ class ParsingAdapter:
                 state = await self._build_from_pre_parsed(state)
                 return state
 
-            if state.phase_1_output is None or not state.phase_1_output.pdf_path:
+            if state.acquisition_output is None or not state.acquisition_output.pdf_path:
                 raise PermanentPhaseError(
                     "Phase 1 output with a PDF path not found in state",
                     phase=2,
                 )
-            pdf_path = state.phase_1_output.pdf_path
+            pdf_path = state.acquisition_output.pdf_path
 
             # Parse document — use absolute path to survive CWD changes.
-            # ``phase_2.py`` sits four levels below the app root
+            # ``parsing.py`` sits four levels below the app root
             # (``<root>/src/pipeline/graph/phases``), so the default data
             # directory stays ``<root>/data/pipeline`` as before the move.
             _backend_root = Path(__file__).resolve().parents[5]
-            output_dir = str(_backend_root / "data" / "pipeline" / state.processing_run_id / "phase_2")
+            output_dir = str(_backend_root / "data" / "pipeline" / state.processing_run_id / "parsing")
             parse_result = await self._parse.parse_local_files_and_save(
                 file_paths=[pdf_path],
                 output_dir=output_dir,
@@ -93,15 +93,15 @@ class ParsingAdapter:
                 )
             first_file = list(parse_result.saved_files.values())[0]
 
-            state.phase_2_output = ParseOutput(
+            state.parsing_output = ParseOutput(
                 md_path=str(first_file.md_path),
                 metadata_path=str(first_file.metadata_path),
                 output_dir=str(first_file.output_dir),
                 images_dir=str(first_file.images_dir) if first_file.images_dir else None,
             )
 
-            state.phase_2_status = PhaseStatusDetail.complete(
-                started_at=state.phase_2_status.started_at,
+            state.parsing_status = PhaseStatusDetail.complete(
+                started_at=state.parsing_status.started_at,
             )
 
             logger.info("Phase 2 completed: run={}", state.processing_run_id)
@@ -119,7 +119,7 @@ class ParsingAdapter:
         markdown_text = state.pre_parsed_markdown
 
         backend_root = Path(__file__).resolve().parents[5]
-        output_dir = backend_root / "data" / "pipeline" / state.processing_run_id / "phase_2"
+        output_dir = backend_root / "data" / "pipeline" / state.processing_run_id / "parsing"
         output_dir.mkdir(parents=True, exist_ok=True)
 
         md_path = output_dir / "output.md"
@@ -156,15 +156,15 @@ class ParsingAdapter:
         async with aiofiles.open(str(meta_path), "w") as f:
             await f.write(json.dumps(metadata, indent=2))
 
-        state.phase_2_output = ParseOutput(
+        state.parsing_output = ParseOutput(
             md_path=str(md_path),
             metadata_path=str(meta_path),
             output_dir=str(output_dir),
             images_dir=None,
         )
 
-        state.phase_2_status = PhaseStatusDetail.complete(
-            started_at=state.phase_2_status.started_at,
+        state.parsing_status = PhaseStatusDetail.complete(
+            started_at=state.parsing_status.started_at,
             summary={"source": "pre_parsed_markdown"},
         )
 

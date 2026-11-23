@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.runs.contracts import (
     PipelineMode,
+    stage_status_field,
     PhaseStatus,
     PipelineGraphState,
     PipelineStatus,
@@ -61,11 +62,11 @@ class PipelineRunSummaryRow:
 def _derive_error_phase(state: PipelineGraphState) -> int:
     """Derive the phase number that was running when the pipeline was interrupted.
 
-    Inspects per-phase PhaseStatusDetail fields in order (phase 4 → 1).
+    Inspects the per-stage PhaseStatusDetail fields in reverse stage order.
     Returns 0 when no phase shows RUNNING status.
     """
     for phase_num in (4, 3, 2, 1):
-        detail = getattr(state, f"phase_{phase_num}_status", None)
+        detail = getattr(state, stage_status_field(phase_num), None)
         if detail is not None and detail.status == PhaseStatus.RUNNING:
             return phase_num
     return 0
@@ -74,23 +75,23 @@ def _derive_error_phase(state: PipelineGraphState) -> int:
 async def _build_raw_metadata(state: PipelineGraphState) -> dict[str, object]:
     """Extract title/authors from Phase 2 metadata.json for SourceDocument.raw_metadata."""
     meta: dict[str, object] = {}
-    if not state.phase_2_output or not state.phase_2_output.metadata_path:
+    if not state.parsing_output or not state.parsing_output.metadata_path:
         return meta
     try:
 
         def _read() -> dict:
-            with open(state.phase_2_output.metadata_path, encoding="utf-8") as f:
+            with open(state.parsing_output.metadata_path, encoding="utf-8") as f:
                 return json.load(f)
 
-        phase1_meta = await asyncio.to_thread(_read)
-        if isinstance(phase1_meta, dict):
-            title = phase1_meta.get("title")
+        acquisition_meta = await asyncio.to_thread(_read)
+        if isinstance(acquisition_meta, dict):
+            title = acquisition_meta.get("title")
             if title and isinstance(title, str):
                 meta["title"] = title
-            authors = phase1_meta.get("authors")
+            authors = acquisition_meta.get("authors")
             if authors and isinstance(authors, list):
                 meta["authors"] = authors
-            journal = phase1_meta.get("journal")
+            journal = acquisition_meta.get("journal")
             if journal and isinstance(journal, str):
                 meta["journal"] = journal
     except (OSError, json.JSONDecodeError):
@@ -131,7 +132,7 @@ async def _load_phase3_document_text(state: PipelineGraphState) -> tuple[str | N
 
     Returns (None, None) when Phase 3 output is missing or files are unreadable.
     """
-    p3 = state.phase_3_output
+    p3 = state.fact_chain_output
     if p3 is None:
         return None, None
     return await load_document_text_from_paths(p3.original_json_path, p3.translated_json_path)
@@ -152,12 +153,12 @@ async def _persist_phase3_document_text(
     Shared by both DirectStatePersistence and SessionBoundStatePersistence.
     Only writes when Phase 3 is COMPLETED and the DB doesn't already have text.
     """
-    if not (state.phase_3_output and state.phase_3_status.status == PhaseStatus.COMPLETED):
+    if not (state.fact_chain_output and state.fact_chain_status.status == PhaseStatus.COMPLETED):
         return
     sd = await session.get(SourceDocument, sd_id)
     if sd is None:
         return
-    p3 = state.phase_3_output
+    p3 = state.fact_chain_output
     replace_existing = _is_phase3_rerun(state)
     source_language = p3.source_language if p3 is not None else None
     existing_translated_is_stale = is_likely_untranslated_render_payload(
@@ -197,11 +198,11 @@ async def _persist_phase3_document_text(
 def _state_json_without_inline_phase3_data(state: PipelineGraphState) -> dict[str, object]:  # noqa  # dict-return: PipelineGraphState JSONB snapshot.
     """Serialize state for JSONB without mutating the live pipeline state."""
     persisted_state = state.model_copy(deep=True)
-    if persisted_state.phase_3_output is not None:
-        persisted_state.phase_3_output.original_text = None
-        persisted_state.phase_3_output.translated_text = None
-        persisted_state.phase_3_output.original_blocks = None
-        persisted_state.phase_3_output.translated_blocks = None
+    if persisted_state.fact_chain_output is not None:
+        persisted_state.fact_chain_output.original_text = None
+        persisted_state.fact_chain_output.translated_text = None
+        persisted_state.fact_chain_output.original_blocks = None
+        persisted_state.fact_chain_output.translated_blocks = None
     return persisted_state.model_dump(mode="json")
 
 
@@ -277,7 +278,7 @@ async def _reset_phase_rerun_artifacts(
 
 
 _TERMINAL_PHASE_STATUSES = frozenset({"completed", "skipped"})
-_PHASE_KEYS = ("phase_1", "phase_2", "phase_3", "phase_4")
+_PHASE_KEYS = ("acquisition", "parsing", "fact_chain", "standardization")
 
 
 def _derive_run_title(sj: dict) -> str | None:
@@ -342,7 +343,7 @@ class DirectStatePersistence:
             raw_meta = await _build_raw_metadata(state)
             self._session.add(SourceDocument(source_document_id=sd_id, raw_metadata=raw_meta))
             await self._session.flush()
-        elif state.phase_2_output:
+        elif state.parsing_output:
             # Update metadata if Phase 2 (parsing) just completed
             new_meta = await _build_raw_metadata(state)
             if new_meta.get("title"):

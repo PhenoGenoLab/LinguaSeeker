@@ -17,7 +17,7 @@ from src.pipeline.skills.runtime import messages
 class StandardizationSkill:
     """Bounded agent for Phase 4: one tool that standardizes a dual result."""
 
-    name = "phase_4_standardization"
+    name = "standardization"
     system_prompt = (
         "You standardize extracted clinical entities against terminology databases.\n"
         "Call the `standardize_entities` tool exactly once, then reply with a one-line summary."
