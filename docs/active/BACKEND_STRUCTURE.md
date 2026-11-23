@@ -55,24 +55,25 @@ Contracts:
 ```text
 backend/
 ├── src/
-│   ├── agents/                                         # Outer runtime: scheduling, persistence, contracts
+│   ├── runs/                                           # Outer runtime: scheduling, persistence, contracts
 │   │   ├── contracts.py                                # PipelineGraphState, enums, error hierarchy
 │   │   ├── runner.py                                   # PipelineRunner — background asyncio.Task management
+│   │   ├── dispatcher.py                               # Job dispatcher and heartbeat
 │   │   ├── concurrency.py                              # PipelineSemaphore, RetryablePhaseExecutor
 │   │   ├── state_persistence.py                        # PostgreSQL state save/load
+│   │   ├── processing_cache.py                         # Two-level cache (Redis + PostgreSQL)
+│   │   ├── content_hash.py                             # Content hashing for dedup
 │   │   └── phase_5_factory.py                          # Phase5ServiceFactory — creates Phase 5 (interactive review) services
-│   ├── pipeline/                                       # Pipeline domain layer (stage 1-2 migration)
+│   ├── pipeline/                                       # Pipeline domain layer
 │   │   ├── graph/
 │   │   │   ├── topology.py                             # PipelineOrchestrator — LangGraph graph wiring
+│   │   │   ├── progress.py                             # Node-level progress recorded into phase summaries
 │   │   │   └── phases/
-│   │   │       ├── phase_1.py                          # Phase1Adapter — wraps document acquisition
-│   │   │       ├── phase_2.py                          # Phase2Adapter — wraps document parsing (MinerU)
-│   │   │       ├── phase_3.py                          # Phase3Adapter — wraps translation + extraction
-│   │   │       └── phase_4.py                          # Phase4Adapter — wraps entity standardization
-│   │   ├── skills/                                     # AgentScope skills, prompts, model runtime
-│   │   ├── tools/                                      # Deterministic helpers (fact-chain checks, windows, projection)
-│   │   ├── mcp/                                        # External protocol adapters (ReMe, planned)
-│   │   └── contracts/                                  # Cross-layer DTOs
+│   │   │       ├── acquisition.py                      # AcquisitionAdapter — wraps document acquisition
+│   │   │       ├── parsing.py                          # ParsingAdapter — wraps document parsing (MinerU)
+│   │   │       ├── fact_chain.py                       # FactChainAdapter — wraps extraction + fact English
+│   │   │       └── standardization.py                  # StandardizationAdapter — wraps entity standardization
+│   │   └── skills/                                     # Agent implementations: prompts, model calls, orchestration
 │   ├── api/
 │   │   ├── auth.py                                     # Authentication logic
 │   │   ├── deps.py                                     # Dependency injection
