@@ -147,7 +147,7 @@ async def test_session_bound_save_uses_upsert():
 
 
 @pytest.mark.asyncio
-async def test_session_bound_save_does_not_mutate_inline_phase3_payload():
+async def test_session_bound_save_does_not_mutate_inline_fact_chain_payload():
     """Persisting state must trim JSONB via a copy, not mutate live state."""
     mock_session = AsyncMock()
     mock_session.execute = AsyncMock()

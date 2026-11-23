@@ -52,7 +52,7 @@ def _stored_pdf(path: str = "/tmp/test.pdf"):
 
 
 @pytest.mark.asyncio
-async def test_phase_1_adapter_success(sample_state: PipelineGraphState):
+async def test_acquisition_adapter_success(sample_state: PipelineGraphState):
     """Phase 1 adapter successfully acquires the document PDF."""
     mock_acquisition = MagicMock()
     mock_acquisition.acquire = AsyncMock(return_value=_make_acquisition_result(stored_file=_stored_pdf()))
@@ -69,7 +69,7 @@ async def test_phase_1_adapter_success(sample_state: PipelineGraphState):
 
 
 @pytest.mark.asyncio
-async def test_phase_1_adapter_raises_permanent_on_acquisition_failure(
+async def test_acquisition_adapter_raises_permanent_on_acquisition_failure(
     sample_state: PipelineGraphState,
 ):
     """Phase 1 adapter raises PermanentPhaseError on acquisition failure."""
@@ -83,7 +83,7 @@ async def test_phase_1_adapter_raises_permanent_on_acquisition_failure(
 
 
 @pytest.mark.asyncio
-async def test_phase_1_adapter_raises_retryable_on_timeout(
+async def test_acquisition_adapter_raises_retryable_on_timeout(
     sample_state: PipelineGraphState,
 ):
     """Phase 1 adapter raises RetryablePhaseError on transient acquisition errors."""
@@ -97,7 +97,7 @@ async def test_phase_1_adapter_raises_retryable_on_timeout(
 
 
 @pytest.mark.asyncio
-async def test_phase_1_adapter_reads_upload_file_as_bytes(tmp_path):
+async def test_acquisition_adapter_reads_upload_file_as_bytes(tmp_path):
     """Phase 1 adapter reads upload_file_path as bytes, not path string."""
     # Create a real temp file to be read by the adapter
     upload_file = tmp_path / "test.pdf"

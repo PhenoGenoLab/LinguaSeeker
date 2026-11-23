@@ -36,7 +36,7 @@ def sample_state(tmp_path) -> PipelineGraphState:
 
 
 @pytest.mark.asyncio
-async def test_phase_4_adapter_success(sample_state: PipelineGraphState):
+async def test_standardization_adapter_success(sample_state: PipelineGraphState):
     """Phase 3 adapter successfully standardizes entities."""
     from src.core.tools.standardization.contracts import (
         StandardizationResult,
@@ -79,7 +79,7 @@ async def test_phase_4_adapter_success(sample_state: PipelineGraphState):
 
 
 @pytest.mark.asyncio
-async def test_phase_4_adapter_skipped_not_relevant(sample_state: PipelineGraphState):
+async def test_standardization_adapter_skipped_not_relevant(sample_state: PipelineGraphState):
     """Phase 4 adapter skips when skip_standardization_reason is NOT_RELEVANT."""
     sample_state.skip_standardization_reason = SkipStandardizationReason.NOT_RELEVANT
 
@@ -100,7 +100,7 @@ async def test_phase_4_adapter_skipped_not_relevant(sample_state: PipelineGraphS
 
 
 @pytest.mark.asyncio
-async def test_phase_4_adapter_skipped_no_entities(sample_state: PipelineGraphState):
+async def test_standardization_adapter_skipped_no_entities(sample_state: PipelineGraphState):
     """Phase 4 adapter skips when skip_standardization_reason is NO_ENTITIES."""
     sample_state.skip_standardization_reason = SkipStandardizationReason.NO_ENTITIES
 
@@ -119,7 +119,7 @@ async def test_phase_4_adapter_skipped_no_entities(sample_state: PipelineGraphSt
 
 
 @pytest.mark.asyncio
-async def test_phase_4_adapter_skipped_when_zero_standardized(
+async def test_standardization_adapter_skipped_when_zero_standardized(
     sample_state: PipelineGraphState,
 ):
     """Phase 4 adapter sets skip reason when standardized_count == 0."""
@@ -164,11 +164,11 @@ async def test_phase_4_adapter_skipped_when_zero_standardized(
 
 
 @pytest.mark.asyncio
-async def test_phase_4_does_not_skip_when_ambiguous_entities_exist(
+async def test_standardization_does_not_skip_when_ambiguous_entities_exist(
     sample_state: PipelineGraphState,
 ):
     """Phase 4 must not set NO_CANDIDATES when ambiguous entities exist."""
-    result_state = await _run_phase_4_with_counts(
+    result_state = await _run_standardization_with_counts(
         sample_state,
         match_count=1,
         standardized_count=0,
@@ -182,11 +182,11 @@ async def test_phase_4_does_not_skip_when_ambiguous_entities_exist(
 
 
 @pytest.mark.asyncio
-async def test_phase_4_does_not_skip_when_unmapped_entities_exist(
+async def test_standardization_does_not_skip_when_unmapped_entities_exist(
     sample_state: PipelineGraphState,
 ):
     """Phase 4 must not set NO_CANDIDATES when unmapped entities exist."""
-    result_state = await _run_phase_4_with_counts(
+    result_state = await _run_standardization_with_counts(
         sample_state,
         match_count=1,
         standardized_count=0,
@@ -199,7 +199,7 @@ async def test_phase_4_does_not_skip_when_unmapped_entities_exist(
     assert result_state.standardization_status.summary["unmapped_count"] == 1
 
 
-async def _run_phase_4_with_counts(
+async def _run_standardization_with_counts(
     sample_state: PipelineGraphState,
     *,
     match_count: int,

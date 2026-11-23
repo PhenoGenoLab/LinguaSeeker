@@ -101,7 +101,7 @@ async def test_orchestrator_runs_all_phases(sample_state, mock_adapters, mock_pe
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_skips_phase_4_when_not_relevant(
+async def test_orchestrator_skips_standardization_when_not_relevant(
     sample_state, mock_adapters, mock_persistence, mock_retry_executor
 ):
     """Orchestrator skips Phase 4 when skip_standardization_reason is set by Phase 3."""
@@ -260,7 +260,7 @@ async def test_orchestrator_notifies_on_state_change(
 
 
 @pytest.mark.asyncio
-async def test_phase_mode_target_1_stops_after_phase_1(
+async def test_phase_mode_target_1_stops_after_acquisition(
     sample_state, mock_adapters, mock_persistence, mock_retry_executor
 ):
     """Phase mode with target_phase=1 runs only Phase 1 and stops."""
@@ -284,7 +284,7 @@ async def test_phase_mode_target_1_stops_after_phase_1(
 
 
 @pytest.mark.asyncio
-async def test_phase_mode_target_2_starts_at_phase_2_when_upstream_complete(
+async def test_phase_mode_target_2_starts_at_parsing_when_upstream_complete(
     mock_adapters, mock_persistence, mock_retry_executor
 ):
     """Phase mode with target_phase=2 starts at Phase 2 when Phase 1 is complete."""

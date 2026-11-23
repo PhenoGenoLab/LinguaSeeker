@@ -181,7 +181,7 @@ class TestValidateAllPhaseTransitions:
         new = self._make_state({1: PhaseStatus.COMPLETED, 2: PhaseStatus.RUNNING, 3: PhaseStatus.PENDING})
         validate_all_phase_transitions(old, new)  # Should not raise
 
-    def test_invalid_phase_1_reversal(self):
+    def test_invalid_acquisition_reversal(self):
         """Any phase with invalid transition → raises."""
         old = self._make_state({1: PhaseStatus.COMPLETED, 2: PhaseStatus.PENDING, 3: PhaseStatus.PENDING})
         new = self._make_state({1: PhaseStatus.RUNNING, 2: PhaseStatus.PENDING, 3: PhaseStatus.PENDING})
@@ -189,7 +189,7 @@ class TestValidateAllPhaseTransitions:
             validate_all_phase_transitions(old, new)
         assert "acquisition" in str(exc_info.value)
 
-    def test_invalid_phase_3_jump(self):
+    def test_invalid_fact_chain_jump(self):
         """Phase 3 jumping from PENDING to COMPLETED → raises."""
         old = self._make_state({1: PhaseStatus.COMPLETED, 2: PhaseStatus.COMPLETED, 3: PhaseStatus.PENDING})
         new = self._make_state({1: PhaseStatus.COMPLETED, 2: PhaseStatus.COMPLETED, 3: PhaseStatus.COMPLETED})

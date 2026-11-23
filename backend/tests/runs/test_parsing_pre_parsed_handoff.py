@@ -34,7 +34,7 @@ def state() -> PipelineGraphState:
 
 
 @pytest.mark.asyncio
-async def test_phase_1_skipped_with_pre_parsed_markdown(state):
+async def test_acquisition_skipped_with_pre_parsed_markdown(state):
     """AcquisitionAdapter marks acquisition SKIPPED and sets an empty pdf_path."""
     mock_acquisition = MagicMock()
     mock_acquisition.acquire = AsyncMock()
@@ -51,7 +51,7 @@ async def test_phase_1_skipped_with_pre_parsed_markdown(state):
 
 
 @pytest.mark.asyncio
-async def test_phase_2_writes_pre_parsed_markdown_without_mineru(state):
+async def test_parsing_writes_pre_parsed_markdown_without_mineru(state):
     """ParsingAdapter consumes the markdown directly, skipping MinerU."""
     mock_parse = MagicMock()
     mock_parse.parse_local_files_and_save = AsyncMock()

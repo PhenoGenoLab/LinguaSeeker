@@ -57,7 +57,7 @@ def _make_parse_result():
 
 
 @pytest.mark.asyncio
-async def test_phase_2_adapter_success(sample_state: PipelineGraphState):
+async def test_parsing_adapter_success(sample_state: PipelineGraphState):
     """Phase 2 adapter parses the Phase 1 PDF and writes the parsing output dir."""
     mock_parse = MagicMock()
     mock_parse.parse_local_files_and_save = AsyncMock(return_value=_make_parse_result())
@@ -80,7 +80,7 @@ async def test_phase_2_adapter_success(sample_state: PipelineGraphState):
 
 
 @pytest.mark.asyncio
-async def test_phase_2_adapter_raises_permanent_without_acquisition_output(sample_state: PipelineGraphState):
+async def test_parsing_adapter_raises_permanent_without_acquisition_output(sample_state: PipelineGraphState):
     """Phase 2 adapter raises PermanentPhaseError when Phase 1 produced no PDF."""
     state = sample_state.model_copy(update={"acquisition_output": AcquisitionOutput(pdf_path="")})
 
@@ -93,7 +93,7 @@ async def test_phase_2_adapter_raises_permanent_without_acquisition_output(sampl
 
 
 @pytest.mark.asyncio
-async def test_phase_2_adapter_raises_permanent_when_no_saved_files(sample_state: PipelineGraphState):
+async def test_parsing_adapter_raises_permanent_when_no_saved_files(sample_state: PipelineGraphState):
     """Phase 2 adapter raises PermanentPhaseError when parsing produced no output."""
     from src.core.tools.parsing.contracts import (
         MinerULocalBatchSaveResult,
@@ -121,7 +121,7 @@ async def test_phase_2_adapter_raises_permanent_when_no_saved_files(sample_state
 
 
 @pytest.mark.asyncio
-async def test_phase_2_adapter_raises_retryable_on_mineru_timeout(sample_state: PipelineGraphState):
+async def test_parsing_adapter_raises_retryable_on_mineru_timeout(sample_state: PipelineGraphState):
     """Phase 2 adapter raises RetryablePhaseError on MinerU timeout."""
     from src.core.tools.parsing.exceptions import (
         MinerUTimeoutError,
@@ -137,7 +137,7 @@ async def test_phase_2_adapter_raises_retryable_on_mineru_timeout(sample_state: 
 
 
 @pytest.mark.asyncio
-async def test_phase_2_adapter_writes_pre_parsed_markdown(tmp_path):
+async def test_parsing_adapter_writes_pre_parsed_markdown(tmp_path):
     """Phase 2 adapter writes pre-parsed markdown as output.md + metadata.json."""
     markdown = "# Rett Syndrome Study\n\nMECP2 c.473C>T pathogenic variant in proband."
     state = PipelineGraphState(
