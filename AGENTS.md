@@ -398,7 +398,7 @@ Configuration: `src/core/config.py` loads layered YAML from `backend/config/defa
 
 #### Rust Native Extensions
 
-`rust-io` is consumed as a published wheel (`rust-io>=0.2,<0.3`), not built here:
+`rust-io` is consumed as a published wheel (`rust-io>=0.3.0,<1.0.0`, resolved from PyPI), not built here:
 
 | Python module | Purpose |
 |---------------|---------|
@@ -487,7 +487,7 @@ bun run test         # Vitest
 
 #### Rust Libraries
 
-The native extension is consumed as the published wheel: `rust-io>=0.2,<0.3`
+The native extension is consumed as the published wheel: `rust-io>=0.3.0,<1.0.0`
 (PyPI), which provides `rust_io`, `rust_io.net` and `rust_io.files`. The repo no
 longer vendors the crates, so there is nothing to `cargo test` or `maturin
 develop` here; upgrade the pin in `backend/pyproject.toml` to pick up a release.

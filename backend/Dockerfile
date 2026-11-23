@@ -9,8 +9,8 @@ FROM python:3.12-slim-trixie
 #
 # For local builds, run the same steps manually (see CI workflow).
 #
-# Trixie ships glibc 2.41; the rust-io wheel is manylinux_2_38, so it installs
-# directly on both the host (Ubuntu 24.04, glibc 2.39) and this image.
+# Trixie ships glibc 2.41; the rust-io wheel is manylinux_2_17, so it installs
+# on any modern glibc or musl base image (host is Ubuntu 24.04, glibc 2.39).
 # ────────────────────────────────────────────────────────────────────
 
 ENV PYTHONUNBUFFERED=1 \

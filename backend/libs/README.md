@@ -15,7 +15,7 @@ libs/
 
 ```toml
 # backend/pyproject.toml
-"rust-io>=0.2,<0.3",
+"rust-io>=0.3.0,<1.0.0",
 ```
 
 ```bash
@@ -24,7 +24,7 @@ uv run python -c "import rust_io.net, rust_io.files"
 ```
 
 - 包主页:`https://pypi.org/project/rust-io/`
-- 平台要求:`cp312`、Linux x86_64 且 glibc ≥ 2.38(当前发布只有这一个 wheel)
+- 平台覆盖:CPython 3.12–3.15;Linux x86_64/aarch64(manylinux_2_17、musllinux_1_2)、macOS x86_64/arm64、Windows x64
 - 源码与发布流程在发布仓库(`github.com/lanshi17/LinguaSeeker`),不在本仓库
 - 可用性探测与降级封装:`backend/src/utils/rust_io.py`
 

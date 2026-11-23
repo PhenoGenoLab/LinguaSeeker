@@ -28,7 +28,7 @@ dependencies = [
     "loguru>=0.7.0",
     "mineru_vl_utils",
     "tokenizers>=0.22.0,<=0.23.0",
-    "rust-io>=0.2,<0.3",
+    "rust-io>=0.3.0,<1.0.0",
     "pymupdf>=1.27.2.3",
     "lingua-language-detector>=2.2.0",
     "langchain-core>=1.4.0",
@@ -71,7 +71,13 @@ name = "aliyun"
 url = "https://mirrors.aliyun.com/pypi/simple/"
 {% endif %}
 
+# rust-io 0.3.x is not on the mirrors yet; pin the package to PyPI.
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple/"
+
 [tool.uv.sources]
+rust-io = { index = "pypi" }
 
 [tool.pytest.ini_options]
 markers = [

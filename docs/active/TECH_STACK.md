@@ -44,7 +44,7 @@
 | Container | Docker Compose | — | Local development orchestration |
 | Python Package Tool | uv | — | Python dependency management |
 | JS Package Tool | nvm + npm | — | Node dependency management |
-| Rust Extension | `rust-io` (PyPI wheel) | 0.2.x | `rust_io.net` + `rust_io.files`; prebuilt, not compiled in this repo |
+| Rust Extension | `rust-io` (PyPI wheel) | 0.3.x | `rust_io.net` + `rust_io.files`; prebuilt, not compiled in this repo |
 
 ## 2. Architectural Principles
 
