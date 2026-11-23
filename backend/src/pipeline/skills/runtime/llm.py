@@ -25,6 +25,23 @@ class Provider(Protocol):
     def invoke(self, *, stage: str, model_id: str, prompt: str, payload: str) -> str: ...
 
 
+async def ainvoke_model_text(model: Any, content: str, **kwargs: Any) -> str:
+    """Call an AgentScope chat model and return its text blocks joined."""
+    from agentscope.message import TextBlock, UserMsg
+
+    response = await model([UserMsg(name="user", content=content)], **kwargs)
+    blocks = getattr(response, "content", None) or []
+    text = "".join(block.text for block in blocks if isinstance(block, TextBlock)).strip()
+    if not text:
+        raise ProviderError("empty model reply")
+    return text
+
+
+def invoke_model_text(model: Any, content: str, **kwargs: Any) -> str:
+    """Synchronous wrapper around :func:`ainvoke_model_text`."""
+    return run_coroutine_sync(lambda: ainvoke_model_text(model, content, **kwargs))
+
+
 class ChatModelProvider:
     """AgentScope chat model used by stages that are not agent-backed."""
 
@@ -57,4 +74,4 @@ class ChatModelProvider:
         return text
 
 
-__all__ = ["ChatModelProvider", "Provider", "ProviderError"]
+__all__ = ["ChatModelProvider", "Provider", "ProviderError", "ainvoke_model_text", "invoke_model_text"]

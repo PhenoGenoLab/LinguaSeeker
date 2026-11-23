@@ -11,7 +11,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from src.pipeline.skills.extraction.config_context import EvidenceExtractionConfigContext
-from src.pipeline.skills.extraction.providers import EvidenceModelTier, LangChainEvidenceProvider
+from src.pipeline.skills.extraction.providers import EvidenceModelTier, AgentScopeEvidenceProvider
 from src.core.tools.graph_retrieval.contracts import (
     CitationResponse,
     GraphEdgeResponse,
@@ -71,15 +71,15 @@ class GraphRagQaEngine:
         self._retriever = SubgraphRetriever(repository)
         self._provider = self._build_provider(settings)
 
-    def _build_provider(self, settings: Settings | None = None) -> LangChainEvidenceProvider:
-        """Build a LangChainEvidenceProvider from app settings or env config."""
+    def _build_provider(self, settings: Settings | None = None) -> AgentScopeEvidenceProvider:
+        """Build a AgentScopeEvidenceProvider from app settings or env config."""
         if settings is not None:
             ctx = EvidenceExtractionConfigContext.from_config(settings)
         else:
             from src.core.config import get_config
 
             ctx = EvidenceExtractionConfigContext.from_config(get_config())
-        return LangChainEvidenceProvider(ctx)
+        return AgentScopeEvidenceProvider(ctx)
 
     async def query(self, question: str, hops: int | None = None, mode: str | None = None) -> GraphRagQueryResponse:
         """Answer a natural-language question using the knowledge graph."""

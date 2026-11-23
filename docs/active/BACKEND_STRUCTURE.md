@@ -117,7 +117,6 @@ backend/
 │       ├── health.py                                   # Health check utilities
 │       ├── observability.py                            # Telemetry/tracing utilities
 │       ├── text.py                                     # Text processing utilities
-│       ├── llm_adapter.py                              # Unified LLM client adapter
 │       └── rust_io.py                                  # Rust IO Python bridge
 ├── libs/
 │   └── config-loader/                                  # Layered YAML config loader (pure Python)
@@ -550,7 +549,7 @@ tests/
 ├── core/
 │   ├── auth/            # Password auth tests
 │   ├── source_fact_chain/
-│   ├── tools/           # Tests for core/tools/<agent> (need rust_io/langchain)
+│   ├── tools/           # Tests for core/tools/<agent> (need rust_io/agentscope)
 │   └── test_*.py        # Config, contracts, layer boundaries
 ├── dao/                 # postgresql/ redis/ neo4j/
 ├── integration/         # App startup, literature profile e2e

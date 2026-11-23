@@ -5,15 +5,17 @@ from __future__ import annotations
 import asyncio
 import json
 import re
-from dataclasses import dataclass
 from typing import Any
+from dataclasses import dataclass
 
 import httpx
 import openai
-from langchain_core.messages import HumanMessage
 from loguru import logger
 
-from src.utils.llm_adapter import LLMPoolAdapter, create_llm_client
+from agentscope.model import ChatModelBase
+
+from src.pipeline.skills.runtime.agentscope_llm import create_chat_model
+from src.pipeline.skills.runtime.llm import ainvoke_model_text
 
 _MAX_RETRIES: int = 3
 _BACKOFF_BASE: float = 30.0  # seconds
@@ -82,7 +84,7 @@ class LocalTranslateGemmaClient:
 class LocalFirstTranslationAdapter:
     """Remote LLM adapter with a local TranslateGemma translation-first path."""
 
-    remote_llm: LLMPoolAdapter
+    remote_llm: ChatModelBase
     local_client: LocalTranslateGemmaClient | None = None
 
     async def translate_locally(self, prompt: str, stage: str) -> str | None:
@@ -124,7 +126,7 @@ def _extract_local_translation_source(prompt: str) -> str:
 
 
 async def _try_local_translation(
-    llm: LLMPoolAdapter | LocalFirstTranslationAdapter, prompt: str, stage: str
+    llm: ChatModelBase | LocalFirstTranslationAdapter, prompt: str, stage: str
 ) -> str | None:
     """Try the local translation path, returning None when remote fallback should run."""
     if not isinstance(llm, LocalFirstTranslationAdapter):
@@ -140,7 +142,7 @@ async def _try_local_translation(
     return None
 
 
-def _remote_llm(llm: LLMPoolAdapter | LocalFirstTranslationAdapter) -> LLMPoolAdapter:
+def _remote_llm(llm: ChatModelBase | LocalFirstTranslationAdapter) -> ChatModelBase:
     """Return the OpenAI-compatible remote adapter."""
     if isinstance(llm, LocalFirstTranslationAdapter):
         return llm.remote_llm
@@ -158,13 +160,12 @@ def create_llm(
     local_base_url: str = "",
     local_target_lang: str = "en",
     local_timeout: float = 60.0,
-) -> LLMPoolAdapter | LocalFirstTranslationAdapter:
+) -> ChatModelBase | LocalFirstTranslationAdapter:
     """Create an LLM client adapter with optional local translation-first path."""
-    remote_llm = create_llm_client(
+    remote_llm = create_chat_model(
         model=model,
         base_url=base_url,
-        api_key=api_key,
-        api_keys=api_keys,
+        api_keys=[key for key in [api_key, *(api_keys or [])] if key],
         temperature=temperature,
         max_tokens=max_tokens,
         timeout=timeout,
@@ -192,17 +193,15 @@ def create_json_llm(
     local_base_url: str = "",
     local_target_lang: str = "en",
     local_timeout: float = 60.0,
-) -> LLMPoolAdapter | LocalFirstTranslationAdapter:
+) -> ChatModelBase | LocalFirstTranslationAdapter:
     """Create an LLM client adapter with JSON response format and optional local translation."""
-    remote_llm = create_llm_client(
+    remote_llm = create_chat_model(
         model=model,
         base_url=base_url,
-        api_key=api_key,
-        api_keys=api_keys,
+        api_keys=[key for key in [api_key, *(api_keys or [])] if key],
         temperature=temperature,
         max_tokens=max_tokens,
         timeout=timeout,
-        model_kwargs={"response_format": {"type": "json_object"}},
     )
     if not local_base_url.strip():
         return remote_llm
@@ -214,6 +213,7 @@ def create_json_llm(
             timeout=local_timeout,
         ),
     )
+
 
 
 def _to_text(content: Any) -> str:
@@ -244,7 +244,7 @@ def _to_text(content: Any) -> str:
 
 
 async def invoke_with_retry(
-    llm: LLMPoolAdapter | LocalFirstTranslationAdapter,
+    llm: ChatModelBase | LocalFirstTranslationAdapter,
     prompt: str,
     stage: str,
     system_prompt: str = "",
@@ -267,7 +267,6 @@ async def invoke_with_retry(
     if local_translation is not None:
         return local_translation
 
-    messages = [HumanMessage(content=content)]
     remote_llm = _remote_llm(llm)
     sem = get_llm_semaphore()
 
@@ -275,8 +274,7 @@ async def invoke_with_retry(
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
             async with sem:
-                response = await remote_llm.ainvoke(messages)
-            return _to_text(response.content)
+                return await ainvoke_model_text(remote_llm, content)
         except _TRANSIENT_EXCEPTIONS as exc:
             last_exc = exc
             delay = _BACKOFF_BASE * (2 ** (attempt - 1))
@@ -294,7 +292,7 @@ async def invoke_with_retry(
 
 
 async def invoke_json_with_retry(
-    llm: LLMPoolAdapter | LocalFirstTranslationAdapter,
+    llm: ChatModelBase | LocalFirstTranslationAdapter,
     prompt: str,
     stage: str,
     system_prompt: str = "",
@@ -316,7 +314,6 @@ async def invoke_json_with_retry(
     if local_translation is not None:
         return json.dumps({"translation": local_translation}, ensure_ascii=False)
 
-    messages = [HumanMessage(content=content)]
     remote_llm = _remote_llm(llm)
     sem = get_llm_semaphore()
 
@@ -324,8 +321,7 @@ async def invoke_json_with_retry(
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
             async with sem:
-                response = await remote_llm.ainvoke(messages)
-            return _to_text(response.content)
+                return await ainvoke_model_text(remote_llm, content)
         except _TRANSIENT_EXCEPTIONS as exc:
             last_exc = exc
             delay = _BACKOFF_BASE * (2 ** (attempt - 1))

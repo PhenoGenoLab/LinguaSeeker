@@ -223,7 +223,6 @@ backend/
 │       ├── health.py                                       #   Health check
 │       ├── observability.py                                #   Telemetry/tracing
 │       ├── text.py                                         #   Text utilities
-│       ├── llm_adapter.py                                  #   LLM client adapter
 │       └── rust_io.py                                      #   Rust I/O Python bridge
 ├── libs/
 │   └── config-loader/                                      # Layered YAML config loader (pure Python)

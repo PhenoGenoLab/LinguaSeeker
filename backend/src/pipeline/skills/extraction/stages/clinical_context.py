@@ -16,7 +16,7 @@ from loguru import logger
 from src.pipeline.skills.extraction.infrastructure.chunking import STRONG_TIER_INPUT_BUDGET_TOKENS, build_block_prompt_chunks
 from src.core.tools.extraction.contracts import DocumentEvidenceMap, EvidenceItem, EvidenceStatus, TrackDocument
 from src.pipeline.skills.extraction.prompts import get_clinical_context_prompt
-from src.pipeline.skills.extraction.providers import EvidenceModelTier, LangChainEvidenceProvider
+from src.pipeline.skills.extraction.providers import EvidenceModelTier, AgentScopeEvidenceProvider
 from src.core.tools.translation.format.segmenter import estimate_tokens
 
 # Fields targeted by this supplement pass.
@@ -37,7 +37,7 @@ class ClinicalContextStage:
 
     def __init__(
         self,
-        provider: LangChainEvidenceProvider,
+        provider: AgentScopeEvidenceProvider,
         input_budget_tokens: int = STRONG_TIER_INPUT_BUDGET_TOKENS,
     ):
         self._provider = provider

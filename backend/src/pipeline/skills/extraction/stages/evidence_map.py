@@ -10,7 +10,7 @@ from src.core.tools.extraction.domain.channel_contracts import DocumentChannelCl
 from src.pipeline.skills.extraction.infrastructure.chunking import DEFAULT_INPUT_BUDGET_TOKENS, build_text_prompt_chunks, merge_evidence_maps
 from src.core.tools.extraction.contracts import RelevanceScanOutput, TrackDocument
 from src.pipeline.skills.extraction.prompts import get_evidence_map_prompt
-from src.pipeline.skills.extraction.providers import EvidenceModelTier, LangChainEvidenceProvider
+from src.pipeline.skills.extraction.providers import EvidenceModelTier, AgentScopeEvidenceProvider
 from src.core.tools.translation.format.segmenter import estimate_tokens
 
 _DEFAULT_CHUNK_CONCURRENCY = 5
@@ -19,7 +19,7 @@ _DEFAULT_CHUNK_CONCURRENCY = 5
 class RelevanceScanStage:
     def __init__(
         self,
-        provider: LangChainEvidenceProvider,
+        provider: AgentScopeEvidenceProvider,
         input_budget_tokens: int = DEFAULT_INPUT_BUDGET_TOKENS,
     ):
         self._provider = provider

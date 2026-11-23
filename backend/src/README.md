@@ -41,7 +41,6 @@ src/
 │   ├── neo4j/                   # 图数据库（预留）
 └── utils/               # 通用工具函数
     ├── logger.py                # 日志配置（loguru）
-    ├── llm_adapter.py           # LLM 客户端适配器（密钥池轮转）
     ├── exceptions.py            # 统一异常层次
     ├── health.py                # 启动健康检查
     ├── middleware.py             # 请求监控中间件
@@ -92,8 +91,10 @@ from src.utils.exceptions import NotFoundException, ValidationException
 ### 创建 LLM 客户端
 
 ```python
-from src.utils.llm_adapter import create_llm_client
-client = create_llm_client(model="gpt-5", api_keys=["sk-1", "sk-2"], base_url="...")
+from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
+from src.core.config import get_config
+
+model = build_chat_model(get_config(), tier="fast")   # AgentScope chat model
 ```
 
 ## Dependencies

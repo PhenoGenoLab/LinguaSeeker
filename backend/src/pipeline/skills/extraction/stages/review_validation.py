@@ -8,7 +8,7 @@ from typing import Literal
 from loguru import logger
 
 from src.core.tools.extraction.contracts import EvidenceItem, EvidenceReviewDecision, EvidenceReviewResponse, EvidenceStatus, EvidenceTriStateReviewDecision, EvidenceTriStateReviewResponse, SourceLocation, TrackDocument
-from src.pipeline.skills.extraction.providers import EvidenceModelTier, LangChainEvidenceProvider
+from src.pipeline.skills.extraction.providers import EvidenceModelTier, AgentScopeEvidenceProvider
 
 ReviewRejectPolicy = Literal["hard_veto", "soft_veto", "tristate_review"]
 DEFAULT_REVIEW_REJECT_POLICY: ReviewRejectPolicy = "tristate_review"
@@ -26,7 +26,7 @@ class ReviewValidationStage:
 
     def __init__(
         self,
-        provider: LangChainEvidenceProvider,
+        provider: AgentScopeEvidenceProvider,
         review_reject_policy: str = DEFAULT_REVIEW_REJECT_POLICY,
     ):
         self._provider = provider

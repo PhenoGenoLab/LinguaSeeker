@@ -257,7 +257,7 @@ def test_default_service_does_not_use_dataset_d_fields():
     # Patch at the module level to avoid real LLM initialization
     with (
         patch(
-            "src.pipeline.skills.extraction.api.LangChainEvidenceProvider",
+            "src.pipeline.skills.extraction.api.AgentScopeEvidenceProvider",
         ),
         patch(
             "src.pipeline.skills.extraction.api.EvidenceExtractionConfigContext",
@@ -284,7 +284,7 @@ def test_service_with_dataset_d_profile_restricts_fields():
 
     with (
         patch(
-            "src.pipeline.skills.extraction.api.LangChainEvidenceProvider",
+            "src.pipeline.skills.extraction.api.AgentScopeEvidenceProvider",
         ),
         patch(
             "src.pipeline.skills.extraction.api.EvidenceExtractionConfigContext",

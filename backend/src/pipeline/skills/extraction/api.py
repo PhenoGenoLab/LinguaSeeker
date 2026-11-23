@@ -10,7 +10,7 @@ from src.pipeline.skills.graph_retrieval.api import GraphRagService
 
 from src.pipeline.skills.extraction.config_context import EvidenceExtractionConfigContext
 from src.core.tools.extraction.contracts import DualEvidenceExtractionResult, DualTrackDocuments, EvidenceExtractionResult, EvidenceExtractionStatus, EvidenceStatus, ExtractionTarget, FieldEligibilitySummary, Track, TrackDocument
-from src.pipeline.skills.extraction.providers import LangChainEvidenceProvider
+from src.pipeline.skills.extraction.providers import AgentScopeEvidenceProvider
 from src.pipeline.skills.extraction.reconcile.api import CrossTrackReconcileService
 from src.core.tools.extraction.domain.field_profile import ExtractionProfile, resolve_profile_fields
 from src.pipeline.skills.extraction.stages.graph_context_retrieval import GraphContextConfig
@@ -74,7 +74,7 @@ class EvidenceExtractionService:
         graph_rag_service: GraphRagService | None = None,
     ):
         self._ctx = EvidenceExtractionConfigContext.from_config(cfg)
-        self._provider = LangChainEvidenceProvider(self._ctx)
+        self._provider = AgentScopeEvidenceProvider(self._ctx)
         self._extraction_mode = resolve_extraction_mode(extraction_mode)
         self._enable_review_validation = enable_review_validation
         self._enable_target_guard = enable_target_guard

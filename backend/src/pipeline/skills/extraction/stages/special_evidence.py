@@ -12,7 +12,7 @@ from src.core.tools.extraction.contracts import EvidenceItem, SpecialEvidenceRec
 from src.core.tools.extraction.core.normalization import RawSourceNormalizer
 from src.core.tools.extraction.core.special_evidence import SpecialEvidenceValidator
 from src.pipeline.skills.extraction.prompts import get_special_evidence_prompt
-from src.pipeline.skills.extraction.providers import EvidenceModelTier, LangChainEvidenceProvider
+from src.pipeline.skills.extraction.providers import EvidenceModelTier, AgentScopeEvidenceProvider
 from src.core.tools.translation.format.segmenter import estimate_tokens
 
 _DEFAULT_CHUNK_CONCURRENCY = 5
@@ -21,7 +21,7 @@ _DEFAULT_CHUNK_CONCURRENCY = 5
 class SpecialEvidenceStage:
     def __init__(
         self,
-        provider: LangChainEvidenceProvider,
+        provider: AgentScopeEvidenceProvider,
         input_budget_tokens: int = STRONG_TIER_INPUT_BUDGET_TOKENS,
     ):
         self._provider = provider

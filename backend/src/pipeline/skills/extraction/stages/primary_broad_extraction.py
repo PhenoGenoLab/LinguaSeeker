@@ -8,7 +8,7 @@ from src.core.tools.extraction.domain.catalog import get_field_spec
 from src.pipeline.skills.extraction.infrastructure.chunking import merge_sparse_evidence_items
 from src.core.tools.extraction.contracts import EvidenceItem, EvidenceStatus, PrimaryBroadEvidenceCandidate, PrimaryBroadExtractionResponse, SourceLocation, TrackDocument
 from src.core.tools.extraction.core.normalization import FieldValueNormalizer
-from src.pipeline.skills.extraction.providers import EvidenceModelTier, LangChainEvidenceProvider
+from src.pipeline.skills.extraction.providers import EvidenceModelTier, AgentScopeEvidenceProvider
 
 _INPUT_MAX_CHARS = 50_000
 
@@ -98,7 +98,7 @@ _PRIMARY_FIELD_LIST = (
 class PrimaryBroadExtractionStage:
     """Run the B8 high-recall primary extraction pass."""
 
-    def __init__(self, provider: LangChainEvidenceProvider):
+    def __init__(self, provider: AgentScopeEvidenceProvider):
         self._provider = provider
 
     def run(self, document: TrackDocument, graph_context: str = "") -> list[EvidenceItem]:

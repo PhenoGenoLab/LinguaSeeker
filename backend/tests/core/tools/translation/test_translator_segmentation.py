@@ -28,7 +28,7 @@ def mock_translator():
 
     with (
         patch(
-            "src.pipeline.skills.translation.translate.providers.create_llm_client",
+            "src.pipeline.skills.translation.translate.providers.create_chat_model",
             return_value=MagicMock(),
         ),
         patch(

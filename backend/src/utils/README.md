@@ -11,7 +11,6 @@
 ```
 utils/
 ├── logger.py              # 日志配置（loguru sinks + stdlib 拦截）
-├── llm_adapter.py         # LLM 客户端适配器（密钥池轮转 + 自动故障转移）
 ├── exceptions.py          # 统一异常层次（域错误码 ↔ HTTP 状态码映射）
 ├── health.py              # 启动依赖健康检查（PostgreSQL、Redis）
 ├── middleware.py           # 请求监控中间件（日志、request_id、耗时）
@@ -38,21 +37,6 @@ utils/
 from src.utils.logger import get_logger
 logger = get_logger()
 ```
-
-### `llm_adapter.py` — LLM 客户端适配器
-
-`LLMPoolAdapter` 包装多个 ChatOpenAI 客户端，提供：
-
-- **Round-robin 密钥轮转** — 高并发场景均匀分配请求
-- **自动故障转移** — 认证错误时标记密钥失败，自动切换
-- **结构化输出** — `_StructuredOutputWrapper` 支持 `with_structured_output()` 接口
-
-```python
-from src.utils.llm_adapter import create_llm_client
-client = create_llm_client(model="gpt-5", api_keys=["sk-1", "sk-2"], base_url="...")
-```
-
-`resolve_max_tokens()` 按百分比计算有效 max_tokens，确保不低于最小值。
 
 ### `exceptions.py` — 异常层次
 
@@ -132,7 +116,6 @@ ACMGException (基类，含 message + code)
 | 依赖 | 用途 |
 |------|------|
 | loguru | 结构化日志 |
-| langchain-core / langchain-openai | LLM 客户端抽象 |
 | langsmith | 追踪 |
 | slowapi | 限流 |
 | Starlette | ASGI 中间件 |

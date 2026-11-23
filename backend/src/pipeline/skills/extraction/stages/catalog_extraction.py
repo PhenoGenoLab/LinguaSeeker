@@ -22,7 +22,7 @@ from src.core.tools.extraction.contracts import DocumentEvidenceMap, EvidenceIte
 from src.core.tools.extraction.core.normalization import FieldValueNormalizer, RawSourceNormalizer
 from src.core.tools.extraction.domain.field_eligibility import FieldEligibilityPolicy
 from src.pipeline.skills.extraction.prompts import get_catalog_extraction_prompt, get_core_identity_retry_prompt
-from src.pipeline.skills.extraction.providers import EvidenceModelTier, LangChainEvidenceProvider
+from src.pipeline.skills.extraction.providers import EvidenceModelTier, AgentScopeEvidenceProvider
 from src.pipeline.skills.extraction.stages.block_selection import select_recall_first_blocks
 from src.core.tools.translation.format.segmenter import estimate_tokens
 
@@ -54,7 +54,7 @@ class CatalogExtractionError(Exception):
 class CatalogExtractionStage:
     def __init__(
         self,
-        provider: LangChainEvidenceProvider,
+        provider: AgentScopeEvidenceProvider,
         input_budget_tokens: int = STRONG_TIER_INPUT_BUDGET_TOKENS,
         field_profile: frozenset[str] | None = None,
     ):

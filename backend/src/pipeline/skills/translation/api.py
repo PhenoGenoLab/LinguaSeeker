@@ -34,12 +34,12 @@ class TranslationService:
     def __init__(self, cfg: Any):
         self._ctx = TranslationConfigContext.from_config(cfg)
         # Create LLM for formatter (redaction detection + OCR repair)
-        from src.utils.llm_adapter import create_llm_client
+        from src.pipeline.skills.runtime.agentscope_llm import create_chat_model
 
-        formatter_llm = create_llm_client(
+        formatter_llm = create_chat_model(
             model=self._ctx.model,
             base_url=self._ctx.base_url,
-            api_keys=self._ctx.api_keys,
+            api_keys=[self._ctx.api_key, *self._ctx.api_keys],
             max_tokens=self._ctx.max_tokens,
             temperature=self._ctx.temperature,
             timeout=self._ctx.timeout,

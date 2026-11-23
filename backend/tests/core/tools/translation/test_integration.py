@@ -1,22 +1,15 @@
-"""Integration test for the full translation pipeline with mocked LLM."""
+"""Integration test for the full translation pipeline with mocked model calls."""
 
-from collections.abc import Iterable
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.core.tools.translation.contracts import (
-    TranslationResult,
-)
+from src.core.tools.translation.contracts import TranslationResult
 from src.pipeline.skills.translation.api import TranslationService
-# The pipeline obtains LLM clients through ``create_llm_client``
-# (src/utils/llm_adapter.py).  The translator's clients (create_llm /
-# create_json_llm in providers.py) call the factory name bound in the
-# providers module, while the formatter's client is built via a
-# function-local import inside TranslationService.__init__ that resolves
-# the factory on the llm_adapter module itself.
-_PROVIDERS_FACTORY = "src.pipeline.skills.translation.translate.providers.create_llm_client"
-_ADAPTER_FACTORY = "src.utils.llm_adapter.create_llm_client"
+
+_ASYNC_HELPER = "src.pipeline.skills.translation.translate.providers.ainvoke_model_text"
+_SYNC_HELPER = "src.pipeline.skills.runtime.llm.invoke_model_text"
+_MODEL_FACTORY = "src.pipeline.skills.runtime.agentscope_llm.create_chat_model"
 
 
 @pytest.fixture
@@ -49,78 +42,58 @@ def english_pages():
     ]
 
 
-def _mock_llm_response(text: str) -> MagicMock:
-    """Create a mock LLM response whose ``content`` attribute is ``text``."""
-    response = MagicMock()
-    response.content = text
-    return response
-
-
-def _make_mock_client(ainvoke_responses: Iterable) -> MagicMock:
-    """Build a mock LLM client matching the LLMPoolAdapter interface.
-
-    ``ainvoke`` backs the translation pipeline (called through
-    ``invoke_with_retry`` / ``invoke_json_with_retry``); ``invoke`` backs the
-    formatter.  Both must return an object with a ``content`` attribute.
-    """
-    mock_client = MagicMock()
-    mock_client.ainvoke = AsyncMock(side_effect=list(ainvoke_responses))
-    mock_client.invoke = MagicMock(
-        return_value=_mock_llm_response(
-            "The patient carries a novel BRCA1 gene variant. This variant leads to loss of protein function."
-        )
-    )
-    return mock_client
-
-
-@patch(_ADAPTER_FACTORY)
-@patch(_PROVIDERS_FACTORY)
-def test_full_pipeline_chinese(mock_providers_factory, mock_api_factory, mock_cfg, chinese_pages):
-    """Full pipeline: Chinese → English with 3-stage pipeline."""
-    # Mock each LLM call: (terminology + system prompt gen + translate + self-review) × 2 runs
+def test_full_pipeline_chinese(mock_cfg, chinese_pages):
+    """Full pipeline: Chinese → English with the 3-stage pipeline."""
     _translate_response = (
         "The patient carries a novel BRCA1 gene variant. This variant leads to loss of protein function."
     )
     _sys_prompt = (
         "You are a biomedical translation engine. Translate from Chinese to English. Preserve markdown structure."
     )
+    responses = [
+        "基因:gene\n变异:variant",  # terminology
+        _sys_prompt,  # system prompt generation
+        _translate_response,  # full-document translate
+        _translate_response,  # self-review
+    ] * 2  # the pipeline runs twice (original + translated pass)
+    calls: list[str] = []
 
-    def _pipeline_run_responses() -> list[MagicMock]:
-        return [
-            _mock_llm_response("基因:gene\n变异:variant"),  # terminology
-            _mock_llm_response(_sys_prompt),  # system prompt generation
-            _mock_llm_response(_translate_response),  # full-document translate
-            _mock_llm_response(_translate_response),  # self-review
-        ]
+    async def fake_async(model, content, **kwargs):
+        calls.append(content)
+        return responses.pop(0)
 
-    mock_llm = _make_mock_client(_pipeline_run_responses() + _pipeline_run_responses())
-    mock_providers_factory.return_value = mock_llm
-    mock_api_factory.return_value = mock_llm
-
-    service = TranslationService(cfg=mock_cfg)
-    result = service.run_sync(chinese_pages)
+    with (
+        patch(_MODEL_FACTORY, return_value=MagicMock()),
+        patch(_ASYNC_HELPER, side_effect=fake_async),
+        patch(_SYNC_HELPER, return_value=_translate_response),
+    ):
+        service = TranslationService(cfg=mock_cfg)
+        result = service.run_sync(chinese_pages)
 
     assert isinstance(result, TranslationResult)
     assert result.source_language != "en"
-    assert len(result.translated_english) > 0
+    assert result.translated_english
     assert result.translated_english != result.formatted_original
-    assert len(result.sentences) > 0
-    assert mock_llm.ainvoke.await_count > 0
+    assert result.sentences
+    assert calls
 
 
-@patch(_ADAPTER_FACTORY)
-@patch(_PROVIDERS_FACTORY)
-def test_pipeline_skip_english(mock_providers_factory, mock_api_factory, mock_cfg, english_pages):
+def test_pipeline_skip_english(mock_cfg, english_pages):
     """Pipeline should skip translation for English documents."""
     _english = (
         "The patient carries a novel BRCA1 variant. This variant results in loss of protein function."
     )
-    mock_llm = _make_mock_client([_mock_llm_response(_english)])
-    mock_providers_factory.return_value = mock_llm
-    mock_api_factory.return_value = mock_llm
 
-    service = TranslationService(cfg=mock_cfg)
-    result = service.run_sync(english_pages)
+    async def fake_async(model, content, **kwargs):  # pragma: no cover - must not run
+        raise AssertionError("no translation call expected for English input")
+
+    with (
+        patch(_MODEL_FACTORY, return_value=MagicMock()),
+        patch(_ASYNC_HELPER, side_effect=fake_async),
+        patch(_SYNC_HELPER, return_value=_english),
+    ):
+        service = TranslationService(cfg=mock_cfg)
+        result = service.run_sync(english_pages)
 
     assert isinstance(result, TranslationResult)
     assert result.source_language == "en"

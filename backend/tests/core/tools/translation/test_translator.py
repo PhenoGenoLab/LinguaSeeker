@@ -12,7 +12,6 @@ from src.core.tools.translation.translate.blocks import _BLOCK_SEP
 from src.pipeline.skills.translation.translate.providers import (
     LocalFirstTranslationAdapter,
     LocalTranslateGemmaClient,
-    _to_text,
     invoke_json_with_retry,
     invoke_with_retry,
 )
@@ -175,30 +174,17 @@ async def test_invoke_with_retry_falls_back_to_remote_when_local_fails():
         async def translate(self, text):
             raise RuntimeError("local service unavailable")
 
-    class FakeResponse:
-        content = "remote translation"
+    adapter = LocalFirstTranslationAdapter(remote_llm=MagicMock(), local_client=FakeLocalClient())
 
-    remote_llm = AsyncMock()
-    remote_llm.ainvoke.return_value = FakeResponse()
-    adapter = LocalFirstTranslationAdapter(remote_llm=remote_llm, local_client=FakeLocalClient())
-
-    result = await invoke_with_retry(adapter, "[DOCUMENT]\n你好,世界", "translate/full")
+    with patch(
+        "src.pipeline.skills.translation.translate.providers.ainvoke_model_text",
+        new_callable=AsyncMock,
+        return_value="remote translation",
+    ) as mock_call:
+        result = await invoke_with_retry(adapter, "[DOCUMENT]\n你好,世界", "translate/full")
 
     assert result == "remote translation"
-    remote_llm.ainvoke.assert_awaited_once()
-
-
-def test_to_text_none():
-    assert _to_text(None) == ""
-
-
-def test_to_text_string():
-    assert _to_text(" hello ") == "hello"
-
-
-def test_to_text_list():
-    content = [{"type": "text", "text": "hello"}, {"type": "text", "text": "world"}]
-    assert "hello" in _to_text(content)
+    mock_call.assert_awaited_once()
 
 
 def test_check_block_coverage_rejects_abstract_only_translation():
@@ -424,9 +410,11 @@ def test_parse_terminology_skips_blank_lines():
 @pytest.mark.asyncio
 async def test_invoke_with_retry_success(mock_ctx):
     t = MultiStageTranslator(ctx=mock_ctx)
-    mock_response = MagicMock()
-    mock_response.content = "success"
-    with patch("langchain_openai.ChatOpenAI.ainvoke", new_callable=AsyncMock, return_value=mock_response):
+    with patch(
+        "src.pipeline.skills.translation.translate.providers.ainvoke_model_text",
+        new_callable=AsyncMock,
+        return_value="success",
+    ):
         result = await invoke_with_retry(t._llm, "test prompt", "test")
         assert result == "success"
 
@@ -436,14 +424,12 @@ async def test_invoke_with_retry_transient_then_success(mock_ctx):
     import httpx
 
     t = MultiStageTranslator(ctx=mock_ctx)
-    mock_response = MagicMock()
-    mock_response.content = "success"
     with patch(
-        "langchain_openai.ChatOpenAI.ainvoke",
+        "src.pipeline.skills.translation.translate.providers.ainvoke_model_text",
         new_callable=AsyncMock,
         side_effect=[
             httpx.ConnectError("connection failed"),
-            mock_response,
+            "success",
         ],
     ):
         result = await invoke_with_retry(t._llm, "test prompt", "test")
@@ -453,7 +439,11 @@ async def test_invoke_with_retry_transient_then_success(mock_ctx):
 @pytest.mark.asyncio
 async def test_invoke_with_retry_non_transient_no_retry(mock_ctx):
     t = MultiStageTranslator(ctx=mock_ctx)
-    with patch("langchain_openai.ChatOpenAI.ainvoke", new_callable=AsyncMock, side_effect=ValueError("bad input")):
+    with patch(
+        "src.pipeline.skills.translation.translate.providers.ainvoke_model_text",
+        new_callable=AsyncMock,
+        side_effect=ValueError("bad input"),
+    ):
         with pytest.raises(ValueError, match="bad input"):
             await invoke_with_retry(t._llm, "test prompt", "test")
 

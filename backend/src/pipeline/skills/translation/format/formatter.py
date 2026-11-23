@@ -247,11 +247,9 @@ class MarkdownFormatter(BaseFormatter):
         logger.info("LLM formatting: {} chars", len(doc.formatted_markdown))
 
         try:
-            # Use the translator's LLM invocation with retry
-            from langchain_core.messages import HumanMessage
+            from src.pipeline.skills.runtime.llm import invoke_model_text
 
-            response = self._llm.invoke([HumanMessage(content=prompt)])
-            formatted = response.content if hasattr(response, "content") else str(response)
+            formatted = invoke_model_text(self._llm, prompt)
 
             if _is_html(formatted):
                 logger.warning("LLM format output is HTML (likely error page), keeping original")

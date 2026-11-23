@@ -20,7 +20,7 @@ extract_evidence/
 ├── channel_contracts.py     # 文档通道分类与字段资格
 ├── chunking.py              # Token 预算提示分块
 ├── prompts.py               # 各阶段 LLM 提示模板
-├── providers.py             # LangChainEvidenceProvider — 多 tier LLM 提供者
+├── providers.py             # AgentScopeEvidenceProvider — 多 tier LLM 提供者
 ├── normalization.py         # ACMG 证据值规范化
 ├── field_eligibility.py     # 目标作用域字段资格策略
 ├── field_profile.py         # 评估配置文件与字段过滤
@@ -89,7 +89,7 @@ relevance_scan → block_selection → catalog_extraction
 
 ### LLM 提供者 (`providers.py`)
 
-`LangChainEvidenceProvider` — 多 tier LLM 提供者：
+`AgentScopeEvidenceProvider` — 多 tier LLM 提供者：
 - **FAST** — 快速 tier，使用 `cfg.llm` 配置
 - **STANDARD** — 标准 tier，使用 `cfg.reasoning` 配置
 - **STRONG** — 强推理 tier，使用 `cfg.reasoning` 配置 + high effort

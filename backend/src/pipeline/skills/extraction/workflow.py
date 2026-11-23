@@ -20,7 +20,7 @@ from src.core.tools.extraction.core.evidence_chain import EvidenceChainBuilder
 from src.core.tools.extraction.core.normalization import EvidenceItemNormalizer
 from src.core.tools.extraction.core.quality import TargetEntityGuard
 from src.core.tools.extraction.domain.normalization import AcmgEvidenceValueNormalizer
-from src.pipeline.skills.extraction.providers import LangChainEvidenceProvider
+from src.pipeline.skills.extraction.providers import AgentScopeEvidenceProvider
 from src.pipeline.skills.extraction.stages.catalog_extraction import CatalogExtractionStage
 from src.pipeline.skills.extraction.stages.clinical_context import ClinicalContextStage
 from src.pipeline.skills.extraction.stages.evidence_map import RelevanceScanStage
@@ -63,7 +63,7 @@ class EvidenceExtractionWorkflow:
 
     def __init__(
         self,
-        provider: LangChainEvidenceProvider,
+        provider: AgentScopeEvidenceProvider,
         input_budget_tokens: int = DEFAULT_INPUT_BUDGET_TOKENS,
         field_profile: frozenset[str] | None = None,
         extraction_mode: str = DEFAULT_EXTRACTION_WORKFLOW_MODE,

@@ -1967,20 +1967,6 @@ wheels = [
 ]
 
 [[package]]
-name = "langchain-openai"
-version = "1.3.0"
-source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple/" }
-dependencies = [
-    { name = "langchain-core" },
-    { name = "openai" },
-    { name = "tiktoken" },
-]
-sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/d0/91/27d6d95c27518f53620b6b746240729d509c0ca7f35d1e40303f992f38bd/langchain_openai-1.3.0.tar.gz", hash = "sha256:a6aa48dc5a00249eb75a7bc15d3cb342ba2494e9c397faec0586e73cf090ecf2", size = 1159484, upload-time = "2026-06-09T20:40:26.293Z" }
-wheels = [
-    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/e4/cd/8777c59b36861bbaa110c93032834e33fa7be527ac29f701bfedbe2e9633/langchain_openai-1.3.0-py3-none-any.whl", hash = "sha256:1d32326aea9b780c65698568ad253a82c4318b434112d05fb578aa20102c26e6", size = 99614, upload-time = "2026-06-09T20:40:25.084Z" },
-]
-
-[[package]]
 name = "langchain-protocol"
 version = "0.0.16"
 source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple/" }
@@ -2133,8 +2119,6 @@ dependencies = [
     { name = "fpdf2" },
     { name = "google-search-results" },
     { name = "httpx", extra = ["socks"] },
-    { name = "langchain-core" },
-    { name = "langchain-openai" },
     { name = "langgraph" },
     { name = "langsmith" },
     { name = "lingua-language-detector" },
@@ -2185,7 +2169,6 @@ ci = [
     { name = "coverage" },
     { name = "fastapi" },
     { name = "httpx", extra = ["socks"] },
-    { name = "langchain-core" },
     { name = "langgraph" },
     { name = "langsmith" },
     { name = "lingua-language-detector" },
@@ -2233,8 +2216,6 @@ requires-dist = [
     { name = "google-search-results", specifier = ">=2.4.2" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },
-    { name = "langchain-core", specifier = ">=1.4.0" },
-    { name = "langchain-openai", specifier = ">=1.2.1" },
     { name = "langgraph", specifier = ">=1.2.0" },
     { name = "langsmith", specifier = ">=0.8.3" },
     { name = "lingua-language-detector", specifier = ">=2.2.0" },
@@ -2280,7 +2261,6 @@ ci = [
     { name = "coverage", extras = ["toml"], specifier = ">=7.6.0" },
     { name = "fastapi", specifier = ">=0.111.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },
-    { name = "langchain-core", specifier = ">=1.4.0" },
     { name = "langgraph", specifier = ">=1.2.0" },
     { name = "langsmith", specifier = ">=0.8.3" },
     { name = "lingua-language-detector", specifier = ">=2.2.0" },

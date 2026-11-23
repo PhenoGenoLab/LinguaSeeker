@@ -1,15 +1,16 @@
-import pytest
-from unittest.mock import MagicMock, patch
+"""Tests for the AgentScope-backed structured evidence provider."""
 
-from langchain_core.exceptions import OutputParserException
+import asyncio
+from unittest.mock import AsyncMock, patch
+
+import httpx
+import pytest
 from pydantic import BaseModel
 
-from src.pipeline.skills.extraction.config_context import (
-    EvidenceExtractionConfigContext,
-)
+from src.pipeline.skills.extraction.config_context import EvidenceExtractionConfigContext
 from src.pipeline.skills.extraction.providers import (
+    AgentScopeEvidenceProvider,
     EvidenceModelTier,
-    LangChainEvidenceProvider,
 )
 
 
@@ -17,27 +18,29 @@ class DemoSchema(BaseModel):
     answer: str
 
 
-def test_provider_uses_strong_model_for_strong_tier():
-    ctx = EvidenceExtractionConfigContext(
-        api_key="key",
-        base_url="http://localhost:8001/v1",
-        max_tokens=8192,
-        reasoning_api_key="reasoning-key",
-        reasoning_base_url="http://localhost:8001/v1",
-        fast_model="fast",
-        standard_model="standard",
-        strong_model="strong",
-    )
+def _ctx(**overrides: object) -> EvidenceExtractionConfigContext:
+    values: dict[str, object] = {
+        "api_key": "key",
+        "api_keys": [],
+        "base_url": "http://localhost:8001/v1",
+        "reasoning_api_key": "reasoning-key",
+        "reasoning_api_keys": [],
+        "reasoning_base_url": "http://localhost:8001/v1",
+        "fast_model": "fast",
+        "standard_model": "standard",
+        "strong_model": "strong",
+        "max_tokens": 8192,
+    }
+    values.update(overrides)
+    return EvidenceExtractionConfigContext(**values)  # type: ignore[arg-type]
 
-    client = MagicMock()
-    structured = MagicMock()
-    structured.invoke.return_value = DemoSchema(answer="ok")
-    client.with_structured_output.return_value = structured
-    with patch(
-        "src.pipeline.skills.extraction.providers.create_llm_client",
-        return_value=client,
-    ) as create_client:
-        provider = LangChainEvidenceProvider(ctx)
+
+def test_strong_tier_routes_to_reasoning_model_and_keys():
+    provider = AgentScopeEvidenceProvider(_ctx())
+    with (
+        patch("src.pipeline.skills.extraction.providers.create_chat_model", return_value="model") as factory,
+        patch("src.pipeline.skills.extraction.providers.invoke_model_text", return_value='{"answer": "ok"}'),
+    ):
         result = provider.invoke_structured(
             prompt="Return JSON.",
             output_schema=DemoSchema,
@@ -46,242 +49,123 @@ def test_provider_uses_strong_model_for_strong_tier():
         )
 
     assert result.answer == "ok"
-    create_client.assert_called_once_with(
+    factory.assert_called_once_with(
         model="strong",
         base_url="http://localhost:8001/v1",
         api_keys=["reasoning-key"],
         max_tokens=8192,
         temperature=0.0,
         timeout=180,
-        model_kwargs={"reasoning_effort": "high"},
+        reasoning_effort="high",
     )
 
 
-def test_provider_uses_json_mode_when_requested():
-    ctx = EvidenceExtractionConfigContext(
-        api_key="key",
-        base_url="http://localhost:8001/v1",
-        max_tokens=8192,
-        reasoning_api_key="reasoning-key",
-        reasoning_base_url="http://localhost:8001/v1",
-        fast_model="fast",
-        standard_model="standard",
-        strong_model="strong",
-    )
-
-    client = MagicMock()
-    structured = MagicMock()
-    structured.invoke.return_value = DemoSchema(answer="ok")
-    client.with_structured_output.return_value = structured
-    with patch(
-        "src.pipeline.skills.extraction.providers.create_llm_client",
-        return_value=client,
+def test_fast_tier_routes_to_fast_model_and_keys():
+    provider = AgentScopeEvidenceProvider(_ctx())
+    with (
+        patch("src.pipeline.skills.extraction.providers.create_chat_model", return_value="model") as factory,
+        patch("src.pipeline.skills.extraction.providers.invoke_model_text", return_value='{"answer": "ok"}'),
     ):
-        provider = LangChainEvidenceProvider(ctx)
-        result = provider.invoke_structured(
-            prompt='Return JSON with {"answer": "ok"}.',
-            output_schema=DemoSchema,
-            tier=EvidenceModelTier.FAST,
-            stage="evidence_map",
-            response_method="json_mode",
-        )
-
-    assert result.answer == "ok"
-    client.with_structured_output.assert_called_once_with(DemoSchema, method="json_mode")
-
-
-def test_provider_falls_back_to_plain_json_when_response_format_is_unsupported():
-    ctx = EvidenceExtractionConfigContext(
-        api_key="key",
-        base_url="http://localhost:8001/v1",
-        max_tokens=8192,
-        reasoning_api_key="reasoning-key",
-        reasoning_base_url="http://localhost:8001/v1",
-        fast_model="fast",
-        standard_model="standard",
-        strong_model="strong",
-    )
-
-    client = MagicMock()
-    structured = MagicMock()
-    structured.invoke.side_effect = ValueError("This response_format type is unavailable now")
-    fallback_message = MagicMock()
-    fallback_message.content = '{"answer": "ok"}'
-    client.invoke.return_value = fallback_message
-    client.with_structured_output.return_value = structured
-    with patch(
-        "src.pipeline.skills.extraction.providers.create_llm_client",
-        return_value=client,
-    ):
-        provider = LangChainEvidenceProvider(ctx)
-        result = provider.invoke_structured(
-            prompt="Return JSON.",
-            output_schema=DemoSchema,
-            tier=EvidenceModelTier.STRONG,
-            stage="demo",
-        )
-
-    assert result.answer == "ok"
-    structured.invoke.assert_called_once()
-    client.invoke.assert_called_once()
-
-
-def test_provider_falls_back_to_plain_json_when_structured_parser_fails():
-    ctx = EvidenceExtractionConfigContext(
-        api_key="key",
-        base_url="http://localhost:8001/v1",
-        max_tokens=8192,
-        reasoning_api_key="reasoning-key",
-        reasoning_base_url="http://localhost:8001/v1",
-        fast_model="fast",
-        standard_model="standard",
-        strong_model="strong",
-    )
-
-    client = MagicMock()
-    structured = MagicMock()
-    structured.invoke.side_effect = OutputParserException("Invalid json output: not json")
-    fallback_message = MagicMock()
-    fallback_message.content = '{"answer": "ok"}'
-    client.invoke.return_value = fallback_message
-    client.with_structured_output.return_value = structured
-    with patch(
-        "src.pipeline.skills.extraction.providers.create_llm_client",
-        return_value=client,
-    ):
-        provider = LangChainEvidenceProvider(ctx)
-        result = provider.invoke_structured(
-            prompt="Return JSON.",
-            output_schema=DemoSchema,
-            tier=EvidenceModelTier.STRONG,
-            stage="primary_broad_extraction",
-        )
-
-    assert result.answer == "ok"
-    structured.invoke.assert_called_once()
-    client.invoke.assert_called_once()
-
-
-def test_provider_fallback_validates_list_schema():
-    ctx = EvidenceExtractionConfigContext(
-        api_key="key",
-        base_url="http://localhost:8001/v1",
-        max_tokens=8192,
-        reasoning_api_key="reasoning-key",
-        reasoning_base_url="http://localhost:8001/v1",
-        fast_model="fast",
-        standard_model="standard",
-        strong_model="strong",
-    )
-
-    client = MagicMock()
-    fallback_message = MagicMock()
-    fallback_message.content = '[{"answer": "ok"}]'
-    client.invoke.return_value = fallback_message
-    with patch(
-        "src.pipeline.skills.extraction.providers.create_llm_client",
-        return_value=client,
-    ):
-        provider = LangChainEvidenceProvider(ctx)
-        result = provider.invoke_structured(
-            prompt="Return JSON.",
-            output_schema=list[DemoSchema],
-            tier=EvidenceModelTier.STRONG,
-            stage="demo",
-        )
-
-    assert len(result) == 1
-    assert result[0].answer == "ok"
-    client.with_structured_output.assert_not_called()
-
-
-def test_provider_fallback_repairs_invalid_json_backslash_escapes():
-    ctx = EvidenceExtractionConfigContext(
-        api_key="key",
-        base_url="http://localhost:8001/v1",
-        max_tokens=8192,
-        reasoning_api_key="reasoning-key",
-        reasoning_base_url="http://localhost:8001/v1",
-        fast_model="fast",
-        standard_model="standard",
-        strong_model="strong",
-    )
-
-    client = MagicMock()
-    structured = MagicMock()
-    structured.invoke.side_effect = ValueError("This response_format type is unavailable now")
-    fallback_message = MagicMock()
-    fallback_message.content = '{"answer": "GLA\\p.R227X"}'
-    client.invoke.return_value = fallback_message
-    client.with_structured_output.return_value = structured
-    with patch(
-        "src.pipeline.skills.extraction.providers.create_llm_client",
-        return_value=client,
-    ):
-        provider = LangChainEvidenceProvider(ctx)
-        result = provider.invoke_structured(
-            prompt="Return JSON.",
-            output_schema=DemoSchema,
-            tier=EvidenceModelTier.STRONG,
-            stage="demo",
-        )
-
-    assert result.answer == "GLA\\p.R227X"
-
-
-def test_provider_fallback_reasks_llm_to_repair_invalid_json():
-    ctx = EvidenceExtractionConfigContext(
-        api_key="key",
-        base_url="http://localhost:8001/v1",
-        max_tokens=8192,
-        reasoning_api_key="reasoning-key",
-        reasoning_base_url="http://localhost:8001/v1",
-        fast_model="fast",
-        standard_model="standard",
-        strong_model="strong",
-    )
-
-    client = MagicMock()
-    invalid_message = MagicMock()
-    invalid_message.content = '{"answer": "broken"'
-    repaired_message = MagicMock()
-    repaired_message.content = '[{"answer": "ok"}]'
-    client.invoke.side_effect = [invalid_message, repaired_message]
-    with patch(
-        "src.pipeline.skills.extraction.providers.create_llm_client",
-        return_value=client,
-    ):
-        provider = LangChainEvidenceProvider(ctx)
-        result = provider.invoke_structured(
-            prompt="Return JSON.",
-            output_schema=list[DemoSchema],
-            tier=EvidenceModelTier.STRONG,
-            stage="demo",
-        )
-
-    assert result[0].answer == "ok"
-    assert client.invoke.call_count == 2
-
-
-def test_provider_fails_fast_when_tier_has_no_api_keys():
-    ctx = EvidenceExtractionConfigContext(
-        api_key="",
-        api_keys=[],
-        base_url="https://api.example.test/v1",
-        reasoning_api_key="",
-        reasoning_api_keys=[],
-        reasoning_base_url="https://api.example.test/v1",
-        fast_model="fast",
-        standard_model="standard",
-        strong_model="strong",
-    )
-
-    provider = LangChainEvidenceProvider(ctx)
-
-    with pytest.raises(RuntimeError, match="missing LLM API key"):
         provider.invoke_structured(
             prompt="Return JSON.",
             output_schema=DemoSchema,
-            tier=EvidenceModelTier.STRONG,
+            tier=EvidenceModelTier.FAST,
             stage="demo",
         )
+
+    kwargs = factory.call_args.kwargs
+    assert kwargs["model"] == "fast"
+    assert kwargs["api_keys"] == ["key"]
+    assert kwargs["reasoning_effort"] is None
+
+
+def test_missing_api_keys_fails_fast():
+    provider = AgentScopeEvidenceProvider(_ctx(api_keys=[], api_key="", reasoning_api_keys=[], reasoning_api_key=""))
+    with pytest.raises(RuntimeError, match="missing LLM API key"):
+        provider.invoke_structured(
+            prompt="x",
+            output_schema=DemoSchema,
+            tier=EvidenceModelTier.FAST,
+            stage="demo",
+        )
+
+
+def test_structured_output_accepts_fenced_json():
+    provider = AgentScopeEvidenceProvider(_ctx())
+    with (
+        patch("src.pipeline.skills.extraction.providers.create_chat_model", return_value="model"),
+        patch("src.pipeline.skills.extraction.providers.invoke_model_text", return_value='```json\n{"answer": "ok"}\n```'),
+    ):
+        result = provider.invoke_structured("x", DemoSchema, EvidenceModelTier.FAST, "demo")
+    assert result.answer == "ok"
+
+
+def test_list_schema_is_supported():
+    provider = AgentScopeEvidenceProvider(_ctx())
+    with (
+        patch("src.pipeline.skills.extraction.providers.create_chat_model", return_value="model"),
+        patch("src.pipeline.skills.extraction.providers.invoke_model_text", return_value='[{"answer": "a"}]'),
+    ):
+        result = provider.invoke_structured("x", list[DemoSchema], EvidenceModelTier.FAST, "demo")  # type: ignore[arg-type]
+    assert [item.answer for item in result] == ["a"]
+
+
+def test_invalid_json_asks_the_model_to_repair_it():
+    provider = AgentScopeEvidenceProvider(_ctx())
+    with (
+        patch("src.pipeline.skills.extraction.providers.create_chat_model", return_value="model"),
+        patch(
+            "src.pipeline.skills.extraction.providers.invoke_model_text",
+            side_effect=["{not json", '{"answer": "repaired"}'],
+        ) as invoke,
+    ):
+        result = provider.invoke_structured("x", DemoSchema, EvidenceModelTier.FAST, "demo")
+
+    assert result.answer == "repaired"
+    assert invoke.call_count == 2
+
+
+def test_backslash_escapes_are_repaired_without_second_call():
+    provider = AgentScopeEvidenceProvider(_ctx())
+    with (
+        patch("src.pipeline.skills.extraction.providers.create_chat_model", return_value="model"),
+        patch(
+            "src.pipeline.skills.extraction.providers.invoke_model_text",
+            return_value='{"answer": "C:\\\\Users"}',
+        ) as invoke,
+    ):
+        result = provider.invoke_structured("x", DemoSchema, EvidenceModelTier.FAST, "demo")
+
+    assert result.answer
+    assert invoke.call_count == 1
+
+
+def test_transient_failure_retries_then_succeeds():
+    provider = AgentScopeEvidenceProvider(_ctx(max_retries=2))
+    with (
+        patch("src.pipeline.skills.extraction.providers.create_chat_model", return_value="model"),
+        patch(
+            "src.pipeline.skills.extraction.providers.invoke_model_text",
+            side_effect=[httpx.ConnectError("down"), '{"answer": "ok"}'],
+        ) as invoke,
+        patch("src.pipeline.skills.extraction.providers.time.sleep"),
+    ):
+        result = provider.invoke_structured("x", DemoSchema, EvidenceModelTier.FAST, "demo")
+
+    assert result.answer == "ok"
+    assert invoke.call_count == 2
+
+
+def test_async_structured_output_parses_json():
+    provider = AgentScopeEvidenceProvider(_ctx())
+    with (
+        patch("src.pipeline.skills.extraction.providers.create_chat_model", return_value="model"),
+        patch(
+            "src.pipeline.skills.extraction.providers.ainvoke_model_text",
+            new_callable=AsyncMock,
+            return_value='{"answer": "async"}',
+        ),
+    ):
+        result = asyncio.run(provider.ainvoke_structured("x", DemoSchema, EvidenceModelTier.STANDARD, "demo"))
+
+    assert result.answer == "async"

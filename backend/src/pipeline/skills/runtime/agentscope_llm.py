@@ -68,28 +68,50 @@ class RotatingOpenAIChatModel(OpenAIChatModel):
         raise last_error
 
 
-def build_chat_model(cfg: Any, *, tier: str = "fast") -> ChatModelBase:
-    """Build an AgentScope chat model for one tier (fast or reasoning)."""
-    provider = cfg.llm if tier == "fast" else cfg.reasoning
-    model = provider.model or cfg.llm.model
-    keys = list(getattr(provider, "all_api_keys", []))
+def create_chat_model(
+    *,
+    model: str,
+    base_url: str,
+    api_keys: list[str],
+    temperature: float = 0.0,
+    max_tokens: int = 8192,
+    timeout: float = 180,
+    reasoning_effort: str | None = None,
+    max_retries: int = 0,
+) -> ChatModelBase:
+    """Build an AgentScope chat model from explicit connection settings."""
+    keys = [key.strip() for key in api_keys if key and key.strip()]
     if not keys:
-        raise ValueError(f"agent runtime: no API key configured for tier={tier}")
-
+        raise ValueError("agent runtime: no API key configured")
     parameters = OpenAIChatModel.Parameters(
-        max_tokens=getattr(provider, "max_tokens", 8192),
-        temperature=0.0,
-        reasoning_effort=getattr(provider, "reasoning_effort", None) or None,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        reasoning_effort=reasoning_effort or None,
     )
-    credentials = [OpenAICredential(api_key=key, base_url=provider.base_url) for key in keys]
+    credentials = [OpenAICredential(api_key=key, base_url=base_url) for key in keys]
     return RotatingOpenAIChatModel(
         credentials=credentials,
         model=model,
         parameters=parameters,
         stream=False,
-        max_retries=getattr(provider, "max_retries", 0),
-        client_kwargs={"timeout": getattr(provider, "timeout", 180)},
+        max_retries=max_retries,
+        client_kwargs={"timeout": timeout},
     )
 
 
-__all__ = ["RotatingOpenAIChatModel", "build_chat_model"]
+def build_chat_model(cfg: Any, *, tier: str = "fast") -> ChatModelBase:
+    """Build an AgentScope chat model for one tier (fast or reasoning)."""
+    provider = cfg.llm if tier == "fast" else cfg.reasoning
+    return create_chat_model(
+        model=provider.model or cfg.llm.model,
+        base_url=provider.base_url,
+        api_keys=list(getattr(provider, "all_api_keys", [])),
+        temperature=0.0,
+        max_tokens=getattr(provider, "max_tokens", 8192),
+        timeout=getattr(provider, "timeout", 180),
+        reasoning_effort=getattr(provider, "reasoning_effort", None) or None,
+        max_retries=getattr(provider, "max_retries", 0),
+    )
+
+
+__all__ = ["RotatingOpenAIChatModel", "build_chat_model", "create_chat_model"]
