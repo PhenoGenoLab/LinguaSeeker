@@ -65,7 +65,7 @@ bilingual rows + dual-track projection (Phase 4)
 - `chain_run.json` 复用键 = `source_hash` + `ChainConfig`（窗口/模型/预算）+
   `PromptVersions`（抽取/核验/翻译/呈现提示词与呈现版本）。
 - `facts=0` 的运行默认**不复用**：provider 瞬时返回合法空列表不应变成永久空证据。
-- `Phase3Adapter.run(state, force_rebuild=True)` 可显式忽略已持久化运行并重新调用模型。
+- `FactChainAdapter.run(state, force_rebuild=True)` 可显式忽略已持久化运行并重新调用模型。
 - 复用分支同样重写 `chain_run.json` 与全部 JSONL，修复“chain_run 之后、JSONL 之前
   崩溃”的不可恢复状态；`supported > 0` 时会清除遗留的 `skip_phase_4_reason`。
 

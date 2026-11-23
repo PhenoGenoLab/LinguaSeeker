@@ -1,8 +1,8 @@
 """Test the pre-parsed markdown handoff across Phase 1 and Phase 2.
 
 With pre-parsed markdown set on the state:
-- Phase1Adapter (acquisition) is SKIPPED and produces no PDF path.
-- Phase2Adapter (parsing) writes the canonical output.md + metadata.json
+- AcquisitionAdapter (acquisition) is SKIPPED and produces no PDF path.
+- ParsingAdapter (parsing) writes the canonical output.md + metadata.json
   without invoking MinerU.
 """
 
@@ -15,8 +15,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from src.runs.contracts import PhaseStatus, PipelineGraphState, PipelineMode, SourceType
-from src.pipeline.graph.phases.phase_1 import Phase1Adapter
-from src.pipeline.graph.phases.phase_2 import Phase2Adapter
+from src.pipeline.graph.phases.acquisition import AcquisitionAdapter
+from src.pipeline.graph.phases.parsing import ParsingAdapter
 
 MARKDOWN = "# Title\n\nMECP2 c.473C>T pathogenic variant in proband."
 
@@ -35,11 +35,11 @@ def state() -> PipelineGraphState:
 
 @pytest.mark.asyncio
 async def test_phase_1_skipped_with_pre_parsed_markdown(state):
-    """Phase1Adapter marks acquisition SKIPPED and sets an empty pdf_path."""
+    """AcquisitionAdapter marks acquisition SKIPPED and sets an empty pdf_path."""
     mock_acquisition = MagicMock()
     mock_acquisition.acquire = AsyncMock()
 
-    adapter = Phase1Adapter(acquisition_service=mock_acquisition)
+    adapter = AcquisitionAdapter(acquisition_service=mock_acquisition)
 
     result = await adapter.run(state)
 
@@ -52,11 +52,11 @@ async def test_phase_1_skipped_with_pre_parsed_markdown(state):
 
 @pytest.mark.asyncio
 async def test_phase_2_writes_pre_parsed_markdown_without_mineru(state):
-    """Phase2Adapter consumes the markdown directly, skipping MinerU."""
+    """ParsingAdapter consumes the markdown directly, skipping MinerU."""
     mock_parse = MagicMock()
     mock_parse.parse_local_files_and_save = AsyncMock()
 
-    adapter = Phase2Adapter(parse_service=mock_parse)
+    adapter = ParsingAdapter(parse_service=mock_parse)
 
     result = await adapter.run(state)
 

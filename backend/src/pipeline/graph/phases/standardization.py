@@ -1,4 +1,4 @@
-"""Phase 4 adapter: entity standardization and knowledge alignment.
+"""Standardization adapter: entity standardization and knowledge alignment.
 
 Raises classified errors for orchestrator-level retry decisions.
 Sets skip_phase_4_reason when standardized_count == 0.
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 _RETRYABLE_ERRORS = build_retryable_errors()
 
 
-class Phase4Adapter:
+class StandardizationAdapter:
     """Thin adapter wrapping EntityStandardizationService.
 
     Standardizes extracted entities against terminology databases,

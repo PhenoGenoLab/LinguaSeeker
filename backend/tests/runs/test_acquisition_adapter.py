@@ -11,7 +11,7 @@ from src.runs.contracts import (
     RetryablePhaseError,
     PermanentPhaseError,
 )
-from src.pipeline.graph.phases.phase_1 import Phase1Adapter
+from src.pipeline.graph.phases.acquisition import AcquisitionAdapter
 
 
 @pytest.fixture
@@ -57,7 +57,7 @@ async def test_phase_1_adapter_success(sample_state: PipelineGraphState):
     mock_acquisition = MagicMock()
     mock_acquisition.acquire = AsyncMock(return_value=_make_acquisition_result(stored_file=_stored_pdf()))
 
-    adapter = Phase1Adapter(acquisition_service=mock_acquisition)
+    adapter = AcquisitionAdapter(acquisition_service=mock_acquisition)
 
     result_state = await adapter.run(sample_state)
 
@@ -76,7 +76,7 @@ async def test_phase_1_adapter_raises_permanent_on_acquisition_failure(
     mock_acquisition = MagicMock()
     mock_acquisition.acquire = AsyncMock(return_value=_make_acquisition_result(success=False, error="File not found"))
 
-    adapter = Phase1Adapter(acquisition_service=mock_acquisition)
+    adapter = AcquisitionAdapter(acquisition_service=mock_acquisition)
 
     with pytest.raises(PermanentPhaseError, match="File not found"):
         await adapter.run(sample_state)
@@ -90,7 +90,7 @@ async def test_phase_1_adapter_raises_retryable_on_timeout(
     mock_acquisition = MagicMock()
     mock_acquisition.acquire = AsyncMock(side_effect=TimeoutError("acquisition timed out"))
 
-    adapter = Phase1Adapter(acquisition_service=mock_acquisition)
+    adapter = AcquisitionAdapter(acquisition_service=mock_acquisition)
 
     with pytest.raises(RetryablePhaseError, match="timed out"):
         await adapter.run(sample_state)
@@ -123,7 +123,7 @@ async def test_phase_1_adapter_reads_upload_file_as_bytes(tmp_path):
     mock_acquisition = MagicMock()
     mock_acquisition.acquire = AsyncMock(side_effect=capture_acquire)
 
-    adapter = Phase1Adapter(acquisition_service=mock_acquisition)
+    adapter = AcquisitionAdapter(acquisition_service=mock_acquisition)
 
     result_state = await adapter.run(state)
 

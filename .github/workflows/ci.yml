@@ -107,7 +107,7 @@ jobs:
           src/pipeline/skills/extraction/prompts
           src/pipeline/skills/translation/stage.py
           src/pipeline/skills/translation/prompts.py
-          src/pipeline/graph/phases/phase_3.py
+          src/pipeline/graph/phases/fact_chain.py
           src/runs/contracts.py
 
   backend-test:
@@ -169,7 +169,7 @@ jobs:
           --cov=src.pipeline.skills.extraction.extract
           --cov=src.pipeline.skills.extraction.runner
           --cov=src.pipeline.skills.translation.stage
-          --cov=src.pipeline.graph.phases.phase_3
+          --cov=src.pipeline.graph.phases.fact_chain
           --cov=src.runs.contracts
           --cov-branch
           --cov-report=term-missing

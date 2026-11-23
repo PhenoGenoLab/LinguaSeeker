@@ -156,10 +156,10 @@ def wire_dependencies() -> None:
     from src.pipeline.skills.standardization.api import (
         EntityStandardizationService,
     )
-    from src.pipeline.graph.phases.phase_1 import Phase1Adapter
-    from src.pipeline.graph.phases.phase_2 import Phase2Adapter
-    from src.pipeline.graph.phases.phase_3 import Phase3Adapter
-    from src.pipeline.graph.phases.phase_4 import Phase4Adapter
+    from src.pipeline.graph.phases.acquisition import AcquisitionAdapter
+    from src.pipeline.graph.phases.parsing import ParsingAdapter
+    from src.pipeline.graph.phases.fact_chain import FactChainAdapter
+    from src.pipeline.graph.phases.standardization import StandardizationAdapter
     from src.pipeline.graph.topology import PipelineOrchestrator
     from src.pipeline.skills.acquisition.service import AcquisitionSkill
     from src.pipeline.skills.extraction.service import SourceFactChainService
@@ -231,10 +231,10 @@ def wire_dependencies() -> None:
     # ── Phase adapters ──
 
     phase_adapters = {
-        "phase_1": Phase1Adapter(acquisition_skill),
-        "phase_2": Phase2Adapter(parsing_skill),
-        "phase_3": Phase3Adapter(source_fact_chain),
-        "phase_4": Phase4Adapter(standardization_skill, session_factory),
+        "phase_1": AcquisitionAdapter(acquisition_skill),
+        "phase_2": ParsingAdapter(parsing_skill),
+        "phase_3": FactChainAdapter(source_fact_chain),
+        "phase_4": StandardizationAdapter(standardization_skill, session_factory),
     }
 
     # ── Orchestrator + Runner ──

@@ -1,4 +1,4 @@
-"""Phase 2 adapter: document parsing (MinerU).
+"""Parsing adapter: document parsing (MinerU).
 
 Raises classified errors for orchestrator-level retry decisions.
 """
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 _RETRYABLE_ERRORS = build_retryable_errors()
 
 
-class Phase2Adapter:
+class ParsingAdapter:
     """Thin adapter wrapping ParseDocumentService.
 
     When ``state.pre_parsed_markdown`` is set (uploaded directly or produced

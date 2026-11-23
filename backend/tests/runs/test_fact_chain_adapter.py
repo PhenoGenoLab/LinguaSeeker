@@ -17,7 +17,7 @@ from src.runs.contracts import (
     SkipPhase4Reason,
     SourceType,
 )
-from src.pipeline.graph.phases.phase_3 import Phase3Adapter
+from src.pipeline.graph.phases.fact_chain import FactChainAdapter
 from src.core.tools.extraction.contracts import (
     DualEvidenceExtractionResult,
     ExtractionTarget,
@@ -122,7 +122,7 @@ def build_adapter(
     *,
     window_chars: int = 300,
     window_overlap: int = 60,
-) -> tuple[Phase3Adapter, StubProvider]:
+) -> tuple[FactChainAdapter, StubProvider]:
     provider = StubProvider(facts)
     cfg = SimpleNamespace(
         llm=SimpleNamespace(model="fast-model"),
@@ -134,7 +134,7 @@ def build_adapter(
         window_chars=window_chars,
         window_overlap=window_overlap,
     )
-    return Phase3Adapter(service, output_root=tmp_path / "runs"), provider
+    return FactChainAdapter(service, output_root=tmp_path / "runs"), provider
 
 
 @pytest.mark.asyncio

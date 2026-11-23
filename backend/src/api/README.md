@@ -40,7 +40,7 @@ cfg → engine → session_factory
   → DocumentAcquisitionService + ParseDocumentService
   → SourceFactChainService（Phase 3：分窗→抽取→核验→事实英译→双语行）
   → EntityStandardizationService
-  → Phase1Adapter + Phase2Adapter + Phase3Adapter
+  → AcquisitionAdapter + ParsingAdapter + FactChainAdapter
   → SessionBoundStatePersistence
   → PipelineOrchestrator → PipelineRunner
   → SingleJobDispatcher

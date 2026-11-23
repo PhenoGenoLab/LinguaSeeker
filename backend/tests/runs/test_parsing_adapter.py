@@ -15,7 +15,7 @@ from src.runs.contracts import (
     PermanentPhaseError,
     RetryablePhaseError,
 )
-from src.pipeline.graph.phases.phase_2 import Phase2Adapter
+from src.pipeline.graph.phases.parsing import ParsingAdapter
 
 
 @pytest.fixture
@@ -62,7 +62,7 @@ async def test_phase_2_adapter_success(sample_state: PipelineGraphState):
     mock_parse = MagicMock()
     mock_parse.parse_local_files_and_save = AsyncMock(return_value=_make_parse_result())
 
-    adapter = Phase2Adapter(parse_service=mock_parse)
+    adapter = ParsingAdapter(parse_service=mock_parse)
 
     result_state = await adapter.run(sample_state)
 
@@ -85,7 +85,7 @@ async def test_phase_2_adapter_raises_permanent_without_phase_1_output(sample_st
     state = sample_state.model_copy(update={"phase_1_output": AcquisitionOutput(pdf_path="")})
 
     mock_parse = MagicMock()
-    adapter = Phase2Adapter(parse_service=mock_parse)
+    adapter = ParsingAdapter(parse_service=mock_parse)
 
     with pytest.raises(PermanentPhaseError, match="Phase 1 output"):
         await adapter.run(state)
@@ -114,7 +114,7 @@ async def test_phase_2_adapter_raises_permanent_when_no_saved_files(sample_state
         )
     )
 
-    adapter = Phase2Adapter(parse_service=mock_parse)
+    adapter = ParsingAdapter(parse_service=mock_parse)
 
     with pytest.raises(PermanentPhaseError, match="no output files"):
         await adapter.run(sample_state)
@@ -130,7 +130,7 @@ async def test_phase_2_adapter_raises_retryable_on_mineru_timeout(sample_state: 
     mock_parse = MagicMock()
     mock_parse.parse_local_files_and_save = AsyncMock(side_effect=MinerUTimeoutError(total_timeout=120.0))
 
-    adapter = Phase2Adapter(parse_service=mock_parse)
+    adapter = ParsingAdapter(parse_service=mock_parse)
 
     with pytest.raises(RetryablePhaseError, match="timed out"):
         await adapter.run(sample_state)
@@ -151,7 +151,7 @@ async def test_phase_2_adapter_writes_pre_parsed_markdown(tmp_path):
     mock_parse = MagicMock()
     mock_parse.parse_local_files_and_save = AsyncMock()
 
-    adapter = Phase2Adapter(parse_service=mock_parse)
+    adapter = ParsingAdapter(parse_service=mock_parse)
 
     result = await adapter.run(state)
 

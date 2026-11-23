@@ -133,7 +133,7 @@ CI 的 mypy 在迁移前只检查 `skills/` 下的薄封装；实现搬入后，
 套件真正覆盖的模块（此前就是这些薄封装）：
 
 `fact_chain`、`skills/runtime`、`skills/extraction/{service,extract,runner}.py`、
-`skills/translation/stage.py`、`phases/phase_3.py`、`runs/contracts.py`。
+`skills/translation/stage.py`、`phases/fact_chain.py`、`runs/contracts.py`。
 
 在 CI 等价环境（ci 依赖组 + agentscope，无 langchain_openai）实测：**287 passed，89.27%**。
 被排除的 prompt/translator/stages 由各自的测试套件覆盖（`tests/core/tools/...`，不在确定性 CI 内）。

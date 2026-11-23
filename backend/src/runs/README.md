@@ -119,9 +119,9 @@ API: POST /pipeline/run
   → SingleJobDispatcher 轮询认领
   → PipelineRunner.start()
   → PipelineOrchestrator.invoke()
-    → Phase1Adapter.run()
-    → Phase2Adapter.run()
-    → Phase3Adapter.run()
+    → AcquisitionAdapter.run()
+    → ParsingAdapter.run()
+    → FactChainAdapter.run()
   → 状态持久化 + 缓存写入
 ```
 

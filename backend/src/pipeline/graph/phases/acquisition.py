@@ -1,4 +1,4 @@
-"""Phase 1 adapter: literature/document acquisition.
+"""Acquisition adapter: literature and document acquisition.
 
 Raises classified errors for orchestrator-level retry decisions.
 """
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 _RETRYABLE_ERRORS = build_retryable_errors()
 
 
-class Phase1Adapter:
+class AcquisitionAdapter:
     """Thin adapter wrapping DocumentAcquisitionService.
 
     Raises RetryablePhaseError for transient failures (timeouts, rate limits).

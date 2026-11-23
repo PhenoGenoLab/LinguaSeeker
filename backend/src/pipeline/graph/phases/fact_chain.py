@@ -1,4 +1,4 @@
-"""Phase 3 adapter: source windows -> extraction -> verification -> fact English.
+"""Fact-chain adapter: source windows -> extraction -> verification -> fact English.
 
 The approved route is a single source-fact chain. Full-document translation is
 no longer part of Phase 3: only presentation fields of verified source facts
@@ -81,7 +81,7 @@ def _load_chain_run(path: Path) -> ChainRun | None:
         return None
 
 
-class Phase3Adapter:
+class FactChainAdapter:
     """Run the source fact chain over the Phase 2 parsed document."""
 
     def __init__(self, chain_service: SourceFactChainService, output_root: Path | None = None):

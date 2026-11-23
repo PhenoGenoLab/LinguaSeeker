@@ -493,7 +493,7 @@ class PipelineGraphState(BaseModel):
     # Pre-parsed markdown (bypasses acquisition + MinerU parsing)
     pre_parsed_markdown: str | None = None
 
-    # Online acquisition fields (passed through to Phase1Adapter)
+    # Online acquisition fields (passed through to AcquisitionAdapter)
     query: str | None = None
     identifiers: list[str] | None = None
     action: str | None = None

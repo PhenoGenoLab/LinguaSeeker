@@ -13,7 +13,7 @@ from src.runs.contracts import (
     StandardizationOutput,
     SkipPhase4Reason,
 )
-from src.pipeline.graph.phases.phase_4 import Phase4Adapter
+from src.pipeline.graph.phases.standardization import StandardizationAdapter
 
 
 @pytest.fixture
@@ -61,13 +61,13 @@ async def test_phase_4_adapter_success(sample_state: PipelineGraphState):
     mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
     mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
 
-    adapter = Phase4Adapter(
+    adapter = StandardizationAdapter(
         standardization_service=mock_standardization,
         session_factory=mock_session_factory,
     )
 
     with patch(
-        "src.pipeline.graph.phases.phase_4.DualEvidenceExtractionResult.model_validate",
+        "src.pipeline.graph.phases.standardization.DualEvidenceExtractionResult.model_validate",
         return_value=MagicMock(),
     ):
         result_state = await adapter.run(sample_state)
@@ -87,7 +87,7 @@ async def test_phase_4_adapter_skipped_not_relevant(sample_state: PipelineGraphS
     mock_standardization.run_dual_result = AsyncMock()
 
     mock_session_factory = MagicMock()
-    adapter = Phase4Adapter(
+    adapter = StandardizationAdapter(
         standardization_service=mock_standardization,
         session_factory=mock_session_factory,
     )
@@ -107,7 +107,7 @@ async def test_phase_4_adapter_skipped_no_entities(sample_state: PipelineGraphSt
     mock_standardization = MagicMock()
 
     mock_session_factory = MagicMock()
-    adapter = Phase4Adapter(
+    adapter = StandardizationAdapter(
         standardization_service=mock_standardization,
         session_factory=mock_session_factory,
     )
@@ -146,13 +146,13 @@ async def test_phase_4_adapter_skipped_when_zero_standardized(
     mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
     mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
 
-    adapter = Phase4Adapter(
+    adapter = StandardizationAdapter(
         standardization_service=mock_standardization,
         session_factory=mock_session_factory,
     )
 
     with patch(
-        "src.pipeline.graph.phases.phase_4.DualEvidenceExtractionResult.model_validate",
+        "src.pipeline.graph.phases.standardization.DualEvidenceExtractionResult.model_validate",
         return_value=MagicMock(),
     ):
         result_state = await adapter.run(sample_state)
@@ -231,13 +231,13 @@ async def _run_phase_4_with_counts(
     mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
     mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
 
-    adapter = Phase4Adapter(
+    adapter = StandardizationAdapter(
         standardization_service=mock_standardization,
         session_factory=mock_session_factory,
     )
 
     with patch(
-        "src.pipeline.graph.phases.phase_4.DualEvidenceExtractionResult.model_validate",
+        "src.pipeline.graph.phases.standardization.DualEvidenceExtractionResult.model_validate",
         return_value=MagicMock(),
     ):
         return await adapter.run(sample_state)
