@@ -11,10 +11,10 @@
 - 项目必须且只能使用现代化管理工具启动与管理依赖：
   - **Python**: `uv`（禁止使用系统 `pip`）
   - **Node.js**: `bun`（禁止使用系统全局 Node 或 npm/nvm）
-  - **Rust**: `cargo`
   - **C/C++**: `cmake`
 - 禁止直接使用系统环境安装或管理任何项目依赖。
-- 所有依赖版本必须在对应配置文件中明确声明（`pyproject.toml` / `package.json` / `Cargo.toml`），锁文件为 `uv.lock` / `bun.lock` / `Cargo.lock`。
+- 所有依赖版本必须在对应配置文件中明确声明（`pyproject.toml` / `package.json`），锁文件为 `uv.lock` / `bun.lock`。
+- **Rust 原生扩展已独立成独立项目**:本仓库不 vendor、不构建、不测试 Rust crate,只通过 PyPI 的 `rust-io` wheel 消费(`rust_io.net` / `rust_io.files`)。`backend/libs/` 下只保留纯 Python 的 `config-loader`;禁止把 crate 重新加回本仓库。
 
 ### 2. 业务代码目录
 
@@ -129,7 +129,7 @@
 
 ### 19. 依赖锁定与审计
 
-- 生产依赖必须锁定到具体版本（Python `uv.lock` / Node `bun.lock` / Rust `Cargo.lock`）。
+- 生产依赖必须锁定到具体版本（Python `uv.lock` / Node `bun.lock`）。
 - 定期审计依赖安全性，发现漏洞及时升级。
 
 ---

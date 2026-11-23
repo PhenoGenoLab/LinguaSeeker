@@ -106,7 +106,7 @@ nothing is built locally.
 
 See [AGENTS.md](./AGENTS.md) for full project rules. Key points:
 
-- Package managers: `uv` (Python), `nvm` + `npm` (Node.js), `cargo` (Rust) — never system-level
+- Package managers: `uv` (Python), `nvm` + `npm` (Node.js) — never system-level; the Rust extension is a PyPI wheel
 - Logging: `loguru`, output to `logs/` with timestamp naming
 - Testing: `pytest` (backend), standard test frameworks (frontend)
 - Code style: Google Style Guide enforced via Ruff (Python) and ESLint (TypeScript)

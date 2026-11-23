@@ -163,7 +163,7 @@ docker compose -f deploy/compose/backend-host/docker-compose.yml \
 
 详见 [AGENTS.md](./AGENTS.md)。关键要点：
 
-- 包管理器：`uv`（Python）、`bun`（Node.js）、`cargo`（Rust）
+- 包管理器：`uv`（Python）、`bun`（Node.js）；Rust 扩展以 PyPI wheel 形式引入，无需本地工具链
 - 日志：`loguru`，输出到 `logs/`
 - 测试：`pytest`（后端）、`vitest`（前端）
 - 代码风格：Google Style Guide，Ruff（Python）和 ESLint（TypeScript）

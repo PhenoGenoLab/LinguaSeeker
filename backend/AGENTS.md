@@ -17,8 +17,9 @@ Modern tools only. System-level installs are prohibited.
 | Rust | — (extension ships as the `rust-io` wheel) | — |
 | C/C++ | `cmake` | — |
 
-- All dependencies must be declared in config files (`pyproject.toml` / `package.json` / `Cargo.toml`).
-- Production dependencies must be locked (`uv.lock` / `package-lock.json` / `Cargo.lock`).
+- All dependencies must be declared in config files (`pyproject.toml` / `package.json`).
+- Production dependencies must be locked (`uv.lock` / `package-lock.json`).
+- Rust crates are maintained in a separate project: consume them as the PyPI `rust-io` wheel, never vendor or build them here (`libs/` holds only the pure-Python `config-loader`).
 
 ### 1.2 Directory Structure
 
