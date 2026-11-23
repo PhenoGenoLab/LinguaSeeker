@@ -21,7 +21,7 @@ from src.runs.contracts import (
     build_retryable_errors,
     classify_phase_error,
 )
-from src.pipeline.graph.agents.acquisition import (
+from src.core.tools.acquisition import (
     AcquisitionSource,
     DocumentAcquisitionRequest,
 )

@@ -27,7 +27,7 @@
 │   ├── app/                        # 入口点（main.py）
 │   ├── src/                        # 业务逻辑（编排垂直切片架构）
 │   │   ├── pipeline/               # 管线领域层
-│   │   │   ├── graph/              #   LangGraph 拓扑、Phase 1-4 适配器、agents
+│   │   │   ├── graph/              #   LangGraph 拓扑与 Phase 1-4 适配器
 │   │   │   └── skills/             #   AgentScope skills
 │   │   ├── core/                   # 配置 + 基础层（foundation/shared/tools/adapters）
 │   │   ├── runs/                   # 一次 run 的生命周期（runner、dispatcher、状态持久化）

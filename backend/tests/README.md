@@ -16,7 +16,6 @@ tests/
 ├── test_startup_lock.py             # 启动 advisory lock 测试
 
 ├── pipeline/                        # pipeline 领域层测试
-│   ├── graph/agents/                #   agent 实现测试（需 rust_io / agentscope，默认不进 CI）
 │   ├── test_extract_skill.py
 │   ├── test_import_boundaries.py
 │   ├── test_search_service.py

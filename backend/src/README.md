@@ -17,7 +17,7 @@ src/
 │   ├── tools/                   # 具体工具（builtin/、task/、acquisition/、parsing/、extraction/ …）
 │   └── adapters/                # L3 外部协议适配（mcp）
 ├── pipeline/            # pipeline 领域层
-│   ├── graph/                   # LangGraph 拓扑、Phase 1-4 适配器、agents 门户
+│   ├── graph/                   # LangGraph 拓扑与 Phase 1-4 适配器
 │   └── skills/                  # 专业 agent 实现（prompt、模型调用、编排）+ runtime
 ├── runs/                # 一次 run 的生命周期（runner、dispatcher、状态持久化）
 │   ├── runner.py                # 后台管线运行器

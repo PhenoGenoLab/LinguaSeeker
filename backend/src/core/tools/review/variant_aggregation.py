@@ -11,7 +11,7 @@ Keeping this logic on the server means the browser only receives the current
 page of variants instead of the full evidence-group corpus. The semantics here
 MUST match the TypeScript implementation - the same input produces the same
 variant rows, ordering, and stats. Tests in
-``backend/tests/pipeline/graph/agents/review/test_variant_aggregation.py``
+``backend/tests/core/tools/review/test_variant_aggregation.py``
 mirror the TypeScript cases to guard against drift.
 """
 

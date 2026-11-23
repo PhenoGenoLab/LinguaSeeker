@@ -10,8 +10,8 @@ Concrete dependencies (imported, never re-exported):
 - ``src.core.shared.tools``: deterministic capabilities (no agent decisions).
 - ``src.core.adapters.mcp``: external service protocol adapters (for example ReMe).
 - ``src.core.shared.contracts``: DTOs shared across the layers.
-- ``src.pipeline.graph.agents``: the agent implementations the adapters delegate to.
+- ``src.pipeline.skills``: the agent implementations the adapters delegate to.
 
 The outer service layer (HTTP routes, runner, dispatcher, persistence, database
-schema) stays in ``src.agents``, ``src.api`` and ``src.dao``.
+schema) stays in ``src.runs``, ``src.api`` and ``src.dao``.
 """

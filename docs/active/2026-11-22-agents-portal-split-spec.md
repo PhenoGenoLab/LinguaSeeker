@@ -137,3 +137,12 @@ CI 的 mypy 在迁移前只检查 `skills/` 下的薄封装；实现搬入后，
 
 在 CI 等价环境（ci 依赖组 + agentscope，无 langchain_openai）实测：**287 passed，89.27%**。
 被排除的 prompt/translator/stages 由各自的测试套件覆盖（`tests/core/tools/...`，不在确定性 CI 内）。
+
+## 10. 后续：门户层已删除
+
+Stage 1-7 建立的 `pipeline/graph/agents/<A>/__init__.py` 门户只做再导出（7 个包、83 行、零行为），
+而 phases 仍在直接 import `skills/` 与 `core/tools/`，并没有形成隔离。2026-11-23 已删除该层：
+
+- `pipeline/graph/phases/*` 与 `runs/phase_5_factory.py` 直接 import 实现（10 行改动）
+- 分层收敛为三层：`graph`（编排）→ `skills`（agent 实现）→ `core/tools`（具体工具）
+- `tests/core/test_layer_boundaries.py` 的"core 不含 agents"断言保留，措辞改为 skills

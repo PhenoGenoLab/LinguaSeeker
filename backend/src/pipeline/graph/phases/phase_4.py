@@ -24,10 +24,10 @@ from src.runs.contracts import (
     build_retryable_errors,
     classify_phase_error,
 )
-from src.pipeline.graph.agents.extraction import DualEvidenceExtractionResult
+from src.core.tools.extraction.contracts import DualEvidenceExtractionResult
 
 if TYPE_CHECKING:
-    from src.pipeline.graph.agents.standardization import StandardizationSkill
+    from src.pipeline.skills.standardization import StandardizationSkill
 
 _RETRYABLE_ERRORS = build_retryable_errors()
 

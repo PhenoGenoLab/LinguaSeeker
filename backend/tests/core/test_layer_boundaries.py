@@ -74,7 +74,7 @@ def test_adapters_stay_isolated() -> None:
 
 
 def test_core_has_no_agents_package() -> None:
-    """Agent implementations live in src/pipeline/graph/agents, not in core."""
+    """Agent implementations live in src/pipeline/skills, not in core."""
     assert not (CORE_ROOT / "agents").exists(), "core/ must not contain an agents package"
 
 

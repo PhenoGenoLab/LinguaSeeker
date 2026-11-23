@@ -3,7 +3,6 @@
 Layering (one direction only)::
 
     pipeline/graph   orchestrates the run (topology, phases, routing)
-    graph/agents     portals - thin nodes that delegate to one skill
     pipeline/skills  agent implementations (prompts, model calls, controls)
     core/tools       the concrete tools those skills expose
 
@@ -22,7 +21,7 @@ that skills call:
 * :mod:`src.core.tools.builtin` - shell, file and interaction tools
 * :mod:`src.core.tools.task` - task list tools
 * :mod:`src.core.tools.<agent>` - deterministic domain tools (acquisition,
-  parsing, ...) moved out of ``pipeline/graph/agents``
+  parsing, ...) used by the skills
 
 Domain packages are not imported from this module: importing them would pull
 ``lit_acquisition``, database drivers and file I/O into every ``core.tools``

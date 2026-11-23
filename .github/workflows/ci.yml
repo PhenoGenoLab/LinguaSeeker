@@ -89,7 +89,7 @@ jobs:
 
       # Scope note: the extraction/translation implementation now lives in
       # skills/ and carries 23 pre-existing type errors that were never checked
-      # (they moved here from pipeline/graph/agents). Listed in
+      # (they moved here from the old graph/agents tree). Listed in
       # docs/active/2026-11-22-agents-portal-split-spec.md as a follow-up; this
       # step keeps the coverage the project had before the split.
       - name: Mypy (source fact chain + agent portals)
@@ -100,7 +100,6 @@ jobs:
           --ignore-missing-imports
           --follow-imports=silent
           src/core/shared/tools/fact_chain
-          src/pipeline/graph/agents
           src/pipeline/skills/runtime
           src/pipeline/skills/extraction/service.py
           src/pipeline/skills/extraction/extract.py

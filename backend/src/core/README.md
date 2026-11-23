@@ -25,11 +25,10 @@ core/
 ```
 
 > **本目录不含 agent 实现**：`acquisition / parsing / translation / extraction /
-> standardization / review / graph_retrieval` 都在 `src/pipeline/graph/agents/`，
-> 由 `pipeline/skills` 与 `pipeline/graph/phases` 调用。
+> standardization / review / graph_retrieval` 都在 `src/pipeline/skills/`，
+> 由 `pipeline/graph/phases` 调用。
 >
-> 依赖方向（单向）：`graph`（编排）→ `agents`（门户，薄节点）→ `skills`（agent 实现）
-> → `core/tools`（具体工具）。`foundation ← shared`，`adapters` 只依赖 `shared.contracts`；
+> 依赖方向（单向）：`graph`（编排）→ `skills`（agent 实现）→ `core/tools`（具体工具）。`foundation ← shared`，`adapters` 只依赖 `shared.contracts`；
 > `src.pipeline` 与 `src.runs` 依赖 core，core 不反向依赖二者。
 > 边界由 `tests/core/test_layer_boundaries.py` 与
 > `tests/pipeline/test_import_boundaries.py` 断言。

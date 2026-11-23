@@ -6,7 +6,6 @@
 
 ```
 pipeline/graph     编排（topology、phases、routing）
-graph/agents       门户（薄节点，只委托给某个 skill）
 pipeline/skills    agent 实现（prompt、模型调用、控制流）
 core/tools         具体工具 ← 本目录
 ```
