@@ -101,17 +101,19 @@ class ExtractSkill:
     def _build_agent(self, window_text: str) -> Any:
         if self._agent_factory is not None:
             return self._agent_factory(window_text)
-        from src.pipeline.skills.runtime.agent import build_agent
+        from agentscope.agent import Agent
+        from agentscope.tool import FunctionTool, Toolkit
 
         if self._model is None:
             from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
 
             self._model = build_chat_model(self._cfg, tier=self._tier)
-        return build_agent(
+        tools = [FunctionTool(fn) for fn in window_tools(window_text)]
+        return Agent(
             name=self.name,
             system_prompt=self._system_prompt({"window_text": window_text}),
             model=self._model,
-            tools=window_tools(window_text),
+            toolkit=Toolkit(tools=tools),
         )
 
     def call(self, request: SkillRequest) -> SkillResult:

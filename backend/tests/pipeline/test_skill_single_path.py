@@ -12,14 +12,7 @@ import asyncio
 
 import pytest
 
-import src.pipeline.skills.runtime.messages as messages_mod
 from src.pipeline.skills.acquisition.service import AcquisitionSkill
-
-
-@pytest.fixture(autouse=True)
-def _no_agentscope_messages(monkeypatch):
-    """Inject a plain string instead of an AgentScope Msg."""
-    monkeypatch.setattr(messages_mod, "user_message", lambda text: text)
 
 
 class _Agent:

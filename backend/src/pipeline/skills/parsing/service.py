@@ -9,7 +9,6 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from src.pipeline.skills.runtime import messages
 
 
 class ParsingSkill:
@@ -48,7 +47,9 @@ class ParsingSkill:
 
         self._tool = parse_document
         agent = self._build_agent(parse_document)
-        await agent.reply(messages.user_message("parse the document"))
+        from agentscope.message import UserMsg
+
+        await agent.reply(UserMsg(name="user", content="parse the document"))
         if "result" not in holder:
             raise RuntimeError(f"{self.name}: agent did not call parse_document")
         return holder["result"]
@@ -56,14 +57,15 @@ class ParsingSkill:
     def _build_agent(self, tool: Callable[[str], Awaitable[str]]) -> Any:
         if self._agent is not None:
             return self._agent
-        from src.pipeline.skills.runtime.agent import build_agent
+        from agentscope.agent import Agent
+        from agentscope.tool import FunctionTool, Toolkit
         from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
 
-        return build_agent(
+        return Agent(
             name=self.name,
             system_prompt=self.system_prompt,
             model=build_chat_model(self._cfg, tier="fast"),
-            tools=[tool],
+            toolkit=Toolkit(tools=[FunctionTool(tool)]),
         )
 
 
