@@ -94,7 +94,6 @@ backend/
 │   │   │   ├── tools/fact_chain/                       # Fact-chain contracts, windows, validation
 │   │   │   └── contracts/skill_io.py                   # SkillRequest / SkillResult
 │   │   ├── tools/                                      # Concrete tools the skills call
-│   │   │   ├── builtin/  task/                         # AgentScope tool definitions
 │   │   │   ├── acquisition/  parsing/                  # Deterministic stage tooling
 │   │   │   ├── extraction/  standardization/  translation/
 │   │   │   └── review/  graph_retrieval/

@@ -1,24 +1,24 @@
 # core/tools — 具体工具
 
-> skills 交给 agent 的具体工具。全部是标准 AgentScope tool 对象，可直接进模型循环，也可被 skill 直接调用。
+> skills 调用的确定性工具：契约、规则、匹配、解析、持久化。**不含 AgentScope 对象**。
 
 ## 分层位置
 
 ```
 pipeline/graph     编排（topology、phases、routing）
-pipeline/skills    agent 实现（prompt、模型调用、控制流）
+pipeline/skills    agent 实现（AgentScope agent、prompt、模型调用、toolkit 注册）
 core/tools         具体工具 ← 本目录
 ```
 
-单向依赖：上层可 import 下层，本目录只向下依赖 `agentscope` 与标准库，**不得 import `src.pipeline`**。
+单向依赖：上层可 import 下层；本目录**不得 import `agentscope`**，也不得 import `src.pipeline`。
+
+AgentScope 的框架约束由 skills 侧承担：agent 构造、`Toolkit`/`FunctionTool` 注册、工具实例化
+都在 `src/pipeline/skills/runtime/` 与各 skill 内完成，本目录只提供被调用的纯逻辑与契约。
 
 ## 目录
 
 ```
 tools/
-├── builtin/           # shell、文件、交互：Bash PowerShell Read Write Edit Glob Grep
-│                      #                       AskUser ResetTools LocalBackend/BackendBase
-├── task/              # TaskCreate TaskGet TaskList TaskUpdate
 ├── acquisition/       # 文献采集：DocumentAcquisitionService、契约、local_upload
 ├── parsing/           # MinerU remote/local、编排、契约
 ├── extraction/        # 证据抽取确定性部分：契约、core、domain、reconcile、verify、projection
@@ -28,41 +28,10 @@ tools/
 └── graph_retrieval/   # 图契约、builder、retrieval、Neo4j provider
 ```
 
-prompt、模型调用与 Skill 编排不在这里，见 `src/pipeline/skills/<agent>/`。
-
-分类镜像 AgentScope 的 `agentscope.tool` 布局，因此 `src.core.tools.builtin` 对应
-`agentscope.tool._builtin`，`src.core.tools.task` 对应 `agentscope.tool._task`。
-
-## 用法
-
-注册给 agent：
-
-```python
-from src.core.tools.builtin import file_and_shell_tools
-from src.pipeline.skills.runtime.agent import build_agent
-
-agent = build_agent(
-    name="reviewer",
-    system_prompt="...",
-    model=model,
-    tools=file_and_shell_tools(cwd="/data/yangzs/work"),
-)
-```
-
-直接调用（不需要模型）：
-
-```python
-from src.core.tools.builtin import Read
-
-result = await Read().call({"file_path": "README.md"})
-```
-
-只需个别工具时直接实例化类即可；工厂函数只是常用组合，没有隐藏默认值。
+各子包按需导入；`import src.core.tools` 本身不加载任何阶段 SDK。
 
 ## 边界
 
-- 本包是 `src/core` 中**唯一**允许 import `agentscope` 的位置；`src/core/shared/tools`
-  仍然禁止（那层是确定性领域能力，不携带 agent 决策）。
-- 不得 import `src.pipeline`。由 `tests/pipeline/test_import_boundaries.py` 断言。
-- `SkillViewer` 在锁定的 agentscope 2.0.12 wheel 中只存在于 `agentscope.tool._builtin`，
-  未公开导出，因此本包不 re-export。
+- 不 import `agentscope`（框架对象属于 skills）。
+- 不 import `src.pipeline`（core 是依赖叶子）。
+- 由 `tests/pipeline/test_import_boundaries.py` 断言。

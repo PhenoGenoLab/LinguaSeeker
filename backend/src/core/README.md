@@ -17,9 +17,10 @@ core/
 ├── shared/                      # L2 共享能力与契约
 │   ├── tools/fact_chain/        #   确定性能力：契约、校验、窗口
 │   └── contracts/skill_io.py    #   跨层 DTO（SkillRequest/SkillResult）
-├── tools/                       # skills 交给 agent 的具体工具（唯一允许 import agentscope）
-│   ├── builtin/                 #   Bash/Read/Write/Edit/Glob/Grep/AskUser/...
-│   └── task/                    #   TaskCreate/TaskGet/TaskList/TaskUpdate
+├── tools/                       # skills 调用的确定性工具（不 import agentscope）
+│   ├── acquisition/ parsing/    #   各阶段工具：契约、规则、持久化
+│   ├── extraction/ standardization/ translation/
+│   └── review/ graph_retrieval/
 └── adapters/                    # L3 外部协议适配
     └── mcp/                     #   ReMe 等（占位，只依赖 shared.contracts）
 ```

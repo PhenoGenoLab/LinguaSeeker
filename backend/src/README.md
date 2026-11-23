@@ -14,7 +14,7 @@ src/
 │   ├── config.py                # Settings 单例（Pydantic Settings）
 │   ├── foundation/              # L1 跨切面基础（auth）
 │   ├── shared/                  # L2 共享能力与契约（fact_chain、skill_io）
-│   ├── tools/                   # 具体工具（builtin/、task/、acquisition/、parsing/、extraction/ …）
+│   ├── tools/                   # 具体工具（acquisition/、parsing/、extraction/、standardization/ …）
 │   └── adapters/                # L3 外部协议适配（mcp）
 ├── pipeline/            # pipeline 领域层
 │   ├── graph/                   # LangGraph 拓扑与阶段适配器（acquisition/parsing/fact_chain/standardization）

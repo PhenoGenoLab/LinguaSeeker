@@ -124,7 +124,7 @@ def test_pipeline_skeleton_packages_exist() -> None:
 
 
 def test_core_packages_hold_the_concrete_layers() -> None:
-    for layer in ("shared/tools", "shared/contracts", "adapters/mcp", "foundation/auth", "tools/builtin", "tools/task"):
+    for layer in ("shared/tools", "shared/contracts", "adapters/mcp", "foundation/auth"):
         package = CORE_ROOT / layer
         assert (package / "__init__.py").is_file(), f"missing core package: {package}"
 
@@ -181,6 +181,15 @@ def test_runs_do_not_import_graph_execution() -> None:
         RUNS_ROOT,
         ("src.pipeline.graph.topology", "src.pipeline.graph.phases"),
         "src/runs must not import the graph execution layer",
+    )
+
+
+def test_core_does_not_import_agentscope() -> None:
+    """AgentScope agents, toolkits and tool registration belong to skills/."""
+    _assert_no_imports(
+        CORE_ROOT,
+        ("agentscope",),
+        "src/core must not import agentscope (the framework lives in pipeline/skills)",
     )
 
 
