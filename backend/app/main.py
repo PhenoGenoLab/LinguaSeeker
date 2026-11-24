@@ -16,6 +16,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.cors import CORSMiddleware
 
 from src.api.v1.router import router as v1_router
+from src.api.v2.router import router as v2_router
 from src.core.config import get_config
 from src.utils.exceptions import ACMGException, error_code_from_exception, status_code_from_error_code
 from src.utils.logger import get_logger, setup_logging
@@ -157,6 +158,15 @@ async def lifespan(app: FastAPI):
         _dispatcher.start()
         logger.info("Job dispatcher started")
 
+    # Start the standalone agent job worker (v2 agent endpoints)
+    from src.api.v2.agent_runtime import get_agent_worker
+
+    try:
+        _agent_worker = get_agent_worker()
+        _agent_worker.start()
+    except Exception as exc:
+        logger.warning("Agent job worker not started: {}", exc)
+
     # Ensure standalone tables (independent MetaData, not managed by Alembic) exist
     # Use advisory lock to prevent multi-worker races on table creation and recovery
     from src.dao.postgresql.search_index_repo import search_index_metadata
@@ -211,6 +221,15 @@ async def lifespan(app: FastAPI):
             await _dispatcher.stop(timeout=90.0)
         except Exception as exc:
             logger.debug("Job dispatcher stop skipped: {}", exc)
+
+    from src.api.v2.agent_runtime import get_agent_worker, reset_agent_worker
+
+    try:
+        await get_agent_worker().stop(timeout=90.0)
+    except Exception as exc:
+        logger.debug("Agent job worker stop skipped: {}", exc)
+    finally:
+        reset_agent_worker()
 
     try:
         runner = get_pipeline_runner()
@@ -302,6 +321,7 @@ def create_app() -> FastAPI:
 
     # ── Routes ───────────────────────────────────────────────────────────
     _app.include_router(v1_router)
+    _app.include_router(v2_router, prefix="/api/v2")
 
     # ── Health (outside v1 router for liveness probes) ──────────────────
     @_app.get("/health", response_model=HealthResponse)

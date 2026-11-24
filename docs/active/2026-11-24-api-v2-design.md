@@ -111,3 +111,29 @@ GET  /api/v2/agents/jobs/{job_id}/result    → <Agent>Result
 2. **agent 路由默认异步**：全部 202+轮询（本设计采用），还是轻量 agent（acquisition search、graph_retrieval）同步返回？
 
 确认后按 §3 实现路由、表结构与迁移。
+
+## 7. 实现状态（2026-11-24）
+
+两个结构选择均已确认并落地：`pipeline_run_states` 增加 `batch_id`/`source_directory`/`relative_path` 列（迁移 `api_v2_batch_agent_jobs_20261124`），所有 agent 路由统一 202 + 轮询。
+
+已实现模块：
+
+| 模块 | 路径 | 说明 |
+|---|---|---|
+| 契约 | `backend/src/api/v2/contracts.py` | 目录运行、agent job、各 agent 请求/结果联合类型 |
+| 目录扫描 | `backend/src/api/v2/directory.py` | 相对输入根解析、模式匹配、越界与数量上限校验 |
+| 运行路由 | `backend/src/api/v2/runs.py` | 创建批次、批次/单次状态、列表、阶段重跑 |
+| Agent 路由 | `backend/src/api/v2/agents.py` | 8 个 agent 入口 + job 状态/结果 |
+| 执行器 | `backend/src/api/v2/executors.py` | 复用既有 acquisition/parsing/fact_chain/standardization/graph_retrieval/review 服务 |
+| 队列 | `backend/src/dao/postgresql/agent_jobs.py` | `agent_jobs` 原子领取（`FOR UPDATE SKIP LOCKED`） |
+| Worker | `backend/src/runs/agent_worker.py` | 常驻轮询、成功/失败落库、指数退避 |
+| 挂载 | `backend/app/main.py` | `/api/v2` 路由 + lifespan 内启动/停止 worker |
+
+实现约束（当前版本）：
+
+- 目录运行复用 v1 pipeline 队列与 dispatcher，`batch_id` 只作为运行分组元数据；文档级状态仍以 `pipeline_run_states` 为准。
+- 阶段 `nodes` 仅在阶段 summary 内提供 `nodes` 列表时填充，现有 pipeline 状态未持久化节点级遥测。
+- `graph_retrieval` 的 `retrieve` 模式返回 `GraphRagService.retrieve_context_for_target` 的格式化上下文；`nodes`/`edges` 仅 `qa` 模式返回。
+- `review/search` 读取最近 200 条分组证据后在应用层做文本/文档/分组过滤与分页。
+- `standardization` 仅给 `document_id` 时，从该文档最近一次运行状态的 `fact_chain_output.extraction_result_path` 解析结果文件。
+- 输入根由 `PIPELINE_INPUT_ROOT` 控制，默认 `backend/data/pipeline/inputs`。
