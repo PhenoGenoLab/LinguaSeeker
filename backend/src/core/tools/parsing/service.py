@@ -12,6 +12,7 @@ from loguru import logger
 
 from .contracts import (
     DedupResult,
+    MinerUBatchStatus,
     MinerULocalBatchParseResult,
     MinerULocalBatchSaveResult,
     ParseAndSaveResult,
@@ -54,6 +55,12 @@ class ParseDocumentService:
         **kwargs: object,
     ) -> MinerULocalBatchSaveResult:
         """Parse local files as a MinerU batch and save each completed result."""
+        from src.core.config import get_config
+
+        cfg = get_config()
+        if cfg.mcp.mineru.enabled is True:
+            return await self._parse_local_files_via_mcp(file_paths, output_dir)
+
         batch = await self.parse_local_files(file_paths, **kwargs)
         saved = {}
         for name, result in batch.results.items():
@@ -61,6 +68,39 @@ class ParseDocumentService:
         return MinerULocalBatchSaveResult(
             batch_id=batch.batch_id,
             parse_result=batch,
+            saved_files=saved,
+        )
+
+    async def _parse_local_files_via_mcp(
+        self,
+        file_paths: list[str],
+        output_dir: str,
+    ) -> MinerULocalBatchSaveResult:
+        """Parse local files through the configured MinerU MCP server."""
+        from src.core.adapters.mcp.mineru import McpMineruClient
+        from src.core.config import get_config
+
+        result = await McpMineruClient(get_config()).parse(files=list(file_paths), output_dir=output_dir)
+        created_at = datetime.now(timezone.utc)
+        saved: dict[str, SavedFiles] = {}
+        for document in result.documents:
+            saved[Path(document.source_path).name] = SavedFiles(
+                md_path=Path(document.md_path),
+                metadata_path=Path(document.metadata_path),
+                output_dir=Path(output_dir),
+                created_at=created_at,
+                images_dir=Path(document.images_dir) if document.images_dir else None,
+            )
+
+        batch_id = f"mcp-{created_at.strftime('%Y%m%d%H%M%S%f')}"
+        parse_result = MinerULocalBatchParseResult(
+            batch_id=batch_id,
+            status=MinerUBatchStatus(batch_id=batch_id, extract_result=[]),
+            results={},
+        )
+        return MinerULocalBatchSaveResult(
+            batch_id=batch_id,
+            parse_result=parse_result,
             saved_files=saved,
         )
 

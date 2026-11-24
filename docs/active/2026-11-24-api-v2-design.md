@@ -137,3 +137,21 @@ GET  /api/v2/agents/jobs/{job_id}/result    → <Agent>Result
 - `review/search` 读取最近 200 条分组证据后在应用层做文本/文档/分组过滤与分页。
 - `standardization` 仅给 `document_id` 时，从该文档最近一次运行状态的 `fact_chain_output.extraction_result_path` 解析结果文件。
 - 输入根由 `PIPELINE_INPUT_ROOT` 控制，默认 `backend/data/pipeline/inputs`。
+
+## 8. 外部服务改走 MCP（文献、MinerU）
+
+文献在线获取与 MinerU 解析不再直接调用 SDK/HTTP，改为调用外部 MCP server 的工具：
+
+| 服务 | 配置节 | 默认工具 | 接入点 |
+|---|---|---|---|
+| 文献获取 | `mcp_literature` | `search_literature` | `DocumentAcquisitionService._handle_literature`（v1 与 v2 共用） |
+| MinerU 解析 | `mcp_mineru` | `parse_documents` | `ParseDocumentService.parse_local_files_and_save`（pipeline 阶段与 v2 共用） |
+
+配置项：`enabled`、`transport`（`streamable_http`/`sse`/`stdio`）、`url`（HTTP/SSE）、`command`（stdio，按 shell 行解析并继承后端环境）、`tool`、`timeout`；默认关闭，直接客户端保留为未启用时的路径。
+
+MCP 工具返回 JSON 对象：
+
+- 文献：`{"documents": [{"path", "title?", "sha256?", "pmid?", "doi?"}], "warnings": []}`，入参 `action`/`query`/`identifiers`/`limit`/`language`/`relevance_gate`/`literature_types`/`download_dir`。
+- MinerU：`{"documents": [{"source_path", "md_path", "metadata_path", "images_dir?", "pages?"}], "failed": []}`，入参 `files`/`output_dir`。
+
+实现位于 `backend/src/core/adapters/mcp/{server,literature,mineru}.py`；测试见 `backend/tests/core/test_mcp_adapters.py`。

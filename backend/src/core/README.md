@@ -22,7 +22,7 @@ core/
 │   ├── extraction/ standardization/ translation/
 │   └── review/ graph_retrieval/
 └── adapters/                    # L3 外部协议适配
-    └── mcp/                     #   ReMe 等（占位，只依赖 shared.contracts）
+    └── mcp/                     #   MCP 客户端（文献、MinerU）与 ReMe
 ```
 
 > **本目录不含 agent 实现**：`acquisition / parsing / translation / extraction /
@@ -53,7 +53,7 @@ core/
 | `foundation/auth/` | 认证契约与口令哈希 |
 | `shared/tools/` | 确定性能力（含 `tools/fact_chain/` 契约、校验、窗口、投影）；无 agent 决策 |
 | `shared/contracts/` | 跨层 DTO，如 `contracts/skill_io.py` 的 `SkillRequest`/`SkillResult` |
-| `adapters/mcp/` | 外部服务协议适配（ReMe 等），占位待契约落地 |
+| `adapters/mcp/` | 外部服务 MCP 客户端（文献获取、MinerU 解析）与 ReMe HTTP 客户端 |
 | `agents/acquisition/` | 采集 agent：本地上传、在线获取、SDK 适配 |
 | `agents/parsing/` | 解析 agent：MinerU remote/local、产物落盘 |
 | `agents/translation/` | 翻译 agent：术语映射、句级对齐、语言校验 |

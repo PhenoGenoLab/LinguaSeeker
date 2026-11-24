@@ -1,4 +1,10 @@
-"""External service protocol adapters (for example ReMe).
+"""External service protocol adapters.
+
+Current adapters:
+
+- ``server.py`` / ``literature.py`` / ``mineru.py``: MCP clients for external
+  MCP servers (literature acquisition and MinerU parsing).
+- ``reme/``: ReMe memory HTTP client.
 
 Import boundary: MCP adapters must not import ``src.pipeline`` or
 ``src.core.shared.tools``.  They depend only on ``src.core.shared.contracts``

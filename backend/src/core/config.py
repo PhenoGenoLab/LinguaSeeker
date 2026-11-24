@@ -325,6 +325,29 @@ class GraphRagConfig(BaseModel):
     mode: str = "full"  # "terminology_only" or "full"
 
 
+class McpServerConfig(BaseModel):
+    """One external MCP server used instead of a direct service client.
+
+    ``transport`` selects the connection: ``streamable_http``/``sse`` use
+    ``url``; ``stdio`` launches ``command`` (shell-like string, parsed with
+    ``shlex``) and inherits the backend environment.
+    """
+
+    enabled: bool = False
+    transport: str = "streamable_http"
+    url: str = ""
+    command: str = ""
+    tool: str = ""
+    timeout: float = 300.0
+
+
+class McpConfig(BaseModel):
+    """External MCP servers (literature acquisition, MinerU parsing)."""
+
+    literature: McpServerConfig = Field(default_factory=McpServerConfig)
+    mineru: McpServerConfig = Field(default_factory=McpServerConfig)
+
+
 # ── Root settings ────────────────────────────────────────────────────────
 
 
@@ -517,6 +540,22 @@ class Settings(BaseSettings):
     network_proxy: str = ""
     network_no_proxy: str = _DEFAULT_NO_PROXY
 
+    # ── External MCP servers flat fields (MCP_<SERVER>_*) ───────────────
+
+    mcp_literature_enabled: bool = False
+    mcp_literature_transport: str = "streamable_http"
+    mcp_literature_url: str = ""
+    mcp_literature_command: str = ""
+    mcp_literature_tool: str = "search_literature"
+    mcp_literature_timeout: float = 300.0
+
+    mcp_mineru_enabled: bool = False
+    mcp_mineru_transport: str = "streamable_http"
+    mcp_mineru_url: str = ""
+    mcp_mineru_command: str = ""
+    mcp_mineru_tool: str = "parse_documents"
+    mcp_mineru_timeout: float = 600.0
+
     # ── Nested domain models (populated by validator) ────────────────────
 
     llm: LLMConfig = Field(default_factory=LLMConfig, exclude=True)
@@ -534,6 +573,7 @@ class Settings(BaseSettings):
     graph_rag: GraphRagConfig = Field(default_factory=GraphRagConfig, exclude=True)
     web_search: WebSearchConfig = Field(default_factory=WebSearchConfig, exclude=True)
     network: NetworkConfig = Field(default_factory=NetworkConfig, exclude=True)
+    mcp: McpConfig = Field(default_factory=McpConfig, exclude=True)
     logging: LoggingConfig = Field(default_factory=LoggingConfig, exclude=True)
 
     # ── Build nested models from flat fields ─────────────────────────────
@@ -690,6 +730,24 @@ class Settings(BaseSettings):
         self.network = NetworkConfig(
             proxy=self.network_proxy,
             no_proxy=self.network_no_proxy,
+        )
+        self.mcp = McpConfig(
+            literature=McpServerConfig(
+                enabled=self.mcp_literature_enabled,
+                transport=self.mcp_literature_transport,
+                url=self.mcp_literature_url,
+                command=self.mcp_literature_command,
+                tool=self.mcp_literature_tool,
+                timeout=self.mcp_literature_timeout,
+            ),
+            mineru=McpServerConfig(
+                enabled=self.mcp_mineru_enabled,
+                transport=self.mcp_mineru_transport,
+                url=self.mcp_mineru_url,
+                command=self.mcp_mineru_command,
+                tool=self.mcp_mineru_tool,
+                timeout=self.mcp_mineru_timeout,
+            ),
         )
 
         if self.is_production and not self.api_key.strip():

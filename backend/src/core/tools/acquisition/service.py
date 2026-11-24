@@ -129,6 +129,30 @@ class DocumentAcquisitionService:
         if request.action == "search" and not request.query:
             raise ValueError("query is required for search action")
 
+        from src.core.config import get_config
+
+        cfg = get_config()
+        if cfg.mcp.literature.enabled is True:
+            from src.core.adapters.mcp.literature import McpLiteratureClient
+
+            self.logger.debug("Acquiring literature through MCP server")
+            mcp_result = await McpLiteratureClient(cfg).fetch(
+                action=request.action,
+                query=request.query,
+                identifiers=request.identifiers,
+                limit=request.limit,
+                language=request.language,
+                relevance_gate=request.relevance_gate,
+                literature_types=request.literature_types,
+                download_dir=request.download_path,
+            )
+            return DocumentAcquisitionResult(
+                success=True,
+                source=AcquisitionSource.ONLINE,
+                warnings=list(mcp_result.warnings),
+                downloads=[DocumentDownloadEntry(file_path=document.path) for document in mcp_result.documents],
+            )
+
         from lit_acquisition import (
             multilingual_acquisition_workflow,
             online_acquisition_workflow,
