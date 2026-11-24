@@ -473,6 +473,11 @@ class PipelineGraphState(BaseModel):
     source_document_id: str
     owner_user_id: str | None = None
 
+    # Directory-run grouping (API v2)
+    batch_id: str | None = None
+    source_directory: str | None = None
+    relative_path: str | None = None
+
     # Execution mode
     mode: PipelineMode
     source_type: SourceType
@@ -555,6 +560,9 @@ class PipelineGraphState(BaseModel):
             processing_run_id=rd["processing_run_id"],
             source_document_id=rd["source_document_id"],
             owner_user_id=rd.get("owner_user_id"),
+            batch_id=rd.get("batch_id"),
+            source_directory=rd.get("source_directory"),
+            relative_path=rd.get("relative_path"),
             mode=PipelineMode(rd.get("mode", "full")),
             source_type=SourceType(rd.get("source_type", "local")),
             target_phase=rd.get("target_phase"),

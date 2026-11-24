@@ -386,6 +386,9 @@ class DirectStatePersistence:
                 owner_user_id=owner_id,
                 owner_worker_id=owner_worker_id,
                 heartbeat_at=heartbeat_at,
+                batch_id=UUID(state.batch_id) if state.batch_id else None,
+                source_directory=state.source_directory,
+                relative_path=state.relative_path,
             )
             self._session.add(new_record)
         await self._session.commit()
@@ -523,6 +526,9 @@ class SessionBoundStatePersistence:
                     owner_user_id=owner_id,
                     owner_worker_id=owner_worker_id,
                     heartbeat_at=heartbeat_at,
+                    batch_id=UUID(state.batch_id) if state.batch_id else None,
+                    source_directory=state.source_directory,
+                    relative_path=state.relative_path,
                 )
                 .on_conflict_do_update(
                     index_elements=["processing_run_id"],
