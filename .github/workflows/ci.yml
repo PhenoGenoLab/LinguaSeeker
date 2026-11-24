@@ -161,6 +161,7 @@ jobs:
           tests/runs
           tests/pipeline
           tests/api/test_wiring_config.py
+          tests/api/test_v2_contracts.py
           tests/pipeline/test_search_service.py
           -q
           --cov=src.core.shared.tools.fact_chain
