@@ -12,11 +12,13 @@ import pytest
 
 from src.core.tools.review.search_service import (
     SearchService,
-    _build_highlight,
-    _coerce_str,
-    _filter_body_blocks,
-    _filter_body_text,
 )
+from src.core.tools.review.search_blocks import (
+    coerce_str as _coerce_str,
+    filter_body_blocks as _filter_body_blocks,
+    filter_body_text as _filter_body_text,
+)
+from src.core.tools.review.search_presentation import build_highlight as _build_highlight
 
 _DEFAULT_TS = datetime(2026, 1, 1, tzinfo=timezone.utc)
 

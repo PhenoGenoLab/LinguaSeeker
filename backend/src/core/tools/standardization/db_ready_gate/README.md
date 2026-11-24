@@ -50,7 +50,7 @@ evaluate_db_ready_candidates()
 DbReadyGateReport + rejection reason counts
 ```
 
-The module is intentionally pure: it has no database session, LLM client, filesystem access, or mutable global state. `StandardizationRepository.upsert_canonical_evidence()` owns the integration boundary: it adapts staged `RunItemSpec` rows plus normalized entity bindings into `DbReadyCandidate` values, calls this module, logs aggregate rejection reasons, and only writes accepted business track rows to canonical evidence.
+The module is intentionally pure: it has no database session, LLM client, filesystem access, or mutable global state. `EvidenceProjectionRepository.upsert_canonical_evidence()` (via the `StandardizationRepository` facade) owns the integration boundary: it adapts staged `RunItemSpec` rows plus normalized entity bindings into `DbReadyCandidate` values, calls this module, logs aggregate rejection reasons, and only writes accepted business track rows to canonical evidence.
 
 ## Public API
 
@@ -181,7 +181,7 @@ Use this only when the caller has an explicit expert review boundary. It is mean
 
 - Add new rejection reasons in `contracts.py` when the reason should be visible in audit output.
 - Add field-specific requirements by extending `DbReadyGatePolicy`; avoid hard-coding benchmark-specific IDs in `core.py`.
-- Repository wiring lives in `StandardizationRepository._filter_db_ready_run_item_rows()`. Keep new persistence behavior there; keep this module pure.
+- Repository wiring lives in `EvidenceProjectionRepository._filter_db_ready_run_item_rows()`. Keep new persistence behavior there; keep this module pure.
 - Keep this module pure. Database reads, source-link lookups, and expert-review writes belong in providers/repositories around this gate.
 
 ## Performance Notes

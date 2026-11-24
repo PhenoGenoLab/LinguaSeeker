@@ -26,7 +26,7 @@ standardization/
 ├── adapters.py              # DualResultAdapter：Phase 2 输出 → Phase 3 输入
 ├── matchers.py              # HybridTerminologyMatcher：精确 + 语义混合匹配门面
 ├── normalizers.py           # 共享规范化工具（文本折叠、基因符号、疾病跨语言映射）
-├── repositories.py          # StandardizationRepository：PostgreSQL 持久化（术语、匹配、绑定、规范证据）
+├── repositories/            # 持久化协作者：terminology / entities / evidence / search_index + facade
 ├── importers.py             # 术语导入解析器（HGNC、OMIM、HPO、ClinGen、ClinVar）
 ├── variant_id.py            # 未匹配变异的确定性内部 ID 生成
 ├── hgvs_normalizer.py       # HGVS 变异规范化与别名扩展
