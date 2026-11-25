@@ -18,7 +18,7 @@ from src.core.tools.standardization.contracts import (
     StandardizationInput,
 )
 from src.core.tools.standardization.normalizers import normalize_lookup_text
-from src.utils.text import parse_gene_from_group_id
+from src.utils.text.content import parse_gene_from_group_id
 
 
 ROLE_BY_ENTITY_TYPE = {

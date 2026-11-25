@@ -25,7 +25,7 @@ from agentscope.model import ChatModelBase
 from src.pipeline.skills.extraction.config_context import EvidenceExtractionConfigContext
 from src.pipeline.skills.runtime.agentscope_llm import create_chat_model
 from src.pipeline.skills.runtime.llm import ainvoke_model_text, invoke_model_text
-from src.utils.text import strip_json_fences
+from src.utils.text.content import strip_json_fences
 
 SchemaT = TypeVar("SchemaT")
 

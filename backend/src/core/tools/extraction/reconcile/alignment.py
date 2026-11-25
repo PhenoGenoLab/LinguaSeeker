@@ -12,9 +12,9 @@ from src.core.tools.extraction.contracts import (
     EvidenceStatus,
     EvidenceSupportLabel,
 )
-from src.utils.text_normalize import SPACE_RE as _SPACE_RE
-from src.utils.text_normalize import normalize_text as _normalize_text
-from src.utils.text_normalize import normalize_value as _normalize_value
+from src.utils.text.normalize import SPACE_RE as _SPACE_RE
+from src.utils.text.normalize import normalize_text as _normalize_text
+from src.utils.text.normalize import normalize_value as _normalize_value
 
 _RELATIONSHIP_VALUES = {
     "associated",

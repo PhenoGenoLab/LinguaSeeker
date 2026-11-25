@@ -12,7 +12,7 @@ from loguru import logger
 from ..base import ParserStrategy
 from ..contracts import DocumentMetadata, PageContent, ParseResult
 from ..exceptions import MinerUAPIError
-from src.utils.text import extract_abstract_from_markdown
+from src.utils.text.content import extract_abstract_from_markdown
 
 
 class MinerULocalParser(ParserStrategy):

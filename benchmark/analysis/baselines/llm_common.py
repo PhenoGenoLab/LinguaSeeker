@@ -16,7 +16,7 @@ from src.core.tools.translation.translate.language_detector import (
     should_skip_translation,
 )
 from src.utils.llm_adapter import LLMPoolAdapter, create_llm_client
-from src.utils.text import strip_json_fences
+from src.utils.text.content import strip_json_fences
 
 
 BaselineMode = Literal[

@@ -22,7 +22,7 @@ from src.core.tools.extraction.reconcile.contracts import (
 from src.core.tools.extraction.reconcile.alignment import (
     build_alignment_records,
 )
-from src.utils.text_normalize import normalize_value as _normalize_value
+from src.utils.text.normalize import normalize_value as _normalize_value
 
 
 @dataclass(frozen=True)

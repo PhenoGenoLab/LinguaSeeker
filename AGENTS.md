@@ -342,7 +342,7 @@
 #### 29.2 SSRF 防护
 
 - 所有发起外部 HTTP 请求的代码**必须**在请求前和重定向后校验目标 URL，拒绝私有/保留 IP 地址。
-- 使用 `validate_url_safe()` 函数（DNS 解析 + 私有 IP 检查），已实现于 `backend/src/utils/ssrf.py`，调用点在 `backend/src/core/tools/parsing/orchestrator.py`（请求前 + 重定向后各一次）。
+- 使用 `validate_url_safe()` 函数（DNS 解析 + 私有 IP 检查），已实现于 `backend/src/utils/security/ssrf.py`，调用点在 `backend/src/core/tools/parsing/orchestrator.py`（请求前 + 重定向后各一次）。
   - 在线文献获取已委托给 `lit-acquisition` SDK（本地路径依赖 `../05_lit-acquisition`，editable），其 `net` 层内置同等的 SSRF 校验
 - 新增外部 HTTP 请求代码时，**必须**复用上述函数或等效的 SSRF 校验逻辑。
 

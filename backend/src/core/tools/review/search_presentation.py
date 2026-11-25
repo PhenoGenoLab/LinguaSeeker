@@ -17,7 +17,7 @@ from src.core.tools.review.contracts import (
     EvidenceSearchResult,
     EvidenceTrackTrace,
 )
-from src.utils.text import parse_gene_from_group_id, parse_variant_from_group_id
+from src.utils.text.content import parse_gene_from_group_id, parse_variant_from_group_id
 
 from src.core.tools.review.evidence_search_repository import (
     CLASSIFICATION_FIELDS as _CLASSIFICATION_FIELDS,

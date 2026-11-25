@@ -22,8 +22,8 @@ from src.utils.exceptions import ACMGException, error_code_from_exception, statu
 from src.utils.logger import get_logger, setup_logging
 
 from src.api.rate_limit import init_limiter
-from src.utils.middleware import add_request_monitoring
-from src.utils.security_headers import SecurityHeadersMiddleware, SecurityHeadersMiddlewareHSTS
+from src.utils.http.monitoring import add_request_monitoring
+from src.utils.http.security_headers import SecurityHeadersMiddleware, SecurityHeadersMiddlewareHSTS
 
 
 class ErrorDetail(TypedDict, total=False):

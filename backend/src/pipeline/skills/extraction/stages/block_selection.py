@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from src.core.tools.extraction.contracts import ContentBlock, ExtractionTarget, TrackDocument
 from src.pipeline.skills.extraction.prompts import block_readable_text
-from src.utils.text_normalize import normalize_text as _normalize_text
+from src.utils.text.normalize import normalize_text as _normalize_text
 
 _RELATIONSHIP_CUE_RE = re.compile(
     r"\b("

@@ -15,7 +15,7 @@ import httpx
 from loguru import logger
 
 from src.utils.rust_io import net_io
-from src.utils.text import extract_abstract_from_markdown
+from src.utils.text.content import extract_abstract_from_markdown
 
 from ..base import ParserStrategy
 from ..common.converters import block_to_markdown, html_table_to_structured

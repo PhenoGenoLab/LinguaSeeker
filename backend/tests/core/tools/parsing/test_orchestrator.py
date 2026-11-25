@@ -21,7 +21,7 @@ from src.core.tools.parsing.exceptions import (
 from src.core.tools.parsing.orchestrator import (
     DocumentParseOrchestrator,
 )
-from src.utils.ssrf import validate_url_safe as _validate_url_safe
+from src.utils.security.ssrf import validate_url_safe as _validate_url_safe
 
 
 @pytest.fixture
@@ -192,7 +192,7 @@ async def test_url_fallback_downloads_to_temp_and_cleans_up(mock_remote, mock_lo
 
     with (
         patch("src.core.tools.parsing.orchestrator.httpx.AsyncClient") as mock_cls,
-        patch("src.utils.ssrf.validate_url_safe"),
+        patch("src.utils.security.ssrf.validate_url_safe"),
     ):
         mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
         mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
@@ -218,7 +218,7 @@ async def test_url_fallback_rejects_non_pdf_content_type(mock_remote, mock_local
 
     with (
         patch("src.core.tools.parsing.orchestrator.httpx.AsyncClient") as mock_cls,
-        patch("src.utils.ssrf.validate_url_safe"),
+        patch("src.utils.security.ssrf.validate_url_safe"),
     ):
         mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
         mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
@@ -241,7 +241,7 @@ async def test_url_fallback_rejects_non_pdf_signature(mock_remote, mock_local):
 
     with (
         patch("src.core.tools.parsing.orchestrator.httpx.AsyncClient") as mock_cls,
-        patch("src.utils.ssrf.validate_url_safe"),
+        patch("src.utils.security.ssrf.validate_url_safe"),
     ):
         mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
         mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
@@ -273,7 +273,7 @@ async def test_url_fallback_rejects_http_error(mock_remote, mock_local):
 
     with (
         patch("src.core.tools.parsing.orchestrator.httpx.AsyncClient") as mock_cls,
-        patch("src.utils.ssrf.validate_url_safe"),
+        patch("src.utils.security.ssrf.validate_url_safe"),
     ):
         mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
         mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)

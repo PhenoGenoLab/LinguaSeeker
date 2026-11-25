@@ -8,8 +8,8 @@ from uuid import UUID
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.utils.text import parse_gene_from_group_id, parse_variant_from_group_id
-from src.utils.translation_render_quality import (
+from src.utils.text.content import parse_gene_from_group_id, parse_variant_from_group_id
+from src.utils.text.render_quality import (
     is_likely_untranslated_render_blocks,
     is_likely_untranslated_render_payload,
 )

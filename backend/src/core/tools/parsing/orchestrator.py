@@ -11,7 +11,7 @@ from loguru import logger
 from .base import ParserStrategy
 from .contracts import MinerULocalBatchOptions, MinerULocalBatchParseResult, ParseResult
 from .exceptions import MinerUAPIError, ParserExhaustedError
-from src.utils.ssrf import validate_url_safe
+from src.utils.security.ssrf import validate_url_safe
 
 _MAX_DOWNLOAD_BYTES = 100 * 1024 * 1024  # 100 MB
 _ALLOWED_CONTENT_TYPES = {"application/pdf", "application/octet-stream"}

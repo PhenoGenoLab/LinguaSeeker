@@ -39,8 +39,8 @@ from src.dao.postgresql.models import (
     RunEvidenceItem,
     SourceDocument,
 )
-from src.utils.text_normalize import concat_document_text
-from src.utils.translation_render_quality import (
+from src.utils.text.normalize import concat_document_text
+from src.utils.text.render_quality import (
     is_likely_untranslated_render_blocks,
     is_likely_untranslated_render_payload,
 )

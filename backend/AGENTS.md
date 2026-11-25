@@ -69,7 +69,7 @@ New modules should prefer **Orchestrated Vertical Slice Architecture**:
 - **Auth routes**: `src/api/v1/auth.py` — `/login`, `/logout`, `/me` endpoints.
 - **Session format**: `<base64url_payload>.<base64url_hmac_signature>`, payload is `{"exp": <unix_ts>}`, 8-hour duration.
 - **All route handlers** must include `_api_key: str | None = Depends(require_api_key)`.
-- **SSRF guard**: All external HTTP requests must call `validate_url_safe()` (`src/utils/ssrf.py`) before and after redirects (DNS-based private IP check).
+- **SSRF guard**: All external HTTP requests must call `validate_url_safe()` (`src/utils/security/ssrf.py`) before and after redirects (DNS-based private IP check).
 
 ### 1.6 Logging & Testing
 

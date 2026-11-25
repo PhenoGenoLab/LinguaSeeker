@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from difflib import SequenceMatcher
 
-from src.utils.text_normalize import block_text_from_dict
+from src.utils.text.normalize import block_text_from_dict
 
 _CJK_RE = re.compile(r"[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]")
 _WHITESPACE_RE = re.compile(r"\s+")

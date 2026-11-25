@@ -10,7 +10,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from src.utils.middleware import add_request_monitoring
+from src.utils.http.monitoring import add_request_monitoring
 
 
 async def _ok(request: Request) -> JSONResponse:
@@ -79,7 +79,7 @@ async def test_sse_streaming_not_broken_by_middleware():
     from fastapi import FastAPI
     from fastapi.responses import StreamingResponse
     from httpx import ASGITransport, AsyncClient
-    from src.utils.middleware import add_request_monitoring
+    from src.utils.http.monitoring import add_request_monitoring
 
     app = FastAPI()
     add_request_monitoring(app)
@@ -119,7 +119,7 @@ async def test_request_state_request_id_accessible_in_error_handlers():
     from fastapi import FastAPI
     from fastapi.responses import JSONResponse
     from httpx import ASGITransport, AsyncClient
-    from src.utils.middleware import add_request_monitoring
+    from src.utils.http.monitoring import add_request_monitoring
 
     app = FastAPI()
     add_request_monitoring(app)

@@ -17,7 +17,7 @@ from loguru import logger
 
 from src.core.tools.translation.contracts import TranslationAlignmentChunk
 from src.core.tools.translation.translate.language_detector import detect_language
-from src.utils.text_normalize import block_text_from_dict, concat_document_text
+from src.utils.text.normalize import block_text_from_dict, concat_document_text
 
 _BODY_START_PATTERNS = (
     r"^［?摘要］?",
