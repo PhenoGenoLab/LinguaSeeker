@@ -10,11 +10,18 @@ from src.pipeline.skills.review.factory import ReviewServiceFactory
 from src.api.wiring import get_session_factory
 from src.dao.neo4j.repository import Neo4jRepository
 from src.dao.postgresql.users import PostgresUserStore
+from src.dao.postgresql.review.annotation_store import PostgresAnnotationStore
 from src.dao.postgresql.review.evidence_store import PostgresEvidenceStore
 from src.dao.postgresql.review.audit_store import PostgresAuditStore
 from src.dao.postgresql.review.feedback_store import PostgresFeedbackStore
 from src.dao.postgresql.review.literature_store import PostgresLiteratureStore
-from src.ports.review import AuditStore, EvidenceQueryStore, FeedbackStore, LiteratureStore
+from src.ports.review import (
+    AnnotationStore,
+    AuditStore,
+    EvidenceQueryStore,
+    FeedbackStore,
+    LiteratureStore,
+)
 from src.ports.users import UserStore
 
 _review_factory: ReviewServiceFactory | None = None
@@ -74,6 +81,11 @@ def get_audit_store() -> AuditStore:
 def get_literature_store() -> LiteratureStore:
     """Return a literature profile store for the current session factory."""
     return PostgresLiteratureStore(get_session_factory())
+
+
+def get_annotation_store() -> AnnotationStore:
+    """Return an annotation store for the current session factory."""
+    return PostgresAnnotationStore(get_session_factory())
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:

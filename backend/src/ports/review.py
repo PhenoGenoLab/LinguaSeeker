@@ -87,6 +87,69 @@ class LiteratureStore(Protocol):
     async def refresh_all(self, *, owner_user_id: UUID | str | None = None) -> "LiteratureRefreshResponse": ...
 
 
+@dataclass(frozen=True)
+class AnnotationRecord:
+    """One annotation row without persistence types."""
+
+    id: UUID
+    source_document_id: UUID
+    track: str
+    paragraph_id: str
+    start_offset: int
+    end_offset: int
+    color: str | None
+    note: str | None
+    author: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AnnotationStore(Protocol):
+    """CRUD for document annotations."""
+
+    async def list_annotations(
+        self,
+        source_document_id: UUID,
+        *,
+        track: str | None,
+        owner_user_id: UUID | None,
+    ) -> list[AnnotationRecord]: ...
+
+    async def get_annotation(
+        self,
+        annotation_id: UUID,
+        *,
+        owner_user_id: UUID | None,
+    ) -> AnnotationRecord | None: ...
+
+    async def create_annotation(
+        self,
+        source_document_id: UUID,
+        *,
+        track: str,
+        paragraph_id: str,
+        start_offset: int,
+        end_offset: int,
+        color: str | None,
+        note: str | None,
+        author: str | None,
+        owner_user_id: UUID | None,
+    ) -> AnnotationRecord: ...
+
+    async def update_annotation(
+        self,
+        annotation_id: UUID,
+        *,
+        color: str | None,
+        note: str | None,
+        update_color: bool,
+        update_note: bool,
+        owner_user_id: UUID | None,
+    ) -> AnnotationRecord: ...
+
+    async def delete_annotation(self, annotation_id: UUID, *, owner_user_id: UUID | None) -> None: ...
+
+
 class AuditStore(Protocol):
     """Read review audit events."""
 
