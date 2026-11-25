@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.pipeline.skills.review.chat_service import (
     ChatService,
 )
+from src.dao.postgresql.review.chat_store import SessionChatStore
+from src.dao.postgresql.review.feedback_store import FeedbackService
 
 
 @pytest.mark.asyncio
@@ -20,7 +22,7 @@ class TestChatAI:
     async def test_build_evidence_context(self, db_session: AsyncSession) -> None:
         """Builds context block from evidence card + entities + source span."""
         evidence_id = await self._create_evidence_with_bindings(db_session)
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
 
         context = await service._build_evidence_context(canonical_evidence_id=evidence_id)
 
@@ -30,7 +32,7 @@ class TestChatAI:
 
     async def test_build_evidence_context_missing_evidence_returns_empty(self, db_session: AsyncSession) -> None:
         """Missing evidence IDs should not raise NoResultFound."""
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
 
         context = await service._build_evidence_context(canonical_evidence_id=uuid.uuid4())
 
@@ -38,31 +40,31 @@ class TestChatAI:
 
     async def test_detect_intent_question(self, db_session: AsyncSession) -> None:
         """Pure question triggers AI reply."""
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
         intent = service._detect_intent("What is the gene symbol?")
         assert intent == "question"
 
     async def test_detect_intent_action_request(self, db_session: AsyncSession) -> None:
         """Standalone action requests should not produce silent empty replies."""
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
         intent = service._detect_intent("我想做文献的证据提取")
         assert intent == "question"
 
     async def test_detect_intent_greeting(self, db_session: AsyncSession) -> None:
         """Standalone greetings should receive assistant guidance."""
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
         intent = service._detect_intent("hi")
         assert intent == "question"
 
     async def test_detect_intent_correction(self, db_session: AsyncSession) -> None:
         """Correction instruction triggers structured operation."""
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
         intent = service._detect_intent("Change phenotype to Fabry 病")
         assert intent == "correction"
 
     async def test_detect_intent_note(self, db_session: AsyncSession) -> None:
         """Notes now default to question (handled by router)."""
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
         intent = service._detect_intent("Need to verify this later")
         assert intent == "question"
 
@@ -72,7 +74,7 @@ class TestChatAI:
         run_id = await self._create_test_run(db_session)
         provider = MagicMock()
         provider.generate = AsyncMock(return_value="The gene is GLA.")
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=run_id, user_id=None)
 
         reply = await service.generate_reply(
@@ -93,7 +95,7 @@ class TestChatAI:
         run_id = await self._create_test_run(db_session)
         provider = MagicMock()
         provider.generate = AsyncMock(return_value="Noted.")
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=run_id, user_id=None)
 
         reply = await service.generate_reply(

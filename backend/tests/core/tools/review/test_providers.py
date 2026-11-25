@@ -67,7 +67,14 @@ async def test_chat_service_uses_injected_provider():
     mock_provider = MagicMock()
     mock_provider.generate = AsyncMock(return_value="test reply")
 
-    service = ChatService(session=mock_session, chat_provider=mock_provider)
+    from src.dao.postgresql.review.chat_store import SessionChatStore
+    from src.dao.postgresql.review.feedback_store import FeedbackService
+
+    service = ChatService(
+        SessionChatStore(mock_session),
+        chat_provider=mock_provider,
+        feedback_store=FeedbackService(mock_session),
+    )
 
     with patch.object(service, "_build_evidence_context", new_callable=AsyncMock, return_value="ctx"):
         await service.generate_reply(

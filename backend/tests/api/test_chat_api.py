@@ -76,7 +76,6 @@ async def test_create_session(async_client: AsyncClient):
         )
         assert response.status_code == 200
         assert response.json()["chat_session_id"] == str(session_id)
-        _test_db_session(async_client).commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -103,7 +102,6 @@ async def test_create_standalone_session_api(async_client: AsyncClient):
     assert response.status_code == 200
     assert response.json()["chat_session_id"] == str(session_id)
     assert response.json()["processing_run_id"] is None
-    _test_db_session(async_client).commit.assert_awaited_once()
     mock_service.create_session.assert_awaited_once_with(
         processing_run_id=None,
         user_id=None,
@@ -160,10 +158,6 @@ async def test_append_message(async_client: AsyncClient):
     with patch("src.api.v1.chat.get_review_factory") as mock_factory:
         events: list[str] = []
 
-        async def commit_side_effect() -> None:
-            events.append("commit")
-
-        _test_db_session(async_client).commit.side_effect = commit_side_effect
         mock_service = MagicMock()
         mock_service.append_message = AsyncMock(return_value=mock_response)
         mock_service.generate_reply = AsyncMock(return_value=None)
@@ -177,12 +171,11 @@ async def test_append_message(async_client: AsyncClient):
 
     assert response.status_code == 200
     assert response.json()["content"] == "What is the gene?"
-    _test_db_session(async_client).commit.assert_awaited_once()
     mock_factory.return_value.schedule_session_title_generation.assert_called_once_with(
         session_id=session_id,
         user_message="What is the gene?",
     )
-    assert events == ["commit", "schedule"]
+    assert events == ["schedule"]
 
 
 @pytest.mark.asyncio

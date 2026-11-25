@@ -12,11 +12,10 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from loguru import logger
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from src.api.auth import get_current_account
-from src.api.deps import get_db_session, get_review_factory
+from src.api.deps import get_review_factory
 from src.api.rate_limit import limiter
 from src.api.wiring import get_local_parser
 from src.core.foundation.auth.contracts import AuthContext
@@ -47,41 +46,36 @@ class AppendMessageRequest(BaseModel):
 async def create_session(
     request: Request,
     body: CreateSessionRequest,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> ChatSessionResponse:
     """Create a new chat session."""
     factory = get_review_factory()
-    service = factory.create_chat_service(session)
-    chat_session = await service.create_session(
+    service = factory.create_chat_service()
+    return await service.create_session(
         processing_run_id=body.processing_run_id,
         user_id=account.owner_user_id,
     )
-    await session.commit()
-    return chat_session
 
 
 @router.get("/sessions/{processing_run_id}", response_model=list[ChatSessionResponse])
 async def list_sessions(
     processing_run_id: UUID,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> list[ChatSessionResponse]:
     """List all chat sessions for a processing run."""
     factory = get_review_factory()
-    service = factory.create_chat_service(session)
+    service = factory.create_chat_service()
     return await service.list_sessions(processing_run_id=processing_run_id, owner_user_id=account.owner_user_id)
 
 
 @router.get("/session-details/{session_id}", response_model=ChatSessionResponse)
 async def get_session(
     session_id: UUID,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> ChatSessionResponse:
     """Fetch a single chat session by id."""
     factory = get_review_factory()
-    service = factory.create_chat_service(session)
+    service = factory.create_chat_service()
     return await service.get_session(session_id=session_id, owner_user_id=account.owner_user_id)
 
 
@@ -89,12 +83,11 @@ async def get_session(
 async def list_messages(
     session_id: UUID,
     limit: int = 100,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> list[ChatMessageResponse]:
     """List messages in a chat session."""
     factory = get_review_factory()
-    service = factory.create_chat_service(session)
+    service = factory.create_chat_service()
     return await service.list_messages(session_id=session_id, limit=limit, owner_user_id=account.owner_user_id)
 
 
@@ -104,12 +97,11 @@ async def append_message(
     request: Request,
     session_id: UUID,
     body: AppendMessageRequest,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> ChatMessageResponse:
     """Append a message to a chat session."""
     factory = get_review_factory()
-    service = factory.create_chat_service(session)
+    service = factory.create_chat_service()
     msg = await service.append_message(
         session_id=session_id,
         role=body.role,
@@ -137,7 +129,6 @@ async def append_message(
                 owner_user_id=account.owner_user_id,
             )
 
-    await session.commit()
     if body.role == "user":
         factory.schedule_session_title_generation(
             session_id=session_id,
@@ -153,7 +144,6 @@ async def stream_reply(
     session_id: UUID,
     user_message: str,
     evidence_id: UUID | None = None,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> StreamingResponse:
     """Stream AI reply as SSE events with 15-second keepalive heartbeat.
@@ -164,7 +154,7 @@ async def stream_reply(
     reply is lost. This is a known FastAPI StreamingResponse limitation.
     """
     factory = get_review_factory()
-    service = factory.create_chat_service(session)
+    service = factory.create_chat_service()
 
     async def event_generator():
         async for event in service.stream_reply(

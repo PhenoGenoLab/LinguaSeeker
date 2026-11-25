@@ -406,35 +406,33 @@ class AgentExecutor:
         except ValueError as exc:
             raise AgentJobFailure(f"invalid session_id: {request.session_id}") from exc
 
-        async with self._session_factory() as session:
-            service = self._review_factory.create_chat_service(session)
-            if session_id is None:
-                created = await service.create_session(
-                    processing_run_id=None,
-                    user_id=job.owner_user_id,
-                )
-                session_id = created.chat_session_id
-            await service.append_message(
-                session_id=session_id,
-                role="user",
-                content=request.message,
-                owner_user_id=job.owner_user_id,
+        service = self._review_factory.create_chat_service()
+        if session_id is None:
+            created = await service.create_session(
+                processing_run_id=None,
+                user_id=job.owner_user_id,
             )
-            reply = await service.generate_reply(
-                session_id=session_id,
-                user_message=request.message,
-                owner_user_id=job.owner_user_id,
-                reviewer_id=job.owner_user_id,
-            )
-            if not reply:
-                raise AgentJobFailure("chat provider returned an empty reply", kind="transient")
-            await service.append_message(
-                session_id=session_id,
-                role="assistant",
-                content=reply,
-                owner_user_id=job.owner_user_id,
-            )
-            await session.commit()
+            session_id = created.chat_session_id
+        await service.append_message(
+            session_id=session_id,
+            role="user",
+            content=request.message,
+            owner_user_id=job.owner_user_id,
+        )
+        reply = await service.generate_reply(
+            session_id=session_id,
+            user_message=request.message,
+            owner_user_id=job.owner_user_id,
+            reviewer_id=job.owner_user_id,
+        )
+        if not reply:
+            raise AgentJobFailure("chat provider returned an empty reply", kind="transient")
+        await service.append_message(
+            session_id=session_id,
+            role="assistant",
+            content=reply,
+            owner_user_id=job.owner_user_id,
+        )
         return ReviewChatResult(
             session_id=str(session_id),
             reply=reply,

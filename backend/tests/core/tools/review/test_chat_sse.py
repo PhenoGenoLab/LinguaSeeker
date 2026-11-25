@@ -13,6 +13,8 @@ from src.pipeline.skills.review.chat_service import (
     ChatService,
 )
 from src.core.tools.review.contracts import ChatAction
+from src.dao.postgresql.review.chat_store import SessionChatStore
+from src.dao.postgresql.review.feedback_store import FeedbackService
 from src.pipeline.skills.review.providers import (
     _parse_delimited,
     _try_parse_action,
@@ -89,7 +91,7 @@ class TestChatSSEEvidenceContext:
 
         provider = MagicMock()
         provider.stream = mock_stream
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=run_id, user_id=None)
 
         events = []
@@ -117,7 +119,7 @@ class TestChatSSEEvidenceContext:
 
         provider = MagicMock()
         provider.stream = mock_stream_error
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=run_id, user_id=None)
 
         events = []
@@ -140,7 +142,7 @@ class TestChatSSEEvidenceContext:
 
         provider = MagicMock()
         provider.stream = mock_stream
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=run_id, user_id=None)
 
         async for _ in service.stream_reply(
@@ -200,7 +202,7 @@ class TestChatRouterEnvelope:
 
         provider = MagicMock()
         provider.route_intent_stream = mock_stream
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         events = []
@@ -227,7 +229,7 @@ class TestChatRouterEnvelope:
 
         provider = MagicMock()
         provider.route_intent_stream = mock_stream
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         events = []
@@ -254,7 +256,7 @@ class TestChatRouterEnvelope:
 
         provider = MagicMock()
         provider.route_intent_stream = mock_stream
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         async for _ in service.stream_reply(
@@ -288,7 +290,7 @@ class TestChatRouterEnvelope:
 
         provider = MagicMock()
         provider.route_intent_stream = mock_stream
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         events = []
@@ -319,7 +321,7 @@ class TestChatRouterEnvelope:
 
         provider = MagicMock()
         provider.route_intent_stream = mock_stream
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         async for _ in service.stream_reply(
@@ -347,7 +349,7 @@ class TestChatRouterEnvelope:
         provider = MagicMock()
         provider.generate = AsyncMock(return_value="Upload request")
         provider.route_intent_stream = mock_stream
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         await service.append_message(

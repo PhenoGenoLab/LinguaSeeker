@@ -8,25 +8,14 @@ from uuid import UUID
 
 from loguru import logger
 
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.core.tools.review.contracts import (
     ChatAction,
     ChatMessageResponse,
     ChatSessionResponse,
-    EvidenceCardPayload,
 )
 from src.pipeline.skills.review.providers import _KEEPALIVE
-from src.dao.postgresql.models import (
-    CanonicalEvidenceItem,
-    ChatMessage,
-    ChatSession,
-    EvidenceEntityBinding,
-    NormalizedEntity,
-    RunEvidenceItem,
-)
-from src.utils.exceptions import NotFoundException
+from src.ports.chat import ChatStore
+from src.ports.review import FeedbackStore
 
 if TYPE_CHECKING:
     from src.pipeline.skills.review.providers import (
@@ -179,11 +168,13 @@ class ChatService:
 
     def __init__(
         self,
-        session: AsyncSession,
+        store: ChatStore,
         chat_provider: ChatLLMProvider | None = None,
+        feedback_store: FeedbackStore | None = None,
     ):
-        self._session = session
+        self._store = store
         self._chat_provider = chat_provider
+        self._feedback_store = feedback_store
 
     def _require_chat_provider(self) -> "ChatLLMProvider":
         """Return the injected chat provider.
@@ -206,20 +197,9 @@ class ChatService:
         user_id: UUID | None = None,
     ) -> ChatSessionResponse:
         """Create a new chat session, optionally bound to a processing run."""
-        session = ChatSession(
+        return await self._store.create_session(
             processing_run_id=processing_run_id,
             user_id=user_id,
-        )
-        self._session.add(session)
-        await self._session.flush()
-
-        return ChatSessionResponse(
-            chat_session_id=session.chat_session_id,
-            processing_run_id=session.processing_run_id,
-            user_id=session.user_id,
-            title=session.title,
-            created_at=session.created_at,
-            message_count=0,
         )
 
     async def _require_session(
@@ -227,19 +207,9 @@ class ChatService:
         *,
         session_id: UUID,
         owner_user_id: UUID | None = None,
-    ) -> ChatSession:
-        """Fetch a chat session or raise NotFoundException if it doesn't exist."""
-        owner_filter = ChatSession.user_id.is_(None) if owner_user_id is None else ChatSession.user_id == owner_user_id
-        result = await self._session.execute(
-            select(ChatSession).where(
-                ChatSession.chat_session_id == session_id,
-                owner_filter,
-            )
-        )
-        session = result.scalar_one_or_none()
-        if session is None:
-            raise NotFoundException("ChatSession", str(session_id))
-        return session
+    ) -> None:
+        """Ensure a chat session exists and belongs to the caller."""
+        await self._store.require_session(session_id=session_id, owner_user_id=owner_user_id)
 
     async def get_session(
         self,
@@ -248,18 +218,7 @@ class ChatService:
         owner_user_id: UUID | None = None,
     ) -> ChatSessionResponse:
         """Fetch one chat session with its message count."""
-        session = await self._require_session(session_id=session_id, owner_user_id=owner_user_id)
-        count_stmt = select(func.count()).select_from(ChatMessage).where(ChatMessage.chat_session_id == session_id)
-        count_result = await self._session.execute(count_stmt)
-        message_count = int(count_result.scalar_one())
-        return ChatSessionResponse(
-            chat_session_id=session.chat_session_id,
-            processing_run_id=session.processing_run_id,
-            user_id=session.user_id,
-            title=session.title,
-            created_at=session.created_at,
-            message_count=message_count,
-        )
+        return await self._store.get_session(session_id=session_id, owner_user_id=owner_user_id)
 
     async def append_message(
         self,
@@ -273,19 +232,15 @@ class ChatService:
         owner_user_id: UUID | None = None,
     ) -> ChatMessageResponse:
         """Append a message to a chat session."""
-        await self._require_session(session_id=session_id, owner_user_id=owner_user_id)
-        message = ChatMessage(
-            chat_session_id=session_id,
+        return await self._store.append_message(
+            session_id=session_id,
             role=role,
             content=content,
             evidence_id=evidence_id,
             entity_id=entity_id,
-            action=action.model_dump(mode="json") if action else None,
+            action=action,
+            owner_user_id=owner_user_id,
         )
-        self._session.add(message)
-        await self._session.flush()
-
-        return self._to_message_response(message)
 
     async def generate_session_title(
         self,
@@ -294,84 +249,10 @@ class ChatService:
         user_message: str,
     ) -> None:
         """Generate a title for a session that does not already have one."""
-        chat_session = await self._require_session(session_id=session_id)
+        chat_session = await self._store.get_session(session_id=session_id)
         if chat_session.title:
             return
 
-        await self._maybe_generate_session_title(
-            session=chat_session,
-            user_message=user_message,
-        )
-
-    async def list_messages(
-        self,
-        *,
-        session_id: UUID,
-        limit: int = 100,
-        owner_user_id: UUID | None = None,
-    ) -> list[ChatMessageResponse]:
-        """List messages in a session, ordered chronologically."""
-        await self._require_session(session_id=session_id, owner_user_id=owner_user_id)
-        stmt = (
-            select(ChatMessage)
-            .where(ChatMessage.chat_session_id == session_id)
-            .order_by(ChatMessage.created_at.asc())
-            .limit(limit)
-        )
-        result = await self._session.execute(stmt)
-        messages = result.scalars().all()
-
-        return [self._to_message_response(msg) for msg in messages]
-
-    async def list_sessions(
-        self,
-        *,
-        processing_run_id: UUID,
-        owner_user_id: UUID | None = None,
-    ) -> list[ChatSessionResponse]:
-        """List all chat sessions for a processing run."""
-        owner_filter = ChatSession.user_id.is_(None) if owner_user_id is None else ChatSession.user_id == owner_user_id
-        count_subq = (
-            select(
-                ChatMessage.chat_session_id,
-                func.count().label("msg_count"),
-            )
-            .group_by(ChatMessage.chat_session_id)
-            .subquery()
-        )
-
-        stmt = (
-            select(ChatSession, func.coalesce(count_subq.c.msg_count, 0))
-            .outerjoin(
-                count_subq,
-                ChatSession.chat_session_id == count_subq.c.chat_session_id,
-            )
-            .where(ChatSession.processing_run_id == processing_run_id)
-            .where(owner_filter)
-            .order_by(ChatSession.created_at.desc())
-        )
-        result = await self._session.execute(stmt)
-        rows = result.all()
-
-        return [
-            ChatSessionResponse(
-                chat_session_id=session.chat_session_id,
-                processing_run_id=session.processing_run_id,
-                user_id=session.user_id,
-                title=session.title,
-                created_at=session.created_at,
-                message_count=msg_count,
-            )
-            for session, msg_count in rows
-        ]
-
-    async def _maybe_generate_session_title(
-        self,
-        *,
-        session: ChatSession,
-        user_message: str,
-    ) -> None:
-        """Generate and persist an LLM title without blocking chat on failure."""
         provider = self._chat_provider
         if provider is None:
             logger.warning(
@@ -392,9 +273,33 @@ class ChatService:
         title = self._clean_session_title(raw_title)
         if not title:
             return
+        await self._store.set_title(session_id=session_id, title=title)
 
-        session.title = title
-        await self._session.flush()
+    async def list_messages(
+        self,
+        *,
+        session_id: UUID,
+        limit: int = 100,
+        owner_user_id: UUID | None = None,
+    ) -> list[ChatMessageResponse]:
+        """List messages in a session, ordered chronologically."""
+        return await self._store.list_messages(
+            session_id=session_id,
+            limit=limit,
+            owner_user_id=owner_user_id,
+        )
+
+    async def list_sessions(
+        self,
+        *,
+        processing_run_id: UUID,
+        owner_user_id: UUID | None = None,
+    ) -> list[ChatSessionResponse]:
+        """List all chat sessions for a processing run."""
+        return await self._store.list_sessions(
+            processing_run_id=processing_run_id,
+            owner_user_id=owner_user_id,
+        )
 
     @staticmethod
     def _clean_session_title(raw_title: str) -> str:
@@ -407,28 +312,6 @@ class ChatService:
         if len(title) > _SESSION_TITLE_MAX_CHARS:
             title = title[:_SESSION_TITLE_MAX_CHARS].rstrip()
         return title
-
-    @staticmethod
-    def _to_message_response(message: ChatMessage) -> ChatMessageResponse:
-        """Convert a ChatMessage ORM row to a validated API response."""
-        action: ChatAction | None = None
-        if message.action:
-            try:
-                action = ChatAction.model_validate(message.action)
-            except Exception as exc:
-                logger.warning("Stored chat action failed validation: {}", exc)
-                action = None
-
-        return ChatMessageResponse(
-            message_id=message.message_id,
-            chat_session_id=message.chat_session_id,
-            role=message.role,
-            content=message.content,
-            evidence_id=message.evidence_id,
-            entity_id=message.entity_id,
-            action=action,
-            created_at=message.created_at,
-        )
 
     async def _build_evidence_context(
         self,
@@ -443,79 +326,10 @@ class ChatService:
         - Associated entities (via bindings)
         - Source span snippet
         """
-        owner_filter = (
-            CanonicalEvidenceItem.owner_user_id.is_(None)
-            if owner_user_id is None
-            else CanonicalEvidenceItem.owner_user_id == owner_user_id
+        return await self._store.evidence_context(
+            canonical_evidence_id=canonical_evidence_id,
+            owner_user_id=owner_user_id,
         )
-        stmt = select(CanonicalEvidenceItem).where(
-            CanonicalEvidenceItem.canonical_evidence_id == canonical_evidence_id,
-            owner_filter,
-        )
-        result = await self._session.execute(stmt)
-        evidence = result.scalar_one_or_none()
-
-        if evidence is None:
-            logger.warning(
-                "Chat evidence context requested for missing canonical evidence: {}",
-                canonical_evidence_id,
-            )
-            return ""
-
-        payload = evidence.active_payload or {}
-        best_run_id = evidence.current_best_run_evidence_id
-
-        card = EvidenceCardPayload.from_field_payload(
-            field_id=evidence.field_id,
-            payload=payload,
-        )
-        context_parts = [
-            "**Evidence Card**",
-            f"Gene: {card.gene or 'N/A'}",
-            f"Variant: {card.variant or 'N/A'}",
-            f"Phenotype: {card.phenotype or 'N/A'}",
-            f"Disease: {card.disease or 'N/A'}",
-            f"Classification: {card.classification or 'N/A'}",
-            f"Evidence Strength: {card.evidence_strength or 'N/A'}",
-            f"Summary: {card.summary or 'N/A'}",
-        ]
-
-        if best_run_id:
-            # Entity bindings via current_best_run_evidence_id
-            stmt = (
-                select(NormalizedEntity)
-                .join(
-                    EvidenceEntityBinding,
-                    EvidenceEntityBinding.entity_id == NormalizedEntity.entity_id,
-                )
-                .where(
-                    EvidenceEntityBinding.run_evidence_item_id == best_run_id,
-                )
-            )
-            result = await self._session.execute(stmt)
-            entities = result.scalars().all()
-
-            if entities:
-                context_parts.append("\n**Associated Entities**")
-                for entity in entities[:5]:
-                    context_parts.append(f"- {entity.entity_type}: {entity.display_name} ({entity.external_id})")
-
-            # Source snippet from the best run item
-            stmt = select(RunEvidenceItem).where(
-                RunEvidenceItem.run_evidence_item_id == best_run_id,
-                RunEvidenceItem.owner_user_id.is_(None)
-                if owner_user_id is None
-                else RunEvidenceItem.owner_user_id == owner_user_id,
-            )
-            result = await self._session.execute(stmt)
-            run_item = result.scalar_one_or_none()
-
-            if run_item and run_item.source_span:
-                snippet = run_item.source_span.get("text_snippet", "")[:300]
-                if snippet:
-                    context_parts.append(f"\n**Source Text**\n{snippet}")
-
-        return "\n".join(context_parts)
 
     _CORRECTION_FIELD_ALIASES: dict[str, str] = {
         "gene": "gene",
@@ -579,13 +393,11 @@ class ChatService:
         reviewer_id: UUID | None = None,
         owner_user_id: UUID | None = None,
     ) -> str:
-        """Parse the user message and apply correction via FeedbackService."""
-        from src.dao.postgresql.review.feedback_store import (
-            FeedbackService,
-        )
+        """Parse the user message and apply correction through the feedback port."""
         from src.core.tools.review.contracts import (
             EvidencePatchRequest,
         )
+        from src.utils.exceptions import RecordNotFoundError
 
         fields = self._parse_correction_message(user_message)
         if not fields:
@@ -595,22 +407,20 @@ class ChatService:
                 "You can also use the Edit button on the evidence detail page."
             )
 
-        from sqlalchemy.exc import NoResultFound
-
         try:
             patch = EvidencePatchRequest(
                 fields=fields,
                 change_reason=f"Chat correction: {user_message[:200]}",
             )
-            service = FeedbackService(self._session)
-            result = await service.patch_evidence(
+            if self._feedback_store is None:
+                raise RuntimeError("ChatService requires a feedback store for corrections")
+            result = await self._feedback_store.patch_evidence(
                 canonical_evidence_id=evidence_id,
                 patch=patch,
                 reviewer_id=reviewer_id,
                 owner_user_id=owner_user_id,
             )
-            await self._session.commit()
-        except NoResultFound:
+        except RecordNotFoundError:
             return "Correction not applied: that evidence card is not available for this account."
         except ValueError:
             logger.warning("Chat correction rejected for evidence {}", evidence_id)
@@ -880,16 +690,8 @@ class ChatService:
         limit: int = 10,
         exclude_latest_user_message: str | None = None,
     ) -> list[dict[str, str]]:
-        stmt = (
-            select(ChatMessage)
-            .where(ChatMessage.chat_session_id == session_id)
-            .order_by(ChatMessage.created_at.desc())
-            .limit(limit)
-        )
-        result = await self._session.execute(stmt)
-        rows = list(result.scalars().all())
-        rows.reverse()
-        history = [{"role": m.role, "content": m.content} for m in rows if m.content]
+        rows = await self._store.recent_history(session_id=session_id, limit=limit)
+        history = [{"role": m.role, "content": m.content} for m in rows]
         if (
             exclude_latest_user_message
             and history

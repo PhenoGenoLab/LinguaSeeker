@@ -19,7 +19,7 @@ from src.dao.postgresql.review.source_link_store import PostgresSourceLinkStore
 
 @pytest.fixture
 def factory() -> ReviewServiceFactory:
-    return ReviewServiceFactory(cfg=MagicMock())
+    return ReviewServiceFactory(cfg=MagicMock(), session_factory=MagicMock())
 
 
 def test_create_feedback_service(factory: ReviewServiceFactory):
@@ -31,8 +31,7 @@ def test_create_feedback_service(factory: ReviewServiceFactory):
 
 def test_create_chat_service(factory: ReviewServiceFactory):
     """create_chat_service returns a ChatService instance."""
-    session = MagicMock()
-    service = factory.create_chat_service(session)
+    service = factory.create_chat_service()
     assert isinstance(service, ChatService)
 
 

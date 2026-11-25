@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.pipeline.skills.review.chat_service import (
     ChatService,
 )
+from src.dao.postgresql.review.chat_store import SessionChatStore
+from src.dao.postgresql.review.feedback_store import FeedbackService
 from src.utils.exceptions import NotFoundException
 
 
@@ -52,7 +54,7 @@ class TestChatService:
     async def test_create_session(self, db_session: AsyncSession) -> None:
         """Creates a chat session bound to a processing run."""
         run_id = await self._create_test_run(db_session)
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
 
         session = await service.create_session(processing_run_id=run_id, user_id=None)
 
@@ -61,7 +63,7 @@ class TestChatService:
 
     async def test_create_standalone_session(self, db_session: AsyncSession) -> None:
         """Creates a chat session that is not bound to a pipeline run."""
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
 
         session = await service.create_session(processing_run_id=None, user_id=None)
 
@@ -71,7 +73,7 @@ class TestChatService:
     async def test_append_message(self, db_session: AsyncSession) -> None:
         """Appends a message to a session."""
         run_id = await self._create_test_run(db_session)
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=run_id, user_id=None)
 
         msg = await service.append_message(
@@ -89,7 +91,7 @@ class TestChatService:
         """Appending a user message is persist-only and does not wait for title LLM."""
         provider = MagicMock()
         provider.generate = AsyncMock(return_value='"BRCA1 upload plan."')
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         await service.append_message(
@@ -110,7 +112,7 @@ class TestChatService:
         """The background title path asks ChatLLM for a persisted session title."""
         provider = MagicMock()
         provider.generate = AsyncMock(return_value='"BRCA1 upload plan."')
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         await service.append_message(
@@ -135,7 +137,7 @@ class TestChatService:
         """Once a ChatLLM title exists, later user turns keep it stable."""
         provider = MagicMock()
         provider.generate = AsyncMock(return_value="Initial BRCA1 task")
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         await service.append_message(
@@ -169,7 +171,7 @@ class TestChatService:
 
     async def test_append_message_nonexistent_session_raises_not_found(self, db_session: AsyncSession) -> None:
         """Appending to a non-existent session raises NotFoundException (404)."""
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
         fake_id = uuid.uuid4()
 
         with pytest.raises(NotFoundException, match="ChatSession"):
@@ -183,7 +185,7 @@ class TestChatService:
 
     async def test_list_messages_nonexistent_session_raises_not_found(self, db_session: AsyncSession) -> None:
         """Listing messages for a non-existent session raises NotFoundException."""
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
         fake_id = uuid.uuid4()
 
         with pytest.raises(NotFoundException, match="ChatSession"):
@@ -192,7 +194,7 @@ class TestChatService:
     async def test_list_messages_ordered(self, db_session: AsyncSession) -> None:
         """Lists messages in chronological order."""
         run_id = await self._create_test_run(db_session)
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=run_id, user_id=None)
 
         await service.append_message(
@@ -228,7 +230,7 @@ class TestChatService:
     async def test_list_sessions_by_run(self, db_session: AsyncSession) -> None:
         """Lists all sessions for a processing run."""
         run_id = await self._create_test_run(db_session)
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
 
         await service.create_session(processing_run_id=run_id, user_id=None)
         await service.create_session(processing_run_id=run_id, user_id=None)
@@ -240,7 +242,7 @@ class TestChatService:
     async def test_list_messages_with_limit(self, db_session: AsyncSession) -> None:
         """Limits the number of returned messages."""
         run_id = await self._create_test_run(db_session)
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=run_id, user_id=None)
 
         for i in range(10):
@@ -260,7 +262,7 @@ class TestChatService:
         """Standalone chat uses a general assistant prompt without evidence context."""
         provider = MagicMock()
         provider.generate = AsyncMock(return_value="I can help start a pipeline.")
-        service = ChatService(db_session, chat_provider=provider)
+        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         reply = await service.generate_reply(
@@ -361,7 +363,7 @@ class TestChatService:
         await db_session.flush()
 
         # Act
-        service = ChatService(db_session)
+        service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
         context = await service._build_evidence_context(
             canonical_evidence_id=canonical.canonical_evidence_id,
         )

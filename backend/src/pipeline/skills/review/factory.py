@@ -16,7 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.pipeline.skills.review.chat_service import ChatService
 from src.core.tools.review.delta_audit_service import DeltaAuditService
-from src.dao.postgresql.review.feedback_store import FeedbackService
+from src.dao.postgresql.review.chat_store import PostgresChatStore
+from src.dao.postgresql.review.feedback_store import PostgresFeedbackStore
 from src.pipeline.skills.review.providers import ChatLLMProvider
 from src.dao.postgresql.review.source_link_store import PostgresSourceLinkStore
 
@@ -45,11 +46,19 @@ class ReviewServiceFactory:
     def chat_provider(self) -> ChatLLMProvider:
         return self._chat_provider
 
-    def create_feedback_service(self, session: AsyncSession) -> FeedbackService:
+    def create_feedback_service(self, session: AsyncSession) -> "FeedbackService":
+        from src.dao.postgresql.review.feedback_store import FeedbackService
+
         return FeedbackService(session)
 
-    def create_chat_service(self, session: AsyncSession) -> ChatService:
-        return ChatService(session=session, chat_provider=self._chat_provider)
+    def create_chat_service(self) -> ChatService:
+        if self._session_factory is None:
+            raise RuntimeError("ChatService requires a configured session factory")
+        return ChatService(
+            store=PostgresChatStore(self._session_factory),
+            chat_provider=self._chat_provider,
+            feedback_store=PostgresFeedbackStore(self._session_factory),
+        )
 
     def schedule_session_title_generation(
         self,
@@ -80,13 +89,11 @@ class ReviewServiceFactory:
         if self._session_factory is None:
             return
 
-        async with self._session_factory() as session:
-            service = self.create_chat_service(session)
-            await service.generate_session_title(
-                session_id=session_id,
-                user_message=user_message,
-            )
-            await session.commit()
+        service = self.create_chat_service()
+        await service.generate_session_title(
+            session_id=session_id,
+            user_message=user_message,
+        )
 
     @staticmethod
     def _log_background_title_failure(task: asyncio.Task[None]) -> None:
