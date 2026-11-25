@@ -6,10 +6,31 @@ from typing import Protocol
 from uuid import UUID
 
 from src.core.tools.review.contracts import (
+    BilingualSpan,
     EvidenceGroupDetailResponse,
     EvidenceSearchResponse,
+    TrackSpan,
     VariantSearchResponse,
 )
+
+
+class SourceLinkStore(Protocol):
+    """Read source spans for evidence traceability."""
+
+    async def get_track_span(
+        self,
+        *,
+        canonical_evidence_id: UUID,
+        track: str,
+        owner_user_id: UUID | str | None = None,
+    ) -> TrackSpan | None: ...
+
+    async def get_bilingual_span(
+        self,
+        *,
+        canonical_evidence_id: UUID,
+        owner_user_id: UUID | str | None = None,
+    ) -> BilingualSpan: ...
 
 
 class EvidenceQueryStore(Protocol):

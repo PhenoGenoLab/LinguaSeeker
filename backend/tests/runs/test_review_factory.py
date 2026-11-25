@@ -14,7 +14,7 @@ from src.core.tools.review.delta_audit_service import (
 from src.core.tools.review.feedback_service import (
     FeedbackService,
 )
-from src.core.tools.review.source_linker import SourceLinker
+from src.dao.postgresql.review.source_link_store import PostgresSourceLinkStore
 
 
 @pytest.fixture
@@ -37,10 +37,9 @@ def test_create_chat_service(factory: ReviewServiceFactory):
 
 
 def test_create_source_linker(factory: ReviewServiceFactory):
-    """create_source_linker returns a SourceLinker instance."""
-    session = MagicMock()
-    linker = factory.create_source_linker(session)
-    assert isinstance(linker, SourceLinker)
+    """create_source_linker returns a session-per-call store."""
+    linker = factory.create_source_linker()
+    assert isinstance(linker, PostgresSourceLinkStore)
 
 
 def test_delta_audit_returns_singleton(factory: ReviewServiceFactory):

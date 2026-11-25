@@ -5,7 +5,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.core.tools.review.contracts import (
     BilingualSpan,
@@ -128,3 +128,36 @@ class SourceLinker:
             translated_track=translated,
             alignment_confidence=1.0 if (original and translated) else None,
         )
+
+
+class PostgresSourceLinkStore:
+    """Session-per-call adapter for the source-link read path."""
+
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+        self._session_factory = session_factory
+
+    async def get_track_span(
+        self,
+        *,
+        canonical_evidence_id: UUID,
+        track: str,
+        owner_user_id: UUID | str | None = None,
+    ) -> TrackSpan | None:
+        async with self._session_factory() as session:
+            return await SourceLinker(session).get_track_span(
+                canonical_evidence_id=canonical_evidence_id,
+                track=track,
+                owner_user_id=owner_user_id,
+            )
+
+    async def get_bilingual_span(
+        self,
+        *,
+        canonical_evidence_id: UUID,
+        owner_user_id: UUID | str | None = None,
+    ) -> BilingualSpan:
+        async with self._session_factory() as session:
+            return await SourceLinker(session).get_bilingual_span(
+                canonical_evidence_id=canonical_evidence_id,
+                owner_user_id=owner_user_id,
+            )
