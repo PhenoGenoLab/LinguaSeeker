@@ -13,6 +13,9 @@ from src.core.tools.review.contracts import (
     EvidenceGroupDetailResponse,
     EvidencePatchRequest,
     EvidenceSearchResponse,
+    LiteratureProfileDetailResponse,
+    LiteratureRefreshResponse,
+    LiteratureSearchResponse,
     ReviewStatus,
     TrackSpan,
     VariantSearchResponse,
@@ -56,6 +59,32 @@ class FeedbackStore(Protocol):
         reviewer_id: UUID | None = None,
         owner_user_id: UUID | str | None = None,
     ) -> PatchResult: ...
+
+
+class LiteratureStore(Protocol):
+    """Literature profile queries used by the review API."""
+
+    async def search(
+        self,
+        *,
+        gene: str | None = None,
+        variant: str | None = None,
+        disease: str | None = None,
+        pmid: str | None = None,
+        doi: str | None = None,
+        page: int = 1,
+        page_size: int = 50,
+        owner_user_id: UUID | str | None = None,
+    ) -> "LiteratureSearchResponse": ...
+
+    async def detail(
+        self,
+        source_document_id: UUID,
+        *,
+        owner_user_id: UUID | str | None = None,
+    ) -> "LiteratureProfileDetailResponse | None": ...
+
+    async def refresh_all(self, *, owner_user_id: UUID | str | None = None) -> "LiteratureRefreshResponse": ...
 
 
 class AuditStore(Protocol):
