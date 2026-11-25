@@ -251,6 +251,18 @@ def register_health_checks() -> None:
     register_health_check("redis", check_redis)
 
 
+async def initialize_neo4j() -> None:
+    """Ensure graph indexes and lowercase search fields exist."""
+    repository = _neo4j_repository
+    if repository is None:
+        return
+    try:
+        await repository.ensure_indexes()
+        logger.info("Neo4j indexes and lowercase fields ready")
+    except Exception as exc:
+        logger.warning("Neo4j index initialization failed: {}", exc)
+
+
 async def acquire_startup_lock() -> bool:
     """Acquire a PostgreSQL advisory lock for startup initialization.
 

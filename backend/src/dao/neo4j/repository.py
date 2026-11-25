@@ -60,6 +60,12 @@ class Neo4jRepository:
                 "SET n.display_name_lower = toLower(n.display_name)"
             )
             await backfill.consume()
+            alias_backfill = await session.run(
+                "MATCH (n) "
+                "WHERE n.aliases IS NOT NULL AND n.aliases_lower IS NULL "
+                "SET n.aliases_lower = [a IN n.aliases WHERE a IS NOT NULL | toLower(toString(a))]"
+            )
+            await alias_backfill.consume()
 
     async def execute_write(self, query: str, **parameters: Any) -> list[dict[str, Any]]:
         """Run a write query and return serialized records."""

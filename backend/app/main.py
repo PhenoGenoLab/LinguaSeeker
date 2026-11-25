@@ -98,6 +98,7 @@ async def lifespan(app: FastAPI):
 
     wire_dependencies()
     register_health_checks()
+    await _wiring.initialize_neo4j()
     logger.info("Pipeline orchestrator initialized")
 
     # Start the job dispatcher (background polling for queued jobs)

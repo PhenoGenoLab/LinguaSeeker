@@ -258,6 +258,7 @@ class Neo4jConfig(BaseModel):
     # (`neo4j`). Cross-service isolation is instance-level via NEO4J_URI,
     # not a separate database name (multi-DB is enterprise-only).
     database: str = "neo4j"
+    max_connection_pool_size: int = 10
 
 
 class WebSearchConfig(BaseModel):

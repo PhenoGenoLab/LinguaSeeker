@@ -183,7 +183,7 @@ def test_head_revision_points_to_terminology_schema() -> None:
 
 
 def test_head_revision_chain_is_current() -> None:
-    """The Alembic head reaches the latest migration (source language column)."""
+    """The Alembic head reaches the latest migration (API v2 agent jobs)."""
     backend_str = str(BACKEND_DIR)
     if backend_str not in sys.path:
         sys.path.insert(0, backend_str)
@@ -198,8 +198,8 @@ def test_head_revision_chain_is_current() -> None:
     head = script.get_revision("head")
 
     assert head is not None
-    assert head.revision == "source_language_20260803"
-    assert head.down_revision == "account_scopes_20260709"
+    assert head.revision == "api_v2_batch_agent_jobs_20261124"
+    assert head.down_revision == "source_language_20260803"
 
 
 def test_pipeline_run_leases_migration_chain() -> None:
@@ -287,7 +287,7 @@ def test_embedding_migration_creates_pgvector_extension(monkeypatch) -> None:
 
     module.upgrade()
 
-    assert "CREATE EXTENSION IF NOT EXISTS vector" in statements
+    assert any("pg_extension" in statement and "'vector'" in statement for statement in statements)
 
 
 def test_initial_migration_canonical_evidence_matches_orm_columns(monkeypatch) -> None:

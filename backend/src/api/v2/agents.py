@@ -8,6 +8,7 @@ enqueue a job, and expose polling/result endpoints. Execution lives in
 from __future__ import annotations
 
 import uuid
+from typing import cast
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import TypeAdapter
@@ -209,7 +210,7 @@ async def get_job(
         )
     return AgentJobStatus(
         job_id=job_id,
-        agent=AgentName(job.agent),
+        agent=cast(AgentName, job.agent),
         status=_AGENT_STATUS.get(job.status, "queued"),
         created_at=job.created_at.isoformat() if job.created_at else None,
         started_at=job.started_at.isoformat() if job.started_at else None,
