@@ -15,6 +15,8 @@ from src.dao.postgresql.review.evidence_store import PostgresEvidenceStore
 from src.dao.postgresql.review.audit_store import PostgresAuditStore
 from src.dao.postgresql.review.feedback_store import PostgresFeedbackStore
 from src.dao.postgresql.review.literature_store import PostgresLiteratureStore
+from src.dao.postgresql.run_state_store import PostgresRunStateStore
+from src.runs import RunStateStore
 from src.ports.review import (
     AnnotationStore,
     AuditStore,
@@ -86,6 +88,11 @@ def get_literature_store() -> LiteratureStore:
 def get_annotation_store() -> AnnotationStore:
     """Return an annotation store for the current session factory."""
     return PostgresAnnotationStore(get_session_factory())
+
+
+def get_run_state_store() -> RunStateStore:
+    """Return a run state store for the current session factory."""
+    return PostgresRunStateStore(get_session_factory())
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:

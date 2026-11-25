@@ -81,6 +81,14 @@ class RunStateStore(Protocol):
 
     async def finalize_review(self, processing_run_id: str) -> PipelineGraphState | None: ...
 
+    async def latest_state_for_document(self, source_document_id: str) -> PipelineGraphState | None:
+        """Return the newest state for one source document, if any."""
+        ...
+
+    async def states_for_batch(self, batch_id: str) -> list[PipelineGraphState]:
+        """Return every run state that belongs to one directory batch."""
+        ...
+
     async def list_runs(
         self,
         *,

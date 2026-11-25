@@ -82,6 +82,15 @@ class InMemoryRunStateStore:
     async def finalize_review(self, processing_run_id: str) -> PipelineGraphState | None:
         return await self.load(processing_run_id)
 
+    async def latest_state_for_document(self, source_document_id: str) -> PipelineGraphState | None:
+        matches = [s for s in self._states.values() if s.source_document_id == source_document_id]
+        if not matches:
+            return None
+        return max(matches, key=lambda state: state.created_at or "").model_copy(deep=True)
+
+    async def states_for_batch(self, batch_id: str) -> list[PipelineGraphState]:
+        return [s.model_copy(deep=True) for s in self._states.values() if s.batch_id == batch_id]
+
     async def list_runs(
         self,
         *,

@@ -12,9 +12,9 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
 
 from src.api.auth import get_current_account
+from src.api.deps import get_run_state_store
 from src.api.v1.pipeline import get_job_queue, get_pipeline_runner
 from src.api.v2.contracts import (
     BatchCounts,
@@ -33,7 +33,6 @@ from src.api.v2.contracts import (
 )
 from src.api.v2.directory import resolve_directory
 from src.core.foundation.auth.contracts import AuthContext
-from src.dao.postgresql.models import PipelineRunState
 from src.runs.contracts import (
     PhaseStatus,
     PipelineGraphState,
@@ -237,17 +236,12 @@ async def get_batch(
     account: AuthContext = Depends(get_current_account),
 ) -> BatchStatusResponse:
     """Aggregate status of one directory batch."""
-    from src.api.wiring import get_session_factory
-
-    session_factory = get_session_factory()
     try:
-        batch_uuid = uuid.UUID(batch_id)
+        uuid.UUID(batch_id)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="batch_id must be a UUID") from exc
-    async with session_factory() as session:
-        stmt = select(PipelineRunState).where(PipelineRunState.batch_id == batch_uuid)
-        rows = (await session.execute(stmt)).scalars().all()
-    states = [PipelineGraphState.model_validate(row.state_json) for row in rows if row.state_json]
+
+    states = await get_run_state_store().states_for_batch(batch_id)
     states = [state for state in states if _owns(state, account)]
     if not states:
         raise HTTPException(status_code=404, detail=f"Batch {batch_id} not found")

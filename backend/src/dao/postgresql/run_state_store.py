@@ -17,7 +17,7 @@ from uuid import UUID
 from loguru import logger
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import IntegrityError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.runs.contracts import (
@@ -513,7 +513,15 @@ class PostgresRunStateStore:
                 )
             )
             await session.execute(stmt)
-            await session.commit()
+            try:
+                await session.commit()
+            except IntegrityError as exc:
+                await session.rollback()
+                from src.utils.exceptions import DuplicateRunError
+
+                raise DuplicateRunError(
+                    f"A pipeline run is already in progress for source {state.source_key or state.processing_run_id}"
+                ) from exc
 
     async def reset_phase_rerun_artifacts(
         self,
@@ -615,6 +623,27 @@ class PostgresRunStateStore:
                 .limit(1)
             )
             return result.scalar_one_or_none() is not None
+
+    async def latest_state_for_document(self, source_document_id: str) -> PipelineGraphState | None:
+        """Return the newest state for one source document."""
+        async with self._session_factory() as session:
+            stmt = (
+                select(PipelineRunState)
+                .where(PipelineRunState.source_document_id == UUID(source_document_id))
+                .order_by(PipelineRunState.created_at.desc())
+                .limit(1)
+            )
+            record = (await session.execute(stmt)).scalar_one_or_none()
+        if record is None or not record.state_json:
+            return None
+        return PipelineGraphState.model_validate(record.state_json)
+
+    async def states_for_batch(self, batch_id: str) -> list[PipelineGraphState]:
+        """Return every state that belongs to one directory batch."""
+        async with self._session_factory() as session:
+            stmt = select(PipelineRunState).where(PipelineRunState.batch_id == UUID(batch_id))
+            records = (await session.execute(stmt)).scalars().all()
+        return [PipelineGraphState.model_validate(r.state_json) for r in records if r.state_json]
 
     async def list_runs(
         self,

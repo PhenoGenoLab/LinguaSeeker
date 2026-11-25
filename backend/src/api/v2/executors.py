@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Awaitable, Callable
 
 from pydantic import ValidationError
-from sqlalchemy import select
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -22,6 +21,7 @@ if TYPE_CHECKING:
     from src.core.config import Settings
     from src.dao.neo4j.repository import Neo4jRepository
     from src.pipeline.skills.review.factory import ReviewServiceFactory
+    from src.runs import RunStateStore
 
 from src.api.v2.contracts import (
     AcquiredDocument,
@@ -63,11 +63,13 @@ class AgentExecutor:
         session_factory: "async_sessionmaker[AsyncSession] | None" = None,
         neo4j_repository: "Neo4jRepository | None" = None,
         review_factory: "ReviewServiceFactory | None" = None,
+        state_store: "RunStateStore | None" = None,
     ):
         self._cfg = cfg
         self._session_factory = session_factory
         self._neo4j = neo4j_repository
         self._review_factory = review_factory
+        self._state_store = state_store
 
     async def execute(self, job: AgentJob) -> dict[str, object]:
         handler: Callable[[AgentJob], Awaitable[dict[str, object]]]
@@ -469,44 +471,23 @@ class AgentExecutor:
 
     async def _load_document_text(self, document_id: str) -> tuple[str, Path | None]:
         """Load parsed markdown for a stored document by run state."""
-        if self._session_factory is None or not document_id:
+        if self._state_store is None or not document_id:
             return "", None
-        from src.dao.postgresql.models import PipelineRunState
-
-        async with self._session_factory() as session:
-            stmt = (
-                select(PipelineRunState)
-                .where(PipelineRunState.source_document_id == uuid.UUID(document_id))
-                .order_by(PipelineRunState.created_at.desc())
-                .limit(1)
-            )
-            state = (await session.execute(stmt)).scalar_one_or_none()
-        if state is None:
+        state = await self._state_store.latest_state_for_document(document_id)
+        if state is None or state.parsing_output is None:
             return "", None
-        payload = state.state_json or {}
-        parsing = payload.get("parsing_output") or {}
-        md_path = parsing.get("md_path") or payload.get("markdown_path")
+        md_path = state.parsing_output.md_path
         if not md_path or not Path(md_path).is_file():
             return "", None
         return Path(md_path).read_text(encoding="utf-8"), Path(md_path)
 
     async def _resolve_dual_result_path(self, document_id: str) -> str | None:
-        if self._session_factory is None or not document_id:
+        if self._state_store is None or not document_id:
             return None
-        from src.dao.postgresql.models import PipelineRunState
-
-        async with self._session_factory() as session:
-            stmt = (
-                select(PipelineRunState)
-                .where(PipelineRunState.source_document_id == uuid.UUID(document_id))
-                .order_by(PipelineRunState.created_at.desc())
-                .limit(1)
-            )
-            state = (await session.execute(stmt)).scalar_one_or_none()
-        if state is None:
+        state = await self._state_store.latest_state_for_document(document_id)
+        if state is None or state.fact_chain_output is None:
             return None
-        output = (state.state_json or {}).get("fact_chain_output") or {}
-        return output.get("extraction_result_path")
+        return state.fact_chain_output.extraction_result_path
 
 
 def _work_dir(job_id: uuid.UUID) -> Path:

@@ -66,6 +66,13 @@ class RecordNotFoundError(ACMGException):
         super().__init__(message, code="NOT_FOUND")
 
 
+class DuplicateRunError(ACMGException):
+    """A run already exists for the same source (unique constraint)."""
+
+    def __init__(self, message: str = "A run already exists for this source") -> None:
+        super().__init__(message, code="CONFLICT")
+
+
 class LLMException(ACMGException):
     """LLM service call failed."""
 

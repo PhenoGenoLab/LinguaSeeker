@@ -588,11 +588,11 @@ async def _start_without_queue(
     upload_file_path: str | None,
 ) -> None:
     """Start a run directly when no job queue is configured."""
-    from sqlalchemy.exc import IntegrityError
+    from src.utils.exceptions import DuplicateRunError
 
     try:
         await runner.start(initial_state)
-    except IntegrityError:
+    except DuplicateRunError:
         _discard_upload(upload_file_path)
         raise HTTPException(
             status_code=409,

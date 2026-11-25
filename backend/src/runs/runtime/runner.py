@@ -51,6 +51,11 @@ class PipelineRunner:
         self._heartbeat_interval = heartbeat_interval_seconds
 
     @property
+    def state_store(self) -> RunStateStore:
+        """Return the state store this runner persists through."""
+        return self._persistence
+
+    @property
     def processing_cache_enabled(self) -> bool:
         """Return whether completed pipeline result caching is enabled."""
         return self._processing_cache_enabled

@@ -555,14 +555,14 @@ async def test_post_pipeline_run_accepts_extraction_target(async_client: AsyncCl
 @pytest.mark.asyncio
 async def test_post_pipeline_run_duplicate_source_key_race_returns_409(async_client: AsyncClient):
     """POST returns 409 when unique source_key constraint catches a race."""
-    from sqlalchemy.exc import IntegrityError
+    from src.utils.exceptions import DuplicateRunError
 
     with patch("src.api.v1.pipeline.get_pipeline_runner") as mock_get_runner:
         runner = MagicMock()
         runner.is_running_for_source = AsyncMock(return_value=False)
         runner.compute_initial_content_hash = AsyncMock(return_value=None)
         runner.check_processing_cache = AsyncMock(return_value=None)
-        runner.start = AsyncMock(side_effect=IntegrityError("insert", {}, Exception("duplicate source_key")))
+        runner.start = AsyncMock(side_effect=DuplicateRunError("duplicate source_key"))
         mock_get_runner.return_value = runner
 
         response = await async_client.post(
