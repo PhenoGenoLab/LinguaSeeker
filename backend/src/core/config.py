@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 from urllib.parse import quote, urlparse
 
 from pydantic import BaseModel, Field, model_validator
@@ -369,6 +370,9 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     environment: str = "development"
     debug: bool = False
+    # "postgres" uses the configured database; "memory" runs the lifecycle in
+    # process so the API and pipeline work without a database service.
+    persistence_backend: Literal["postgres", "memory"] = "postgres"
     api_key: str = ""  # X-API-Key for route auth; empty = disabled (insecure)
     session_signing_key: str = ""  # HMAC secret for ce_session cookies; falls back to api_key if empty
 

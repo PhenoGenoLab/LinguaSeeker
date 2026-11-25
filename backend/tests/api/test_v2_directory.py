@@ -9,7 +9,7 @@ import pytest
 
 from src.api.v2.directory import resolve_directory
 from src.dao.postgresql.agent_jobs import AgentJobRow
-from src.runs.agent_worker import AgentJobFailure, AgentJobWorker
+from src.runs import AgentJobFailure, AgentJobWorker
 
 
 def test_resolve_directory_matches_patterns(tmp_path):

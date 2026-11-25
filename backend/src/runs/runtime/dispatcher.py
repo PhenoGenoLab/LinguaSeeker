@@ -19,8 +19,8 @@ from src.runs.contracts import (
     PipelineGraphState,
     PipelineStatus,
 )
-from src.runs.polling import run_polling_loop, stop_polling_task
-from src.dao.postgresql.job_queue import JobQueueRepository
+from src.runs.ports import RunJob, RunJobQueue
+from src.runs.runtime.polling import run_polling_loop, stop_polling_task
 
 
 class SingleJobDispatcher:
@@ -38,7 +38,7 @@ class SingleJobDispatcher:
     def __init__(
         self,
         runner: Any,
-        job_queue: JobQueueRepository,
+        job_queue: RunJobQueue,
         poll_interval: float = 2.0,
         idle_max_interval: float = 30.0,
         worker_id: str | None = None,
@@ -89,7 +89,7 @@ class SingleJobDispatcher:
             should_stop=lambda: self._stopping,
         )
 
-    async def _execute(self, job: Any) -> None:
+    async def _execute(self, job: RunJob) -> None:
         """Run a claimed job through the pipeline."""
         logger.info(
             "Executing job: job_id={}, processing_run_id={}",

@@ -12,20 +12,44 @@
 
 ```
 runs/
-├── runner.py                # 后台管线运行器（asyncio task + DB fallback）
-├── dispatcher.py            # 单任务作业调度器（轮询 pipeline_jobs 表）
-├── contracts.py             # 状态模型、枚举、错误层次、状态转换守卫
-├── state_persistence.py     # PostgreSQL 状态持久化（直接 + 会话绑定两种模式）
-├── processing_cache.py      # 两级文档处理缓存（L1 Redis + L2 PostgreSQL）
-├── content_hash.py          # 内容哈希计算（SHA-256 去重）
-├── concurrency.py           # 并发控制（信号量 + 重试执行器）
-├── review_factory.py        # 审核服务工厂（交互审核层，API 层边界）
-└── __init__.py
+├── __init__.py              # 唯一公共入口（__all__）
+├── contracts.py             # 状态模型、枚举、错误层次、状态转换守卫、RunSummary
+├── ports.py                 # 端口：RunStateStore / RunJobQueue / AgentJobStore / ProcessingCache
+├── runtime/
+│   ├── runner.py            # 后台管线运行器（asyncio task + 端口回退）
+│   ├── dispatcher.py        # 单任务作业调度器（认领端口任务）
+│   ├── agent_worker.py      # v2 独立 agent 作业 worker
+│   ├── polling.py           # 共享轮询/退避循环
+│   ├── concurrency.py       # 并发控制（信号量 + 重试执行器）
+│   └── content_hash.py      # 内容哈希计算（SHA-256 去重）
+└── README.md
+
+# 适配器（唯一允许接触 SQLAlchemy / 驱动的地方）：
+src/dao/postgresql/run_state_store.py
+src/dao/postgresql/job_queue.py
+src/dao/postgresql/agent_jobs.py
+src/dao/postgresql/processing_cache.py
+src/dao/memory/...
 
 # 编排器与阶段适配器：
 src/pipeline/graph/topology.py
 src/pipeline/graph/phases/{acquisition,parsing,fact_chain,standardization}.py
 ```
+
+外部包只能 `from src.runs import ...`，或导入公共子模块 `src.runs.contracts` / `src.runs.ports`；
+`runtime/` 是内部实现，由 `tests/runs/test_runs_public_surface.py` 守卫。
+
+## Persistence boundary
+
+`src.runs` 不感知数据库：它只依赖 `src.runs.ports` 中的协议。具体适配器由
+`src/api/wiring.py` 按 `PERSISTENCE_BACKEND` 选择：
+
+- `postgres`（默认）：`src.dao.postgresql.*`
+- `memory`：`src.dao.memory.*`，进程内状态，供无数据库环境与测试使用；
+  需要数据库的功能返回 `PERSISTENCE_UNAVAILABLE`（HTTP 503）
+
+`ReviewServiceFactory` 已移至 `src/pipeline/skills/review/factory.py`（特性切片自有），
+不再属于 run 生命周期。
 
 ## Key Components
 
@@ -42,18 +66,18 @@ acquisition → parsing → fact_chain → standardization → END
 - 适配器抛出分类错误，编排器决定重试或终止
 - 使用 `RetryablePhaseExecutor` 实现指数退避重试
 
-### `PipelineRunner` (runner.py)
+### `PipelineRunner` (src/runs/runtime/runner.py)
 
 后台管线运行器，管理 asyncio 任务：
 
-- `start()` — 启动后台任务并记录到 PostgreSQL
-- `get_last_state()` — 获取运行状态（先查内存缓存，再查 DB）
+- `start()` — 启动后台任务并通过 `RunStateStore` 记录
+- `get_last_state()` — 获取运行状态（先查内存缓存，再查 `RunStateStore`）
 - `recover_orphaned_runs()` — 服务器重启后恢复中断的运行
 - `shutdown()` — 优雅关闭，等待活跃任务完成
-- `check_processing_cache()` — 查询两级缓存
+- `check_processing_cache()` — 查询 `ProcessingCache`
 - LRU 内存缓存最近 100 个状态
 
-### `SingleJobDispatcher` (dispatcher.py)
+### `SingleJobDispatcher` (src/runs/runtime/dispatcher.py)
 
 单任务作业调度器，后台轮询 `pipeline_jobs` 表：
 
@@ -81,27 +105,27 @@ PhaseError
 
 `classify_phase_error()` 根据异常类型自动分类并重新抛出。
 
-### `SessionBoundStatePersistence` (state_persistence.py)
+### `PostgresRunStateStore` (src/dao/postgresql/run_state_store.py)
 
-PostgreSQL 状态持久化层：
+PostgreSQL 状态持久化适配器（实现 `RunStateStore` 端口）：
 
-- `save_state()` — 保存管线状态到 `pipeline_run_states` 表
-- `load_state()` — 加载最新状态
+- `save()` — 保存管线状态到 `pipeline_run_states` 表
+- `load()` — 加载最新状态
 - `list_runs()` — 列出运行摘要（分页）
 - `has_active_source_key()` — 检查是否有活跃运行处理同一文档
 - 处理 parsing 重跑时的旧数据清理
 - 自动维护 `source_documents` 和 `literature_profiles` 表
 
-### `DocumentProcessingCacheService` (processing_cache.py)
+### `PostgresProcessingCache` (src/dao/postgresql/processing_cache.py)
 
-两级文档处理缓存：
+两级文档处理缓存（实现 `ProcessingCache` 端口）：
 
 - **L1 Redis** — 热缓存，TTL 1 小时，键 `docproc:{content_hash}`
 - **L2 PostgreSQL** — 持久缓存，表 `document_processing_cache`
 - 读路径：L1 → L2（回填 L1）→ miss
 - 写路径：L2 upsert → L1 set
 
-### `ReviewServiceFactory` (review_factory.py)
+### `ReviewServiceFactory` (src/pipeline/skills/review/factory.py)
 
 审核服务工厂（交互审核层），作为 API 层和核心服务之间的边界：
 

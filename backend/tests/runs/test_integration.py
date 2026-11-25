@@ -16,7 +16,7 @@ from src.runs.contracts import (
     SkipStandardizationReason,
 )
 from src.pipeline.graph.topology import PipelineOrchestrator
-from src.runs.concurrency import RetryablePhaseExecutor
+from src.runs import RetryablePhaseExecutor
 
 
 def _make_adapters(**returns) -> dict:

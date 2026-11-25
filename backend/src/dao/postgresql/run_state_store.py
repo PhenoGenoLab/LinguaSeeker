@@ -1,15 +1,15 @@
-"""State persistence layer for pipeline orchestrator.
+"""PostgreSQL adapter for pipeline run state.
 
-Two implementations:
-- DirectStatePersistence: binds a single session (unit tests).
-- SessionBoundStatePersistence: session-per-operation (production).
+- ``SessionRunStateStore``: binds a single session (unit tests).
+- ``PostgresRunStateStore``: session-per-operation (production).
+
+Nothing outside ``src.dao`` may import this module.
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
-from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
@@ -22,6 +22,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.runs.contracts import (
     PipelineMode,
+    RunSummary,
+    derive_error_phase,
     stage_status_field,
     PhaseStatus,
     PipelineGraphState,
@@ -42,35 +44,6 @@ from src.utils.translation_render_quality import (
     is_likely_untranslated_render_blocks,
     is_likely_untranslated_render_payload,
 )
-
-
-@dataclass
-class PipelineRunSummaryRow:
-    """Lightweight summary for listing pipeline runs (avoids full state deserialization)."""
-
-    processing_run_id: str
-    owner_user_id: str | None
-    pipeline_status: str
-    source_key: str | None
-    started_at: str | None
-    completed_at: str | None
-    title: str | None
-    current_phase: str | None
-    completed_phases: int
-    total_phases: int
-
-
-def _derive_error_phase(state: PipelineGraphState) -> int:
-    """Derive the phase number that was running when the pipeline was interrupted.
-
-    Inspects the per-stage PhaseStatusDetail fields in reverse stage order.
-    Returns 0 when no phase shows RUNNING status.
-    """
-    for phase_num in (4, 3, 2, 1):
-        detail = getattr(state, stage_status_field(phase_num), None)
-        if detail is not None and detail.status == PhaseStatus.RUNNING:
-            return phase_num
-    return 0
 
 
 async def _build_raw_metadata(state: PipelineGraphState) -> dict[str, object]:
@@ -151,7 +124,7 @@ async def _persist_phase3_document_text(
 ) -> None:
     """Write Phase 3 document text and structured blocks to SourceDocument.
 
-    Shared by both DirectStatePersistence and SessionBoundStatePersistence.
+    Shared by both SessionRunStateStore and PostgresRunStateStore.
     Only writes when Phase 3 is COMPLETED and the DB doesn't already have text.
     """
     if not (state.fact_chain_output and state.fact_chain_status.status == PhaseStatus.COMPLETED):
@@ -324,7 +297,7 @@ def _count_completed_phases(sj: dict) -> tuple[int, int]:
     return completed, total
 
 
-class DirectStatePersistence:
+class SessionRunStateStore:
     """Save/load PipelineGraphState with a fixed session.
 
     Intended for unit tests with short-lived sessions only.
@@ -424,34 +397,34 @@ class DirectStatePersistence:
     async def recover_orphaned_runs(self, *, heartbeat_timeout_seconds: int = 300) -> int:
         """Not supported in unit-test persistence — raises on misuse."""
         raise NotImplementedError(
-            "recover_orphaned_runs is not available in DirectStatePersistence; "
-            "use SessionBoundStatePersistence for crash recovery."
+            "recover_orphaned_runs is not available in SessionRunStateStore; "
+            "use PostgresRunStateStore for crash recovery."
         )
 
     async def heartbeat(self, processing_run_id: str, owner_worker_id: str) -> bool:
         """Not supported in unit-test persistence — raises on misuse."""
         raise NotImplementedError(
-            "heartbeat is not available in DirectStatePersistence; "
-            "use SessionBoundStatePersistence for heartbeat refresh."
+            "heartbeat is not available in SessionRunStateStore; "
+            "use PostgresRunStateStore for heartbeat refresh."
         )
 
     async def has_active_source_key(self, source_key: str, owner_user_id: str | None = None) -> bool:
         """Not supported in unit-test persistence — raises on misuse."""
         del owner_user_id
         raise NotImplementedError(
-            "has_active_source_key is not available in DirectStatePersistence; "
-            "use SessionBoundStatePersistence for source dedup."
+            "has_active_source_key is not available in SessionRunStateStore; "
+            "use PostgresRunStateStore for source dedup."
         )
 
     async def finalize_review(self, processing_run_id: str) -> PipelineGraphState | None:
         """Not supported in unit-test persistence — raises on misuse."""
         raise NotImplementedError(
-            "finalize_review is not available in DirectStatePersistence; "
-            "use SessionBoundStatePersistence for review finalization."
+            "finalize_review is not available in SessionRunStateStore; "
+            "use PostgresRunStateStore for review finalization."
         )
 
 
-class SessionBoundStatePersistence:
+class PostgresRunStateStore:
     """Save/load PipelineGraphState with session-per-operation.
 
     Creates a fresh session for each save()/load() call, avoiding
@@ -595,7 +568,7 @@ class SessionBoundStatePersistence:
                 state = PipelineGraphState.model_validate(record.state_json)
                 state.pipeline_status = PipelineStatus.FAILED
                 state.error_message = "Pipeline heartbeat expired"
-                state.error_phase = _derive_error_phase(state)
+                state.error_phase = derive_error_phase(state)
                 state.completed_at = now.isoformat()
                 record.state_json = state.model_dump(mode="json")
                 record.pipeline_status = "failed"
@@ -651,7 +624,7 @@ class SessionBoundStatePersistence:
         status: str | None = None,
         search: str | None = None,
         owner_user_id: str | None = None,
-    ) -> tuple[list[PipelineRunSummaryRow], int]:
+    ) -> tuple[list[RunSummary], int]:
         """List pipeline run summaries ordered by creation time (newest first).
 
         Returns a (items, total) tuple. Extracts summary fields from the
@@ -686,7 +659,7 @@ class SessionBoundStatePersistence:
             result = await session.execute(stmt)
             records = result.scalars().all()
 
-            items: list[PipelineRunSummaryRow] = []
+            items: list[RunSummary] = []
             for record in records:
                 sj = record.state_json
 
@@ -695,7 +668,7 @@ class SessionBoundStatePersistence:
                 completed, total_phases = _count_completed_phases(sj)
 
                 items.append(
-                    PipelineRunSummaryRow(
+                    RunSummary(
                         processing_run_id=str(record.processing_run_id),
                         owner_user_id=str(record.owner_user_id) if record.owner_user_id else None,
                         pipeline_status=record.pipeline_status,

@@ -30,9 +30,9 @@ from src.api.v2.contracts import (
     ReviewSearchRequest,
     StandardizationRequest,
 )
-from src.api.wiring import get_session_factory
+from src.api.wiring import get_agent_job_store
 from src.core.foundation.auth.contracts import AuthContext
-from src.dao.postgresql.agent_jobs import AgentJobRepository
+from src.runs import AgentJobStore
 
 router = APIRouter()
 
@@ -47,8 +47,8 @@ _AGENT_STATUS: dict[str, JobStatus] = {
 _AGENT_RESULT_ADAPTER: TypeAdapter[AgentResult] = TypeAdapter(AgentResult)
 
 
-def _repository() -> AgentJobRepository:
-    return AgentJobRepository(get_session_factory())
+def _repository() -> AgentJobStore:
+    return get_agent_job_store()
 
 
 async def _enqueue(

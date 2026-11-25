@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+from dataclasses import dataclass
 from datetime import datetime
 
 from enum import Enum
@@ -585,3 +586,32 @@ class PipelineGraphState(BaseModel):
             review_reject_policy=rd.get("review_reject_policy", "tristate_review"),
             extraction_track_mode=rd.get("extraction_track_mode", "dual"),
         )
+
+
+@dataclass
+class RunSummary:
+    """Lightweight summary for listing pipeline runs without full state hydration."""
+
+    processing_run_id: str
+    owner_user_id: str | None
+    pipeline_status: str
+    source_key: str | None
+    started_at: str | None
+    completed_at: str | None
+    title: str | None
+    current_phase: str | None
+    completed_phases: int
+    total_phases: int
+
+
+def derive_error_phase(state: PipelineGraphState) -> int:
+    """Return the phase that was running when the run was interrupted.
+
+    Inspects the per-stage status fields in reverse order; returns 0 when no
+    phase shows RUNNING.
+    """
+    for phase_num in (4, 3, 2, 1):
+        detail = getattr(state, stage_status_field(phase_num), None)
+        if detail is not None and detail.status == PhaseStatus.RUNNING:
+            return phase_num
+    return 0

@@ -1,23 +1,13 @@
-"""Two-tier document processing cache: L1 Redis + L2 PostgreSQL.
+"""PostgreSQL + Redis adapter for the document processing cache.
 
-When a pipeline run completes, the final state is cached by content hash.
-On subsequent submissions with the same content hash, the cached result
-is returned immediately without re-running the pipeline.
-
-Read path (``get_cached_result``):
-  1. L1 Redis: check ``docproc:{content_hash}`` → hit → return deserialized state.
-  2. L2 PostgreSQL: query ``document_processing_cache`` → hit → backfill L1 → return.
-  3. Miss → return None (caller proceeds with normal pipeline execution).
-
-Write path (``cache_result``):
-  1. L2 PostgreSQL: upsert into ``document_processing_cache``.
-  2. L1 Redis: set ``docproc:{content_hash}`` with TTL.
+L1 is Redis (fast, volatile), L2 is PostgreSQL (durable). Callers depend on
+``src.runs.ports.ProcessingCache``; this module is an implementation detail of
+``src.dao``.
 """
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from uuid import UUID
 
 from loguru import logger
@@ -27,6 +17,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.runs.contracts import PipelineGraphState
+from src.runs.ports import CachedRun
 from src.dao.postgresql.models import DocumentProcessingCache
 
 
@@ -36,15 +27,7 @@ _CACHE_PREFIX = "lingseeker:docproc"
 _L1_TTL_SECONDS = 3600  # 1 hour
 
 
-@dataclass
-class CacheLookupResult:
-    """Result of a cache lookup — the cached state and its origin tier."""
-
-    state: PipelineGraphState
-    source: str  # "l1_redis" or "l2_postgres"
-
-
-class DocumentProcessingCacheService:
+class PostgresProcessingCache:
     """Two-tier cache for document processing results.
 
     L1 is Redis (fast, volatile), L2 is PostgreSQL (durable). The service
@@ -64,7 +47,7 @@ class DocumentProcessingCacheService:
 
     # ── Public API ──────────────────────────────────────────────────────
 
-    async def get_cached_result(self, content_hash: str) -> CacheLookupResult | None:
+    async def get_cached_result(self, content_hash: str) -> CachedRun | None:
         """Look up a cached processing result by content hash.
 
         Checks L1 (Redis) first, then L2 (PostgreSQL). On L2 hit,
@@ -74,7 +57,7 @@ class DocumentProcessingCacheService:
             content_hash: The 64-char hex SHA-256 content hash.
 
         Returns:
-            CacheLookupResult with the cached PipelineGraphState and its
+            CachedRun with the cached PipelineGraphState and its
             source tier, or None if both caches miss.
         """
         # ── L1: Redis ───────────────────────────────────────────────────
@@ -85,7 +68,7 @@ class DocumentProcessingCacheService:
                 state = self._deserialize_state(raw)
                 if state is not None:
                     logger.debug("Processing cache L1 hit: hash={}", content_hash[:12])
-                    return CacheLookupResult(state=state, source="l1_redis")
+                    return CachedRun(state=state, source="l1_redis")
         except Exception:
             logger.warning(
                 "L1 cache read failed for hash={}, falling back to L2",
@@ -101,7 +84,7 @@ class DocumentProcessingCacheService:
                 "Processing cache L2 hit (L1 backfilled): hash={}",
                 content_hash[:12],
             )
-            return CacheLookupResult(state=l2_result, source="l2_postgres")
+            return CachedRun(state=l2_result, source="l2_postgres")
 
         return None
 

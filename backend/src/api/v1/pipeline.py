@@ -48,8 +48,8 @@ from src.runs.contracts import (
     PipelineStatus,
     SourceType,
 )
-from src.runs.content_hash import normalize_identifier
-from src.dao.postgresql.job_queue import JobQueueRepository
+from src.runs import normalize_identifier
+from src.runs import RunJobQueue
 
 router = APIRouter()
 
@@ -59,7 +59,7 @@ _UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data" / "p
 # ── Global pipeline runner (initialized in app lifespan) ─────────────────────
 
 _pipeline_runner = None
-_job_queue: JobQueueRepository | None = None
+_job_queue: RunJobQueue | None = None
 
 
 def get_pipeline_runner():
@@ -76,12 +76,12 @@ def set_pipeline_runner(runner):
     _pipeline_runner = runner
 
 
-def get_job_queue() -> JobQueueRepository | None:
+def get_job_queue() -> RunJobQueue | None:
     """Get the global job queue repository."""
     return _job_queue
 
 
-def set_job_queue(jq: JobQueueRepository) -> None:
+def set_job_queue(jq: RunJobQueue) -> None:
     """Set the global job queue repository."""
     global _job_queue
     _job_queue = jq
@@ -412,7 +412,7 @@ async def _start_phase_rerun(
     account: AuthContext,
     owner_user_id: str | None,
     runner: Any,
-    job_queue: JobQueueRepository | None,
+    job_queue: RunJobQueue | None,
 ) -> PipelineRunResponse:
     """Enqueue (or start) a re-run of phases 2-4 for an existing run."""
     existing_state = await runner.get_last_state(body.processing_run_id)

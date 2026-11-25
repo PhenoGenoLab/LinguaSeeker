@@ -195,6 +195,8 @@ async def lifespan(app: FastAPI):
             logger.warning("Orphaned run recovery failed: {}", exc)
         finally:
             await _release_startup_lock()
+    elif engine is None:
+        logger.info("No database configured — skipping startup lock and crash recovery")
     else:
         logger.info("Skipping startup recovery — another worker holds the advisory lock")
 
@@ -239,12 +241,11 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.debug("Pipeline runner shutdown skipped: {}", exc)
 
-    from src.api.deps import get_phase5_factory
+    from src.api.deps import get_review_factory
 
     try:
-        phase5_factory = get_phase5_factory()
-        if phase5_factory is not None:
-            await phase5_factory.close()
+        review_factory = get_review_factory()
+        await review_factory.close()
     except Exception as exc:
         logger.debug("ReviewServiceFactory close failed during shutdown: {}", exc)
     finally:

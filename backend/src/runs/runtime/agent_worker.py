@@ -13,8 +13,8 @@ from typing import Protocol
 
 from loguru import logger
 
-from src.dao.postgresql.agent_jobs import AgentJobRepository, AgentJobRow
-from src.runs.polling import run_polling_loop, stop_polling_task
+from src.runs.ports import AgentJob, AgentJobStore
+from src.runs.runtime.polling import run_polling_loop, stop_polling_task
 
 
 class AgentJobFailure(Exception):
@@ -28,7 +28,7 @@ class AgentJobFailure(Exception):
 class AgentExecutor(Protocol):
     """Executes one claimed agent job and returns its result payload."""
 
-    async def execute(self, job: AgentJobRow) -> dict[str, object]: ...
+    async def execute(self, job: AgentJob) -> dict[str, object]: ...
 
 
 class AgentJobWorker:
@@ -36,7 +36,7 @@ class AgentJobWorker:
 
     def __init__(
         self,
-        repository: AgentJobRepository,
+        repository: AgentJobStore,
         executor: AgentExecutor,
         *,
         poll_interval: float = 2.0,
@@ -76,7 +76,7 @@ class AgentJobWorker:
             should_stop=lambda: self._stopping,
         )
 
-    async def _execute(self, job: AgentJobRow) -> None:
+    async def _execute(self, job: AgentJob) -> None:
         logger.info("Executing agent job: job_id={}, agent={}, action={}", job.job_id, job.agent, job.action)
         try:
             result = await self._executor.execute(job)

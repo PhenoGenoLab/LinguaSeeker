@@ -21,16 +21,14 @@ from src.runs.contracts import (
     PipelineStatus,
     SourceType,
 )
-from src.runs.content_hash import (
+from src.runs import CachedRun
+from src.runs.runtime.content_hash import (
     compute_content_hash,
     compute_hash_from_bytes,
     compute_hash_from_file,
     compute_hash_from_text,
 )
-from src.runs.processing_cache import (
-    CacheLookupResult,
-    DocumentProcessingCacheService,
-)
+from src.dao.postgresql.processing_cache import PostgresProcessingCache
 
 
 # ── Fixtures ─────────────────────────────────────────────────────────────
@@ -71,7 +69,7 @@ def mock_session_factory():
 @pytest.fixture
 def cache_service(mock_redis, mock_session_factory):
     """CacheService with mocked dependencies."""
-    return DocumentProcessingCacheService(
+    return PostgresProcessingCache(
         redis_client=mock_redis,
         session_factory=mock_session_factory,
     )
@@ -464,7 +462,7 @@ class TestRunnerCacheIntegration:
     @pytest.mark.asyncio
     async def test_check_processing_cache_returns_none_when_no_cache(self, sample_state):
         """Runner with no processing_cache returns None."""
-        from src.runs.runner import PipelineRunner
+        from src.runs import PipelineRunner
 
         runner = PipelineRunner(
             orchestrator=MagicMock(),
@@ -478,7 +476,7 @@ class TestRunnerCacheIntegration:
     @pytest.mark.asyncio
     async def test_check_processing_cache_returns_none_for_empty_hash(self, sample_state):
         """Runner returns None for empty content hash."""
-        from src.runs.runner import PipelineRunner
+        from src.runs import PipelineRunner
 
         mock_cache = MagicMock()
         mock_cache.get_cached_result = AsyncMock()
@@ -496,7 +494,7 @@ class TestRunnerCacheIntegration:
     @pytest.mark.asyncio
     async def test_check_processing_cache_returns_none_when_disabled(self, sample_state):
         """Runner does not query processing cache when the switch is disabled."""
-        from src.runs.runner import PipelineRunner
+        from src.runs import PipelineRunner
 
         mock_cache = MagicMock()
         mock_cache.get_cached_result = AsyncMock()
@@ -515,10 +513,10 @@ class TestRunnerCacheIntegration:
     @pytest.mark.asyncio
     async def test_check_processing_cache_returns_state_on_hit(self, sample_state):
         """Runner returns cached state on hit."""
-        from src.runs.runner import PipelineRunner
+        from src.runs import PipelineRunner
 
         mock_cache = MagicMock()
-        mock_cache.get_cached_result = AsyncMock(return_value=CacheLookupResult(state=sample_state, source="l1_redis"))
+        mock_cache.get_cached_result = AsyncMock(return_value=CachedRun(state=sample_state, source="l1_redis"))
 
         runner = PipelineRunner(
             orchestrator=MagicMock(),

@@ -1,7 +1,7 @@
 """Executors for standalone agent jobs (API v2).
 
 Each handler adapts one v2 request model to the existing feature services.
-Jobs are executed by :class:`src.runs.agent_worker.AgentJobWorker`; failures
+Jobs are executed by :class:`src.runs.AgentJobWorker`; failures
 must raise :class:`AgentJobFailure` with a stable classification.
 """
 
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
     from src.core.config import Settings
     from src.dao.neo4j.repository import Neo4jRepository
-    from src.runs.review_factory import ReviewServiceFactory
+    from src.pipeline.skills.review.factory import ReviewServiceFactory
 
 from src.api.v2.contracts import (
     AcquiredDocument,
@@ -47,8 +47,7 @@ from src.api.v2.contracts import (
     StandardizationResult,
 )
 from src.api.v2.directory import ScannedFile, resolve_directory, input_root
-from src.dao.postgresql.agent_jobs import AgentJobRow
-from src.runs.agent_worker import AgentJobFailure
+from src.runs import AgentJob, AgentJobFailure
 
 
 _REVIEW_SEARCH_MAX_ROWS = 2_000
@@ -70,8 +69,8 @@ class AgentExecutor:
         self._neo4j = neo4j_repository
         self._review_factory = review_factory
 
-    async def execute(self, job: AgentJobRow) -> dict[str, object]:
-        handler: Callable[[AgentJobRow], Awaitable[dict[str, object]]]
+    async def execute(self, job: AgentJob) -> dict[str, object]:
+        handler: Callable[[AgentJob], Awaitable[dict[str, object]]]
         if job.agent == "acquisition":
             handler = self._acquisition
         elif job.agent == "parsing":
@@ -93,7 +92,7 @@ class AgentExecutor:
 
     # ── acquisition ─────────────────────────────────────────────────────
 
-    async def _acquisition(self, job: AgentJobRow) -> dict[str, object]:
+    async def _acquisition(self, job: AgentJob) -> dict[str, object]:
         request = AcquisitionRequest.model_validate(job.request_data)
         if request.mode in {"files", "directory"}:
             scanned = self._resolve_inputs(
@@ -143,7 +142,7 @@ class AgentExecutor:
 
     # ── parsing ─────────────────────────────────────────────────────────
 
-    async def _parsing(self, job: AgentJobRow) -> dict[str, object]:
+    async def _parsing(self, job: AgentJob) -> dict[str, object]:
         request = ParsingRequest.model_validate(job.request_data)
         scanned = self._resolve_inputs(
             files=request.files,
@@ -186,7 +185,7 @@ class AgentExecutor:
 
     # ── fact_chain ──────────────────────────────────────────────────────
 
-    async def _fact_chain(self, job: AgentJobRow) -> dict[str, object]:
+    async def _fact_chain(self, job: AgentJob) -> dict[str, object]:
         request = FactChainRequest.model_validate(job.request_data)
         if request.source.md_path:
             md_path = Path(request.source.md_path)
@@ -231,7 +230,7 @@ class AgentExecutor:
 
     # ── standardization ─────────────────────────────────────────────────
 
-    async def _standardization(self, job: AgentJobRow) -> dict[str, object]:
+    async def _standardization(self, job: AgentJob) -> dict[str, object]:
         request = StandardizationRequest.model_validate(job.request_data)
         dual_path = request.source.dual_result_path
         document_id = request.source.document_id
@@ -266,7 +265,7 @@ class AgentExecutor:
 
     # ── graph_retrieval ─────────────────────────────────────────────────
 
-    async def _graph_retrieval(self, job: AgentJobRow) -> dict[str, object]:
+    async def _graph_retrieval(self, job: AgentJob) -> dict[str, object]:
         request = GraphRetrievalRequest.model_validate(job.request_data)
         if self._neo4j is None:
             raise AgentJobFailure("Neo4j repository is not configured", kind="transient")
@@ -309,7 +308,7 @@ class AgentExecutor:
 
     # ── review ──────────────────────────────────────────────────────────
 
-    async def _review(self, job: AgentJobRow) -> dict[str, object]:
+    async def _review(self, job: AgentJob) -> dict[str, object]:
         action = job.action or "search"
         if action == "search":
             return await self._review_search(job)
@@ -319,7 +318,7 @@ class AgentExecutor:
             return await self._review_chat(job)
         raise AgentJobFailure(f"unknown review action: {action}")
 
-    async def _review_search(self, job: AgentJobRow) -> dict[str, object]:
+    async def _review_search(self, job: AgentJob) -> dict[str, object]:
         request = ReviewSearchRequest.model_validate(job.request_data)
         if self._session_factory is None:
             raise AgentJobFailure("review search requires a database session", kind="transient")
@@ -354,7 +353,7 @@ class AgentExecutor:
         page = hits[request.offset : request.offset + request.limit]
         return ReviewSearchResult(hits=page, total=total).model_dump(mode="json")
 
-    async def _review_feedback(self, job: AgentJobRow) -> dict[str, object]:
+    async def _review_feedback(self, job: AgentJob) -> dict[str, object]:
         request = ReviewFeedbackRequest.model_validate(job.request_data)
         if self._session_factory is None:
             raise AgentJobFailure("review feedback requires a database session", kind="transient")
@@ -395,7 +394,7 @@ class AgentExecutor:
             status=result.new_status.value,
         ).model_dump(mode="json")
 
-    async def _review_chat(self, job: AgentJobRow) -> dict[str, object]:
+    async def _review_chat(self, job: AgentJob) -> dict[str, object]:
         request = ReviewChatRequest.model_validate(job.request_data)
         if self._session_factory is None:
             raise AgentJobFailure("review chat requires a database session", kind="transient")

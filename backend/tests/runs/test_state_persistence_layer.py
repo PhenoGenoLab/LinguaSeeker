@@ -18,7 +18,7 @@ from src.runs.contracts import (
     PhaseStatusDetail,
     PhaseErrorDetail,
 )
-from src.runs.state_persistence import DirectStatePersistence, SessionBoundStatePersistence
+from src.dao.postgresql.run_state_store import PostgresRunStateStore, SessionRunStateStore
 
 
 def _make_session_factory(session: AsyncSession):
@@ -51,8 +51,8 @@ def sample_state() -> PipelineGraphState:
 
 @pytest.mark.asyncio
 async def test_save_state(db_session: AsyncSession, sample_state: PipelineGraphState):
-    """DirectStatePersistence can save state to database."""
-    service = DirectStatePersistence(db_session)
+    """SessionRunStateStore can save state to database."""
+    service = SessionRunStateStore(db_session)
     await service.save(sample_state)
 
     loaded = await service.load(sample_state.processing_run_id)
@@ -65,7 +65,7 @@ async def test_save_state(db_session: AsyncSession, sample_state: PipelineGraphS
 @pytest.mark.asyncio
 async def test_load_nonexistent_state(db_session: AsyncSession):
     """Loading nonexistent state returns None."""
-    service = DirectStatePersistence(db_session)
+    service = SessionRunStateStore(db_session)
     loaded = await service.load(str(uuid.uuid4()))
     assert loaded is None
 
@@ -73,7 +73,7 @@ async def test_load_nonexistent_state(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_save_state_idempotent(db_session: AsyncSession, sample_state: PipelineGraphState):
     """Saving state multiple times updates the record (checkpoint semantics)."""
-    service = DirectStatePersistence(db_session)
+    service = SessionRunStateStore(db_session)
     await service.save(sample_state)
 
     sample_state.parsing_status = PhaseStatusDetail(
@@ -100,7 +100,7 @@ async def test_save_preserves_structured_errors(db_session: AsyncSession, sample
         ),
     )
 
-    service = DirectStatePersistence(db_session)
+    service = SessionRunStateStore(db_session)
     await service.save(sample_state)
 
     loaded = await service.load(sample_state.processing_run_id)
@@ -111,7 +111,7 @@ async def test_save_preserves_structured_errors(db_session: AsyncSession, sample
 
 @pytest.mark.asyncio
 async def test_session_bound_save_uses_upsert():
-    """SessionBoundStatePersistence.save() uses INSERT ON CONFLICT for writes.
+    """PostgresRunStateStore.save() uses INSERT ON CONFLICT for writes.
 
     Note: save() now reads the existing state first for the state transition
     guard (one extra SELECT), but the write path still uses upsert for atomicity.
@@ -126,7 +126,7 @@ async def test_session_bound_save_uses_upsert():
     mock_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
     mock_factory.return_value.__aexit__ = AsyncMock(return_value=False)
 
-    persistence = SessionBoundStatePersistence(mock_factory)
+    persistence = PostgresRunStateStore(mock_factory)
 
     state = PipelineGraphState(
         processing_run_id=str(uuid.uuid4()),
@@ -158,7 +158,7 @@ async def test_session_bound_save_does_not_mutate_inline_fact_chain_payload():
     mock_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
     mock_factory.return_value.__aexit__ = AsyncMock(return_value=False)
 
-    persistence = SessionBoundStatePersistence(mock_factory)
+    persistence = PostgresRunStateStore(mock_factory)
     state = PipelineGraphState(
         processing_run_id=str(uuid.uuid4()),
         source_document_id=str(uuid.uuid4()),
@@ -191,7 +191,7 @@ async def test_session_bound_save_does_not_mutate_inline_fact_chain_payload():
 @pytest.mark.asyncio
 async def test_recover_orphaned_runs_ignores_fresh_heartbeat(db_session: AsyncSession):
     """Recovery must not fail runs with a recent heartbeat."""
-    persistence = SessionBoundStatePersistence(_make_session_factory(db_session))
+    persistence = PostgresRunStateStore(_make_session_factory(db_session))
 
     state = PipelineGraphState(
         processing_run_id=str(uuid.uuid4()),
@@ -217,7 +217,7 @@ async def test_recover_orphaned_runs_ignores_fresh_heartbeat(db_session: AsyncSe
 @pytest.mark.asyncio
 async def test_recover_orphaned_runs_fails_stale_heartbeat(db_session: AsyncSession):
     """Recovery must fail runs whose heartbeat is older than the timeout."""
-    persistence = SessionBoundStatePersistence(_make_session_factory(db_session))
+    persistence = PostgresRunStateStore(_make_session_factory(db_session))
 
     state = PipelineGraphState(
         processing_run_id=str(uuid.uuid4()),
@@ -245,7 +245,7 @@ async def test_recover_orphaned_runs_fails_stale_heartbeat(db_session: AsyncSess
 async def test_build_raw_metadata_extracts_title(tmp_path):
     """_build_raw_metadata reads title/authors/journal from Phase 2 metadata.json."""
     import json
-    from src.runs.state_persistence import _build_raw_metadata
+    from src.dao.postgresql.run_state_store import _build_raw_metadata
 
     meta_path = tmp_path / "metadata.json"
     meta_path.write_text(
@@ -274,7 +274,7 @@ async def test_build_raw_metadata_extracts_title(tmp_path):
 @pytest.mark.asyncio
 async def test_build_raw_metadata_handles_missing_file(tmp_path):
     """Missing metadata file is handled gracefully — returns empty dict."""
-    from src.runs.state_persistence import _build_raw_metadata
+    from src.dao.postgresql.run_state_store import _build_raw_metadata
 
     state = PipelineGraphState(
         processing_run_id=str(uuid.uuid4()),
@@ -294,7 +294,7 @@ async def test_build_raw_metadata_handles_missing_file(tmp_path):
 @pytest.mark.asyncio
 async def test_build_raw_metadata_no_parsing_output():
     """When Phase 2 has not run, raw_metadata is empty (no crash)."""
-    from src.runs.state_persistence import _build_raw_metadata
+    from src.dao.postgresql.run_state_store import _build_raw_metadata
 
     state = PipelineGraphState(
         processing_run_id=str(uuid.uuid4()),
@@ -307,7 +307,7 @@ async def test_build_raw_metadata_no_parsing_output():
 
 @pytest.mark.asyncio
 async def test_direct_persistence_persists_title_to_source_document(db_session: AsyncSession, tmp_path):
-    """DirectStatePersistence.save() persists the Phase 2 title to SourceDocument.raw_metadata."""
+    """SessionRunStateStore.save() persists the Phase 2 title to SourceDocument.raw_metadata."""
     import json
     from src.dao.postgresql.models import SourceDocument
 
@@ -328,7 +328,7 @@ async def test_direct_persistence_persists_title_to_source_document(db_session: 
         output_dir=str(tmp_path),
     )
 
-    await DirectStatePersistence(db_session).save(state)
+    await SessionRunStateStore(db_session).save(state)
 
     sd = await db_session.get(SourceDocument, uuid.UUID(sd_id))
     assert sd is not None
@@ -350,7 +350,7 @@ async def test_direct_persistence_updates_title_on_existing_source_document(db_s
         source_type=SourceType.LOCAL,
         pipeline_status=PipelineStatus.RUNNING,
     )
-    await DirectStatePersistence(db_session).save(state)
+    await SessionRunStateStore(db_session).save(state)
 
     sd = await db_session.get(SourceDocument, uuid.UUID(sd_id))
     assert sd is not None
@@ -364,7 +364,7 @@ async def test_direct_persistence_updates_title_on_existing_source_document(db_s
         metadata_path=str(meta_path),
         output_dir=str(tmp_path),
     )
-    await DirectStatePersistence(db_session).save(state)
+    await SessionRunStateStore(db_session).save(state)
 
     await db_session.refresh(sd)
     assert sd.raw_metadata.get("title") == "Late Title"
@@ -397,7 +397,7 @@ async def test_direct_persistence_phase3_rerun_refreshes_document_text_and_block
             translated_blocks=[{"text": "old translated"}],
         ),
     )
-    persistence = DirectStatePersistence(db_session)
+    persistence = SessionRunStateStore(db_session)
     await persistence.save(state)
 
     state.mode = PipelineMode.PHASE
@@ -470,7 +470,7 @@ async def test_direct_persistence_full_run_refreshes_untranslated_translation_ca
         ),
     )
 
-    await DirectStatePersistence(db_session).save(state)
+    await SessionRunStateStore(db_session).save(state)
 
     sd = await db_session.get(SourceDocument, sd_id)
     assert sd is not None

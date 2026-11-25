@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.runs.review_factory import ReviewServiceFactory
+from src.pipeline.skills.review.factory import ReviewServiceFactory
 from src.pipeline.skills.review.chat_service import ChatService
 from src.core.tools.review.delta_audit_service import (
     DeltaAuditService,

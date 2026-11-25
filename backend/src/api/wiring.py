@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from redis.asyncio import Redis as AsyncRedis
+
+from loguru import logger
 
 from src.core.config import Settings, get_config
 from src.dao.neo4j.connection import build_neo4j_driver
@@ -17,10 +19,21 @@ from src.dao.redis.connection import build_redis_client
 
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
-    from src.runs.dispatcher import SingleJobDispatcher
+    from src.runs import AgentJobStore, RunJobQueue, SingleJobDispatcher
     from src.core.tools.parsing.local.parser import (
         MinerULocalParser,
     )
+
+
+class _UnavailableSessionFactory:
+    """Session factory for DB-less runs: any use returns a 503-mapped error."""
+
+    def __call__(self, *args: object, **kwargs: object) -> object:
+        del args, kwargs
+        from src.utils.exceptions import PersistenceUnavailableError
+
+        raise PersistenceUnavailableError("database-backed feature")
+
 
 _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
@@ -29,6 +42,20 @@ _local_parser: MinerULocalParser | None = None
 _dispatcher: SingleJobDispatcher | None = None
 _neo4j_driver: AsyncDriver | None = None
 _neo4j_repository: Neo4jRepository | None = None
+_agent_job_store: "AgentJobStore | None" = None
+
+
+def set_agent_job_store(store: "AgentJobStore") -> None:
+    """Register the process-wide agent job store."""
+    global _agent_job_store
+    _agent_job_store = store
+
+
+def get_agent_job_store() -> "AgentJobStore":
+    """Return the agent job store (raises if wiring has not run)."""
+    if _agent_job_store is None:
+        raise RuntimeError("Agent job store not initialized — call wire_dependencies() first")
+    return _agent_job_store
 
 
 def get_session_factory() -> async_sessionmaker[AsyncSession]:
@@ -134,10 +161,14 @@ def wire_dependencies() -> None:
     Called once from lifespan startup.  Creates the full service graph:
     engine → session_factory → adapters → orchestrator → runner → factory.
     """
-    from src.runs.concurrency import PipelineSemaphore, RetryablePhaseExecutor
-    from src.runs.review_factory import ReviewServiceFactory
-    from src.runs.runner import PipelineRunner
-    from src.runs.state_persistence import SessionBoundStatePersistence
+    from src.runs import (
+        PipelineRunner,
+        PipelineSemaphore,
+        RetryablePhaseExecutor,
+        SingleJobDispatcher,
+    )
+    from src.pipeline.skills.review.factory import ReviewServiceFactory
+    from src.dao.postgresql.run_state_store import PostgresRunStateStore
     from src.api.deps import set_neo4j_repository, set_review_factory
     from src.api.v1.pipeline import set_pipeline_runner
     from src.pipeline.skills.graph_retrieval.api import GraphRagService
@@ -173,30 +204,52 @@ def wire_dependencies() -> None:
     # ── lit-acquisition SDK (online literature acquisition) ──────────
     _configure_lit_acquisition(cfg)
 
-    # ── PostgreSQL engine/session singleton ──────────────────────────
-    if _engine is None:
-        _engine = build_async_engine(cfg)
-    if _session_factory is None:
-        _session_factory = async_session_factory(_engine)
-
     # ── Redis client singleton ───────────────────────────────────────
     _redis_client = build_redis_client(cfg)
 
-    # ── Neo4j driver/repository singleton ────────────────────────────
-    if _neo4j_driver is None:
-        _neo4j_driver = build_neo4j_driver(cfg)
-        _neo4j_repository = Neo4jRepository(
-            _neo4j_driver,
-            database=cfg.neo4j.database,
+    # ── Persistence backend ──────────────────────────────────────────
+    backend = cfg.persistence_backend
+    if backend == "memory":
+        from src.dao.memory import InMemoryProcessingCache, InMemoryRunStateStore
+
+        _engine = None
+        _session_factory = cast("async_sessionmaker[AsyncSession]", _UnavailableSessionFactory())
+        persistence = InMemoryRunStateStore()
+        processing_cache = InMemoryProcessingCache()
+        logger.warning(
+            "Persistence backend=memory: run state/cache are process-local; "
+            "DB-backed features return 503"
+        )
+    else:
+        if _engine is None:
+            _engine = build_async_engine(cfg)
+        if _session_factory is None:
+            _session_factory = async_session_factory(_engine)
+        from src.dao.postgresql.processing_cache import PostgresProcessingCache
+
+        session_factory = get_session_factory()
+        persistence = PostgresRunStateStore(session_factory)
+        processing_cache = PostgresProcessingCache(
+            redis_client=_redis_client,
+            session_factory=session_factory,
         )
 
-    # ── Document processing cache (L1 Redis + L2 PostgreSQL) ──────────
-    from src.runs.processing_cache import DocumentProcessingCacheService
+    session_factory = get_session_factory()
 
-    processing_cache = DocumentProcessingCacheService(
-        redis_client=_redis_client,
-        session_factory=get_session_factory(),
-    )
+    # ── Neo4j driver/repository singleton (optional) ──────────────────
+    if _neo4j_driver is None:
+        try:
+            _neo4j_driver = build_neo4j_driver(cfg)
+            _neo4j_repository = Neo4jRepository(
+                _neo4j_driver,
+                database=cfg.neo4j.database,
+            )
+        except Exception as exc:
+            logger.warning("Neo4j unavailable ({}); graph features are disabled", exc)
+            _neo4j_driver = None
+            _neo4j_repository = None
+
+    # ── Document processing cache is built with the persistence backend above.
 
     session_factory = get_session_factory()
 
@@ -239,7 +292,6 @@ def wire_dependencies() -> None:
 
     # ── Orchestrator + Runner ──
 
-    persistence = SessionBoundStatePersistence(session_factory)
     retry_executor = RetryablePhaseExecutor(max_retries=2, backoff_base=30.0)
 
     orchestrator = PipelineOrchestrator(
@@ -269,10 +321,19 @@ def wire_dependencies() -> None:
 
     # ── Job queue + dispatcher ──
 
-    from src.runs.dispatcher import SingleJobDispatcher
     from src.api.v1.pipeline import set_job_queue
 
-    job_queue = JobQueueRepository(session_factory)
+    job_queue: RunJobQueue
+    if backend == "memory":
+        from src.dao.memory import InMemoryAgentJobStore, InMemoryRunJobQueue
+
+        job_queue = InMemoryRunJobQueue()
+        set_agent_job_store(InMemoryAgentJobStore())
+    else:
+        from src.dao.postgresql.agent_jobs import AgentJobRepository
+
+        job_queue = JobQueueRepository(session_factory)
+        set_agent_job_store(AgentJobRepository(session_factory))
     _dispatcher = SingleJobDispatcher(
         runner=runner,
         job_queue=job_queue,

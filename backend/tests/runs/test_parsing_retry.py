@@ -28,7 +28,7 @@ def test_os_error_is_retryable():
 @pytest.mark.asyncio
 async def test_file_not_found_is_not_retried_by_executor():
     """FileNotFoundError should fail immediately, not retry."""
-    from src.runs.concurrency import RetryablePhaseExecutor
+    from src.runs import RetryablePhaseExecutor
 
     executor = RetryablePhaseExecutor(max_retries=2, backoff_base=0.01)
     call_count = 0

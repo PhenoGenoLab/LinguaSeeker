@@ -25,9 +25,9 @@ from src.runs.contracts import (
     validate_phase_status_transition,
     validate_pipeline_status_transition,
 )
-from src.runs.state_persistence import (
-    DirectStatePersistence,
-    SessionBoundStatePersistence,
+from src.dao.postgresql.run_state_store import (
+    PostgresRunStateStore,
+    SessionRunStateStore,
 )
 
 
@@ -201,8 +201,8 @@ class TestValidateAllPhaseTransitions:
 # ── Persistence layer integration tests (with DB session) ────────────────────
 
 
-class TestDirectStatePersistenceTransitionGuard:
-    """State transition guard integration tests with DirectStatePersistence."""
+class TestSessionRunStateStoreTransitionGuard:
+    """State transition guard integration tests with SessionRunStateStore."""
 
     def _make_state(
         self,
@@ -226,7 +226,7 @@ class TestDirectStatePersistenceTransitionGuard:
     @pytest.mark.asyncio
     async def test_initial_save_always_allowed(self, db_session: AsyncSession):
         """First save (no existing state) is always allowed."""
-        persistence = DirectStatePersistence(db_session)
+        persistence = SessionRunStateStore(db_session)
         state = self._make_state(pipeline_status=PipelineStatus.PENDING)
         await persistence.save(state)  # Should not raise
 
@@ -237,7 +237,7 @@ class TestDirectStatePersistenceTransitionGuard:
     @pytest.mark.asyncio
     async def test_valid_pipeline_transition_succeeds(self, db_session: AsyncSession):
         """Valid PENDING → RUNNING transition succeeds."""
-        persistence = DirectStatePersistence(db_session)
+        persistence = SessionRunStateStore(db_session)
         state = self._make_state(pipeline_status=PipelineStatus.PENDING)
         await persistence.save(state)
 
@@ -250,7 +250,7 @@ class TestDirectStatePersistenceTransitionGuard:
     @pytest.mark.asyncio
     async def test_invalid_pipeline_transition_raises(self, db_session: AsyncSession):
         """Invalid COMPLETED → RUNNING transition raises."""
-        persistence = DirectStatePersistence(db_session)
+        persistence = SessionRunStateStore(db_session)
         state = self._make_state(pipeline_status=PipelineStatus.COMPLETED)
         await persistence.save(state)
 
@@ -265,7 +265,7 @@ class TestDirectStatePersistenceTransitionGuard:
     @pytest.mark.asyncio
     async def test_valid_phase_transition_succeeds(self, db_session: AsyncSession):
         """Valid phase PENDING → RUNNING → COMPLETED succeeds."""
-        persistence = DirectStatePersistence(db_session)
+        persistence = SessionRunStateStore(db_session)
         state = self._make_state(
             pipeline_status=PipelineStatus.RUNNING,
             acquisition=PhaseStatus.PENDING,
@@ -284,7 +284,7 @@ class TestDirectStatePersistenceTransitionGuard:
     @pytest.mark.asyncio
     async def test_invalid_phase_transition_raises(self, db_session: AsyncSession):
         """Invalid phase COMPLETED → RUNNING raises."""
-        persistence = DirectStatePersistence(db_session)
+        persistence = SessionRunStateStore(db_session)
         state = self._make_state(
             pipeline_status=PipelineStatus.RUNNING,
             acquisition=PhaseStatus.COMPLETED,
@@ -298,7 +298,7 @@ class TestDirectStatePersistenceTransitionGuard:
     @pytest.mark.asyncio
     async def test_metadata_only_save_identity_no_status_change_succeeds(self, db_session: AsyncSession):
         """Saving with same status (metadata update) succeeds."""
-        persistence = DirectStatePersistence(db_session)
+        persistence = SessionRunStateStore(db_session)
         state = self._make_state(pipeline_status=PipelineStatus.RUNNING)
         await persistence.save(state)
 
@@ -310,7 +310,7 @@ class TestDirectStatePersistenceTransitionGuard:
     @pytest.mark.asyncio
     async def test_phase_rerun_from_failed_succeeds(self, db_session: AsyncSession):
         """Phase rerun: FAILED → PENDING is allowed."""
-        persistence = DirectStatePersistence(db_session)
+        persistence = SessionRunStateStore(db_session)
         state = self._make_state(
             pipeline_status=PipelineStatus.FAILED,
             acquisition=PhaseStatus.FAILED,
@@ -334,7 +334,7 @@ class TestDirectStatePersistenceTransitionGuard:
     @pytest.mark.asyncio
     async def test_full_lifecycle_succeeds(self, db_session: AsyncSession):
         """Full normal lifecycle PENDING → RUNNING → COMPLETED."""
-        persistence = DirectStatePersistence(db_session)
+        persistence = SessionRunStateStore(db_session)
         state = self._make_state(pipeline_status=PipelineStatus.PENDING)
         await persistence.save(state)
 
@@ -359,7 +359,7 @@ class TestDirectStatePersistenceTransitionGuard:
         assert loaded.acquisition_status.status == PhaseStatus.COMPLETED
 
 
-# ── SessionBoundStatePersistence guard tests (mocked) ─────────────────────
+# ── PostgresRunStateStore guard tests (mocked) ─────────────────────
 
 
 def _make_session_factory(session: AsyncSession):
@@ -373,7 +373,7 @@ def _make_session_factory(session: AsyncSession):
 
 
 class TestSessionBoundTransitionGuard:
-    """Transition guard tests for SessionBoundStatePersistence."""
+    """Transition guard tests for PostgresRunStateStore."""
 
     def _make_state(
         self,
@@ -389,8 +389,8 @@ class TestSessionBoundTransitionGuard:
 
     @pytest.mark.asyncio
     async def test_invalid_transition_raises_with_session_bound(self, db_session: AsyncSession):
-        """SessionBoundStatePersistence enforces transition guards."""
-        persistence = SessionBoundStatePersistence(_make_session_factory(db_session))
+        """PostgresRunStateStore enforces transition guards."""
+        persistence = PostgresRunStateStore(_make_session_factory(db_session))
 
         # Start in COMPLETED
         state = self._make_state(pipeline_status=PipelineStatus.COMPLETED)
@@ -403,8 +403,8 @@ class TestSessionBoundTransitionGuard:
 
     @pytest.mark.asyncio
     async def test_valid_transition_succeeds_with_session_bound(self, db_session: AsyncSession):
-        """SessionBoundStatePersistence allows valid transitions."""
-        persistence = SessionBoundStatePersistence(_make_session_factory(db_session))
+        """PostgresRunStateStore allows valid transitions."""
+        persistence = PostgresRunStateStore(_make_session_factory(db_session))
 
         state = self._make_state(pipeline_status=PipelineStatus.PENDING)
         await persistence.save(state)
@@ -420,7 +420,7 @@ class TestSessionBoundTransitionGuard:
         """recover_orphaned_runs produces valid PENDING/RUNNING → FAILED transition."""
         from datetime import timedelta
 
-        persistence = SessionBoundStatePersistence(_make_session_factory(db_session))
+        persistence = PostgresRunStateStore(_make_session_factory(db_session))
 
         state = self._make_state(pipeline_status=PipelineStatus.RUNNING)
         await persistence.save(

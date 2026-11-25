@@ -10,7 +10,7 @@ from src.runs.contracts import (
     SourceType,
     PipelineStatus,
 )
-from src.runs.runner import PipelineRunner
+from src.runs import PipelineRunner
 
 
 def test_runner_evicts_oldest_states_beyond_limit():

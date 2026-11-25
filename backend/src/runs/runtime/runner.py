@@ -11,11 +11,10 @@ from typing import Any
 
 from loguru import logger
 
-from src.runs.concurrency import PipelineSemaphore
-from src.runs.contracts import PipelineGraphState, PipelineMode, PipelineStatus
-from src.runs.content_hash import compute_content_hash
-from src.runs.processing_cache import DocumentProcessingCacheService
-from src.runs.state_persistence import SessionBoundStatePersistence, PipelineRunSummaryRow, _derive_error_phase
+from src.runs.contracts import PipelineGraphState, PipelineMode, PipelineStatus, RunSummary, derive_error_phase
+from src.runs.ports import ProcessingCache, RunStateStore
+from src.runs.runtime.concurrency import PipelineSemaphore
+from src.runs.runtime.content_hash import compute_content_hash
 
 
 class PipelineRunner:
@@ -33,8 +32,8 @@ class PipelineRunner:
         self,
         orchestrator: Any,
         semaphore: PipelineSemaphore,
-        state_persistence: SessionBoundStatePersistence,
-        processing_cache: DocumentProcessingCacheService | None = None,
+        state_persistence: RunStateStore,
+        processing_cache: ProcessingCache | None = None,
         processing_cache_enabled: bool = True,
         duplicate_run_prevention_enabled: bool = True,
         worker_id: str | None = None,
@@ -147,7 +146,7 @@ class PipelineRunner:
                 last_state = self._last_states.get(run_id)
                 base_state = last_state if last_state is not None else initial_state
                 current_phase = (
-                    base_state.error_phase if base_state.error_phase is not None else _derive_error_phase(base_state)
+                    base_state.error_phase if base_state.error_phase is not None else derive_error_phase(base_state)
                 )
                 error_state = base_state.model_copy(
                     update={
@@ -228,7 +227,7 @@ class PipelineRunner:
         status: str | None = None,
         search: str | None = None,
         owner_user_id: str | None = None,
-    ) -> tuple[list[PipelineRunSummaryRow], int]:
+    ) -> tuple[list[RunSummary], int]:
         """List pipeline run summaries (newest first)."""
         return await self._persistence.list_runs(
             limit=limit,

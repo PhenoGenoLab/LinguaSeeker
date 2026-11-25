@@ -30,7 +30,7 @@ async def test_patch_evidence_event_is_queryable_by_source_document(
 ) -> None:
     """PATCH evidence through API records an audit event queryable by source document."""
     from app.main import create_app
-    from src.runs.review_factory import ReviewServiceFactory
+    from src.pipeline.skills.review.factory import ReviewServiceFactory
     from src.api.deps import get_db_session
     from src.core.config import Settings
     from src.dao.postgresql.models import CanonicalEvidenceItem, SourceDocument

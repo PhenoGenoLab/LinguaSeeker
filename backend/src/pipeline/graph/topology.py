@@ -19,7 +19,7 @@ from typing import Any
 from langgraph.graph import END, StateGraph
 from loguru import logger
 
-from src.runs.concurrency import RetryablePhaseExecutor
+from src.runs import RetryablePhaseExecutor, RunStateStore
 from src.runs.contracts import (
     stage_name,
     stage_number,
@@ -36,7 +36,6 @@ from src.runs.contracts import (
     validate_pipeline_status_transition,
     validate_phase_status_transition,
 )
-from src.runs.state_persistence import SessionBoundStatePersistence
 from src.pipeline.graph.progress import NodeProgress, record_node
 
 # Upstream dependencies for single-phase mode validation
@@ -59,7 +58,7 @@ class PipelineOrchestrator:
     def __init__(
         self,
         phase_adapters: dict[str, Any],
-        state_persistence: SessionBoundStatePersistence,
+        state_persistence: RunStateStore,
         retry_executor: RetryablePhaseExecutor,
     ):
         self._adapters = phase_adapters
