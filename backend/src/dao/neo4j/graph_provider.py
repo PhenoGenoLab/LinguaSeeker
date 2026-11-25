@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from src.core.tools.graph_retrieval.contracts import (
+    GraphWriteSummary,
     LiteratureGraphBatch,
     LiteratureGraphEdge,
     LiteratureGraphNode,
@@ -22,7 +23,7 @@ class Neo4jGraphProvider:
         self,
         batch: LiteratureGraphBatch,
         chunk_size: int = 500,
-    ) -> dict[str, int]:
+    ) -> GraphWriteSummary:
         """Persist a batch of nodes and edges in chunks.
 
         Returns:

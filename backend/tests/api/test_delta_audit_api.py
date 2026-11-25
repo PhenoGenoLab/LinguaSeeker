@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 @pytest.mark.asyncio
 async def test_list_audit_events(async_client: AsyncClient):
     """GET /api/v1/delta-audit/ returns audit events."""
-    with patch("src.api.deps.PostgresAuditStore") as mock_store_cls:
+    with patch("src.api.wiring.PostgresAuditStore") as mock_store_cls:
         mock_store = MagicMock()
         mock_store.list_events = AsyncMock(return_value=[])
         mock_store_cls.return_value = mock_store
@@ -64,7 +64,7 @@ async def test_patch_evidence_event_is_queryable_by_source_document(
     with (
         patch("src.core.config.get_config", return_value=mock_settings),
         patch("src.api.auth.get_config", return_value=mock_settings),
-        patch("src.api.deps.get_session_factory", return_value=fake_session_factory),
+        patch("src.api.wiring.get_session_factory", return_value=fake_session_factory),
         patch(
             "src.dao.postgresql.review.feedback_store."
             "FeedbackService._refresh_literature_profile",

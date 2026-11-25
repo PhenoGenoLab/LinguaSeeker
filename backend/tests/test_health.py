@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 @pytest.mark.asyncio
 async def test_redis_health_check_returns_false_on_connection_refused():
     """Redis check should return False, not raise."""
-    from src.api.health import check_redis
+    from src.api.wiring import check_redis
 
     with patch("src.api.wiring.get_redis_client") as mock_get:
         mock_client = AsyncMock()
@@ -20,7 +20,7 @@ async def test_redis_health_check_returns_false_on_connection_refused():
 @pytest.mark.asyncio
 async def test_redis_health_check_skips_when_client_none():
     """Redis check should skip gracefully when client is None."""
-    from src.api.health import check_redis
+    from src.api.wiring import check_redis
 
     with patch("src.api.wiring.get_redis_client", return_value=None):
         result = await check_redis()
@@ -30,7 +30,7 @@ async def test_redis_health_check_skips_when_client_none():
 @pytest.mark.asyncio
 async def test_redis_health_check_logs_at_debug_not_warning(caplog):
     """Redis failure should log at DEBUG, not WARNING, to avoid log spam."""
-    from src.api.health import check_redis
+    from src.api.wiring import check_redis
 
     with patch("src.api.wiring.get_redis_client") as mock_get:
         mock_client = AsyncMock()

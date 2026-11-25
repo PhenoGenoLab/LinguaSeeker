@@ -65,7 +65,7 @@ ACMGException (基类，含 message + code)
 
 - `check_all_connections()` — 并发检查所有注册的服务
 - `HealthResult` — 包含 `postgres` 和 `redis` 的布尔状态
-- 使用装饰器注册检查函数：`@_register("postgres")`
+- 通过 `register_health_check(name, probe)` 注册检查函数；具体探针由 `src/api/wiring.py` 注册
 
 ### `http/monitoring.py` — 请求监控
 

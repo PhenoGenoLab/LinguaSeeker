@@ -64,60 +64,6 @@ def _error_response(
     return JSONResponse(status_code=status, content=body, headers={"X-Request-ID": request_id})
 
 
-_startup_lock_raw_conn = None
-
-
-async def _try_startup_lock(engine) -> bool:
-    """Acquire a PostgreSQL advisory lock for startup initialization.
-
-    Uses a raw connection (not returned to pool) so the lock persists
-    for the duration of the startup phase.  PostgreSQL advisory locks
-    are session-scoped: they release automatically when the connection
-    closes.
-
-    Returns True if the lock was acquired (this worker should run recovery).
-    Returns False if another worker already holds the lock.
-    Returns True for non-PostgreSQL engines (SQLite in tests).
-    """
-    global _startup_lock_raw_conn
-
-    try:
-        raw_conn = await engine.raw_connection()
-        try:
-            result = await raw_conn.exec_driver_sql(
-                "SELECT pg_try_advisory_lock(hashtext('lingua_seeker_backend_startup'))"
-            )
-            row = result.fetchone()
-            acquired = bool(row[0]) if row else False
-        except Exception:
-            await raw_conn.close()
-            return True
-
-        if acquired:
-            _startup_lock_raw_conn = raw_conn
-        else:
-            await raw_conn.close()
-        return acquired
-    except Exception:
-        # Non-PostgreSQL engines (SQLite in tests) don't have advisory locks
-        return True
-
-
-async def _release_startup_lock() -> None:
-    """Release the PostgreSQL advisory lock by closing the raw connection.
-
-    PostgreSQL automatically releases all advisory locks when a connection
-    is closed, so explicit pg_advisory_unlock is not required.
-    """
-    global _startup_lock_raw_conn
-    if _startup_lock_raw_conn is not None:
-        try:
-            await _startup_lock_raw_conn.close()
-        except Exception:
-            pass
-        _startup_lock_raw_conn = None
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize and teardown application resources."""
@@ -147,11 +93,11 @@ async def lifespan(app: FastAPI):
     import src.api.wiring as _wiring
 
     wire_dependencies = _wiring.wire_dependencies
-    from src.api.health import register_default_health_checks
+    from src.api.wiring import register_health_checks
     from src.utils.health import check_all_connections
 
     wire_dependencies()
-    register_default_health_checks()
+    register_health_checks()
     logger.info("Pipeline orchestrator initialized")
 
     # Start the job dispatcher (background polling for queued jobs)
@@ -171,14 +117,9 @@ async def lifespan(app: FastAPI):
 
     # Ensure standalone tables (independent MetaData, not managed by Alembic) exist
     # Use advisory lock to prevent multi-worker races on table creation and recovery
-    _wiring.get_session_factory()  # trigger lazy engine creation
-    engine = _wiring.get_engine()
-
-    startup_lock_acquired = False
-    if engine is not None:
-        startup_lock_acquired = await _try_startup_lock(engine)
-    if engine is not None and startup_lock_acquired:
-        await _wiring.create_search_index_tables(engine)
+    startup_lock_acquired = await _wiring.acquire_startup_lock()
+    if startup_lock_acquired:
+        await _wiring.create_search_index_tables()
 
     # Recover pipeline runs and jobs interrupted by server restart (only if we hold the lock)
     from src.api.v1.pipeline import get_job_queue, get_pipeline_runner
@@ -193,8 +134,8 @@ async def lifespan(app: FastAPI):
         except Exception as exc:
             logger.warning("Orphaned run recovery failed: {}", exc)
         finally:
-            await _release_startup_lock()
-    elif engine is None:
+            await _wiring.release_startup_lock()
+    elif not _wiring.has_database():
         logger.info("No database configured — skipping startup lock and crash recovery")
     else:
         logger.info("Skipping startup recovery — another worker holds the advisory lock")
@@ -315,7 +256,9 @@ def create_app() -> FastAPI:
     from slowapi import _rate_limit_exceeded_handler
     from slowapi.errors import RateLimitExceeded
 
-    configured_limiter = init_limiter()
+    import src.api.wiring as _wiring
+
+    configured_limiter = init_limiter(_wiring.build_rate_limit_storage())
     _app.state.limiter = configured_limiter
     _app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 

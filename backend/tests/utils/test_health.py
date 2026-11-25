@@ -7,14 +7,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.api.health import register_default_health_checks
+from src.api.wiring import check_redis, register_health_checks
 from src.utils.health import HealthResult, check_all_connections
 
 
 @pytest.fixture(autouse=True)
 def _registered_checks():
     """Register the application probes before each test."""
-    register_default_health_checks()
+    register_health_checks()
 
 
 @pytest.mark.asyncio
@@ -54,8 +54,6 @@ async def test_check_redis_uses_wiring_singleton() -> None:
     mock_client.ping.return_value = True
 
     with patch("src.api.wiring.get_redis_client", return_value=mock_client):
-        from src.api.health import check_redis
-
         result = await check_redis()
 
     assert result is True

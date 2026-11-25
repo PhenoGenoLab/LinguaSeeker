@@ -25,7 +25,7 @@ async def test_patch_evidence_returns_updated_card(async_client: AsyncClient):
     )
 
     # Patch in the route module where get_review_factory is bound
-    with patch("src.api.deps.PostgresFeedbackStore") as mock_store_cls:
+    with patch("src.api.wiring.PostgresFeedbackStore") as mock_store_cls:
         mock_service = MagicMock()
         mock_service.patch_evidence = AsyncMock(return_value=mock_result)
         mock_store_cls.return_value = mock_service
@@ -46,7 +46,7 @@ async def test_patch_evidence_404_for_unknown(async_client: AsyncClient):
     """PATCH /api/v1/evidence/{id} returns 404 for unknown evidence."""
     from src.utils.exceptions import RecordNotFoundError
 
-    with patch("src.api.deps.PostgresFeedbackStore") as mock_store_cls:
+    with patch("src.api.wiring.PostgresFeedbackStore") as mock_store_cls:
         mock_service = MagicMock()
         mock_service.patch_evidence = AsyncMock(side_effect=RecordNotFoundError("missing"))
         mock_store_cls.return_value = mock_service
@@ -83,7 +83,7 @@ async def test_get_evidence_group_detail(async_client: AsyncClient):
         traces=[],
     )
 
-    with patch("src.api.deps.PostgresEvidenceStore") as mock_store_cls:
+    with patch("src.api.wiring.PostgresEvidenceStore") as mock_store_cls:
         mock_store = MagicMock()
         mock_store.group_detail = AsyncMock(return_value=mock_response)
         mock_store_cls.return_value = mock_store
@@ -102,7 +102,7 @@ async def test_get_evidence_group_detail_returns_404(async_client: AsyncClient):
     """GET /api/v1/evidence/groups/{group_id} returns 404 when group is missing."""
     from src.utils.exceptions import RecordNotFoundError
 
-    with patch("src.api.deps.PostgresEvidenceStore") as mock_store_cls:
+    with patch("src.api.wiring.PostgresEvidenceStore") as mock_store_cls:
         mock_store = MagicMock()
         mock_store.group_detail = AsyncMock(side_effect=RecordNotFoundError("missing"))
         mock_store_cls.return_value = mock_store

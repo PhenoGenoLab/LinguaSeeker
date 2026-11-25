@@ -48,5 +48,5 @@ def _dummy_session_factory():
     async_ctx = AsyncMock()
     async_ctx.__aenter__.return_value = mock_session
     factory = MagicMock(return_value=async_ctx)
-    with patch("src.api.deps.get_session_factory", return_value=factory):
+    with patch("src.api.wiring.get_session_factory", return_value=factory):
         yield

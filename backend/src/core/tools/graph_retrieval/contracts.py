@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import TypedDict
 
 from pydantic import BaseModel, Field
 
@@ -208,3 +209,10 @@ class SubgraphContext:
     edges: list[GraphEdge] = field(default_factory=list)
     summary_text: str = ""
     source_evidence_ids: list[str] = field(default_factory=list)
+
+
+class GraphWriteSummary(TypedDict):
+    """Counts returned after writing one literature graph batch."""
+
+    nodes_written: int
+    edges_written: int

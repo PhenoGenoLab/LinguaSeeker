@@ -13,7 +13,9 @@ from src.pipeline.skills.graph_retrieval.api import GraphRagService
 cfg = get_config()
 driver = build_neo4j_driver(cfg)
 repo = Neo4jRepository(driver)
-service = GraphRagService(repo)
+from src.dao.neo4j.graph_provider import Neo4jGraphProvider
+
+service = GraphRagService(repo, writer=Neo4jGraphProvider(repo))
 
 # 为抽取目标检索图上下文
 context = await service.retrieve_context_for_target(
@@ -41,7 +43,7 @@ PostgresStandardizationRunner.run_dual_result()
 GraphRagService.write_literature_graph()
     │
     ▼
-EvidenceGraphBuilder ──► Neo4jGraphProvider ──► Neo4jRepository
+EvidenceGraphBuilder ──► Neo4jGraphProvider (dao/neo4j) ──► Neo4jRepository
 ```
 
 ## 公共 API

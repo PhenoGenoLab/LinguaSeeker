@@ -188,4 +188,4 @@ def test_wire_dependencies_initializes_session_factory_before_use():
 
     mock_engine.assert_called_once_with(cfg)
     mock_session_factory.assert_called_once_with(fake_engine)
-    assert wiring.get_session_factory() is fake_session_factory
+    assert wiring._session_factory is fake_session_factory

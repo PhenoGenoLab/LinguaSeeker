@@ -6,6 +6,8 @@ from typing import Any, Protocol
 
 from src.core.tools.graph_retrieval.contracts import (
     GraphNode,
+    GraphWriteSummary,
+    LiteratureGraphBatch,
     SubgraphContext,
 )
 
@@ -48,3 +50,13 @@ class GraphRepository(Protocol):
         property_filter: dict[str, object] | None = None,
         limit: int = 100,
     ) -> list[GraphNode]: ...
+
+
+class GraphWriter(Protocol):
+    """Persist literature graph batches into the store."""
+
+    async def write_batch(
+        self,
+        batch: LiteratureGraphBatch,
+        chunk_size: int = 500,
+    ) -> GraphWriteSummary: ...

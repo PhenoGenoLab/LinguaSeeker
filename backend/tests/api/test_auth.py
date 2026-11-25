@@ -53,8 +53,8 @@ async def test_write_route_defaults_to_public_account_without_api_key(_mock_conf
             new_callable=AsyncMock,
             return_value=MagicMock(failed_services=MagicMock(return_value=[])),
         ),
-        patch("src.api.deps.PostgresFeedbackStore") as mock_store_cls,
-        patch("src.api.deps.get_session_factory") as mock_sf,
+        patch("src.api.wiring.PostgresFeedbackStore") as mock_store_cls,
+        patch("src.api.wiring.get_session_factory") as mock_sf,
     ):
         mock_sf.return_value = MagicMock(
             return_value=AsyncMock(
@@ -109,8 +109,8 @@ async def test_write_route_accepted_with_valid_api_key(_mock_config_with_api_key
             new_callable=AsyncMock,
             return_value=MagicMock(failed_services=MagicMock(return_value=[])),
         ),
-        patch("src.api.deps.PostgresFeedbackStore") as mock_store_cls,
-        patch("src.api.deps.get_session_factory") as mock_sf,
+        patch("src.api.wiring.PostgresFeedbackStore") as mock_store_cls,
+        patch("src.api.wiring.get_session_factory") as mock_sf,
     ):
         mock_sf.return_value = MagicMock(
             return_value=AsyncMock(
@@ -365,7 +365,7 @@ async def test_login_creates_user_for_new_username(_mock_config_with_api_key):
             new_callable=AsyncMock,
             return_value=MagicMock(failed_services=MagicMock(return_value=[])),
         ),
-        patch("src.api.deps.get_session_factory", return_value=session_factory),
+        patch("src.api.wiring.get_session_factory", return_value=session_factory),
     ):
         from app.main import create_app
         from src.api.auth import _decode_session

@@ -74,7 +74,7 @@ async def _app_client() -> AsyncGenerator[tuple[AsyncClient, uuid.UUID], None]:
             new_callable=AsyncMock,
             return_value=MagicMock(failed_services=MagicMock(return_value=[])),
         ),
-        patch("src.api.deps.get_session_factory", return_value=session_factory),
+        patch("src.api.wiring.get_session_factory", return_value=session_factory),
     ):
         from src.core.config import Settings
 

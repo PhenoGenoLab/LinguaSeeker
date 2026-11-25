@@ -1,23 +1,23 @@
-"""Tests for _try_startup_lock connection lifecycle."""
+"""Tests for the startup advisory lock connection lifecycle."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 @pytest.fixture(autouse=True)
 def reset_lock_global():
     """Reset module-level global between tests to prevent stale state."""
-    import app.main
+    import src.api.wiring as wiring
 
-    app.main._startup_lock_raw_conn = None
+    wiring._startup_lock_raw_conn = None
     yield
-    app.main._startup_lock_raw_conn = None
+    wiring._startup_lock_raw_conn = None
 
 
 @pytest.mark.asyncio
 async def test_startup_lock_closes_connection_on_sql_error():
     """raw_conn must be closed even when SQL execution fails."""
-    from app.main import _try_startup_lock
+    from src.api.wiring import acquire_startup_lock
 
     mock_engine = MagicMock()
     mock_conn = MagicMock()
@@ -25,7 +25,8 @@ async def test_startup_lock_closes_connection_on_sql_error():
     mock_conn.close = AsyncMock()
     mock_engine.raw_connection = AsyncMock(return_value=mock_conn)
 
-    result = await _try_startup_lock(mock_engine)
+    with patch("src.api.wiring.get_engine", return_value=mock_engine):
+        result = await acquire_startup_lock()
 
     assert result is True
     mock_conn.close.assert_awaited_once()
@@ -34,7 +35,7 @@ async def test_startup_lock_closes_connection_on_sql_error():
 @pytest.mark.asyncio
 async def test_startup_lock_closes_connection_when_not_acquired():
     """raw_conn must be closed when advisory lock is not acquired."""
-    from app.main import _try_startup_lock
+    from src.api.wiring import acquire_startup_lock
 
     mock_engine = MagicMock()
     mock_conn = MagicMock()
@@ -44,7 +45,8 @@ async def test_startup_lock_closes_connection_when_not_acquired():
     mock_conn.close = AsyncMock()
     mock_engine.raw_connection = AsyncMock(return_value=mock_conn)
 
-    result = await _try_startup_lock(mock_engine)
+    with patch("src.api.wiring.get_engine", return_value=mock_engine):
+        result = await acquire_startup_lock()
 
     assert result is False
     mock_conn.close.assert_awaited_once()
@@ -53,7 +55,7 @@ async def test_startup_lock_closes_connection_when_not_acquired():
 @pytest.mark.asyncio
 async def test_startup_lock_keeps_connection_when_acquired():
     """raw_conn must NOT be closed when advisory lock is acquired."""
-    from app.main import _try_startup_lock
+    from src.api.wiring import acquire_startup_lock
 
     mock_engine = MagicMock()
     mock_conn = MagicMock()
@@ -63,7 +65,8 @@ async def test_startup_lock_keeps_connection_when_acquired():
     mock_conn.close = AsyncMock()
     mock_engine.raw_connection = AsyncMock(return_value=mock_conn)
 
-    result = await _try_startup_lock(mock_engine)
+    with patch("src.api.wiring.get_engine", return_value=mock_engine):
+        result = await acquire_startup_lock()
 
     assert result is True
     mock_conn.close.assert_not_awaited()

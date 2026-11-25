@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Protocol
 from uuid import UUID
 
+from src.core.tools.extraction.contracts import DualEvidenceExtractionResult
 from src.core.tools.standardization.contracts import (
     EntityMatch,
     EntityType,
@@ -73,7 +74,7 @@ class StandardizationRunner(Protocol):
 
     async def run_dual_result(
         self,
-        result: object,
+        result: DualEvidenceExtractionResult,
         *,
         source_document_id: str,
         processing_run_id: str,
