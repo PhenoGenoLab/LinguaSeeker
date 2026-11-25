@@ -10,7 +10,7 @@ from enum import Enum
 
 from typing import Any, NoReturn
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.tools.extraction.contracts import (
     ExtractionTarget,
@@ -550,6 +550,74 @@ class PipelineGraphState(BaseModel):
     ablation_original_only: bool = False
     review_reject_policy: str = "tristate_review"
     extraction_track_mode: str = "dual"
+
+    @model_validator(mode="before")
+    @classmethod
+    def _translate_legacy_phase_fields(cls, data: Any) -> Any:
+        """Map pre-stage-name JSONB snapshots onto the current stage fields.
+
+        Rows written before the 4-stage split stored ``phase_N_status`` and
+        ``phase_N_output``. Four-phase rows map 1:1; three-phase rows used
+        phase 1 for acquisition+parsing and phase 2 for fact chain.
+        """
+        if not isinstance(data, dict):
+            return data
+        if not any(str(key).startswith("phase_") for key in data):
+            return data
+
+        legacy = dict(data)
+        has_phase_4 = "phase_4_status" in legacy or "phase_4_output" in legacy
+
+        def take(name: str) -> Any:
+            return legacy.pop(name, None)
+
+        phase_1_status = take("phase_1_status")
+        phase_2_status = take("phase_2_status")
+        phase_3_status = take("phase_3_status")
+        phase_4_status = take("phase_4_status")
+        phase_1_output = take("phase_1_output")
+        phase_2_output = take("phase_2_output")
+        phase_3_output = take("phase_3_output")
+        phase_4_output = take("phase_4_output")
+
+        if has_phase_4:
+            status_targets = {
+                "acquisition_status": phase_1_status,
+                "parsing_status": phase_2_status,
+                "fact_chain_status": phase_3_status,
+                "standardization_status": phase_4_status,
+            }
+            output_targets = {
+                "acquisition_output": phase_1_output,
+                "parsing_output": phase_2_output,
+                "fact_chain_output": phase_3_output,
+                "standardization_output": phase_4_output,
+            }
+        else:
+            status_targets = {
+                "acquisition_status": phase_1_status,
+                "parsing_status": phase_1_status,
+                "fact_chain_status": phase_2_status,
+                "standardization_status": phase_3_status,
+            }
+            output_targets = {
+                "parsing_output": phase_1_output,
+                "fact_chain_output": phase_2_output,
+                "standardization_output": phase_3_output,
+            }
+            if isinstance(phase_1_output, dict):
+                output_targets["acquisition_output"] = {
+                    "pdf_path": phase_1_output.get("pdf_path", ""),
+                }
+
+        for target, value in {**status_targets, **output_targets}.items():
+            if value is not None:
+                legacy.setdefault(target, value)
+
+        skip_reason = take("skip_phase_4_reason") or take("skip_phase_3_reason")
+        if skip_reason is not None:
+            legacy.setdefault("skip_standardization_reason", skip_reason)
+        return legacy
 
     @classmethod
     def from_request_data(cls, rd: dict[str, Any]) -> PipelineGraphState:

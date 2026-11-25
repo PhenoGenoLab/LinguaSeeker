@@ -276,10 +276,28 @@ def _derive_run_title(sj: dict) -> str | None:
     return None
 
 
+def _stage_status_details(sj: dict) -> dict[str, object]:
+    """Return current stage-name status details, translating legacy keys."""
+    if not any(str(key).startswith("phase_") for key in sj):
+        return {key: sj.get(f"{key}_status") for key in _PHASE_KEYS}
+    if "phase_4_status" in sj:
+        return {
+            "acquisition": sj.get("phase_1_status"),
+            "parsing": sj.get("phase_2_status"),
+            "fact_chain": sj.get("phase_3_status"),
+            "standardization": sj.get("phase_4_status"),
+        }
+    return {
+        "acquisition": sj.get("phase_1_status"),
+        "parsing": sj.get("phase_1_status"),
+        "fact_chain": sj.get("phase_2_status"),
+        "standardization": sj.get("phase_3_status"),
+    }
+
+
 def _derive_current_phase(sj: dict) -> str | None:
     """Return the phase key that is currently 'running', or None."""
-    for pk in _PHASE_KEYS:
-        phase_detail = sj.get(pk + "_status")
+    for pk, phase_detail in _stage_status_details(sj).items():
         if isinstance(phase_detail, dict) and phase_detail.get("status") == "running":
             return pk
     return None
@@ -289,8 +307,7 @@ def _count_completed_phases(sj: dict) -> tuple[int, int]:
     """Count completed/skipped phases and return (completed, total)."""
     total = len(_PHASE_KEYS)
     completed = 0
-    for pk in _PHASE_KEYS:
-        detail = sj.get(pk + "_status")
+    for detail in _stage_status_details(sj).values():
         if isinstance(detail, dict) and detail.get("status") in _TERMINAL_PHASE_STATUSES:
             completed += 1
     return completed, total
