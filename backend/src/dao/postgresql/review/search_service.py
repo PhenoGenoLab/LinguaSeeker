@@ -25,7 +25,7 @@ from src.core.tools.review.contracts import (
     VariantSearchResponse,
     VariantSearchStatsResponse,
 )
-from src.core.tools.review.evidence_search_repository import EvidenceSearchRepository
+from src.dao.postgresql.review.evidence_search_repository import EvidenceSearchRepository
 from src.core.tools.review.search_blocks import (
     coerce_str,
     detect_source_language_from_text,

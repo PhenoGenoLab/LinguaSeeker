@@ -10,7 +10,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.core.tools.review.search_service import (
+from src.dao.postgresql.review.search_service import (
     SearchService,
 )
 from src.core.tools.review.search_blocks import (

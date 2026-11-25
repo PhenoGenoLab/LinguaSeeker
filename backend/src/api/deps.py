@@ -10,6 +10,8 @@ from src.pipeline.skills.review.factory import ReviewServiceFactory
 from src.api.wiring import get_session_factory
 from src.dao.neo4j.repository import Neo4jRepository
 from src.dao.postgresql.users import PostgresUserStore
+from src.dao.postgresql.review.evidence_store import PostgresEvidenceStore
+from src.ports.review import EvidenceQueryStore
 from src.ports.users import UserStore
 
 _review_factory: ReviewServiceFactory | None = None
@@ -49,6 +51,11 @@ def get_user_store() -> UserStore:
     database the factory raises a 503-mapped ``PersistenceUnavailableError``.
     """
     return PostgresUserStore(get_session_factory())
+
+
+def get_evidence_store() -> EvidenceQueryStore:
+    """Return a read-only evidence query store for the current session factory."""
+    return PostgresEvidenceStore(get_session_factory())
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:

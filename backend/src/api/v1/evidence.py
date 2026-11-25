@@ -11,9 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from src.api.auth import get_current_account
-from src.api.deps import get_db_session, get_review_factory
+from src.api.deps import get_db_session, get_evidence_store, get_review_factory
 from src.api.rate_limit import limiter
 from src.core.foundation.auth.contracts import AuthContext
+from src.ports.review import EvidenceQueryStore
 from src.core.tools.review.contracts import (
     EvidenceGroupDetailResponse,
     EvidenceGroupSummary,
@@ -26,7 +27,6 @@ from src.core.tools.review.contracts import (
     PatchResultResponse,
     VariantSearchResponse,
 )
-from src.core.tools.review.search_service import SearchService
 from src.dao.postgresql.literature_profile_repo import LiteratureProfileRepository
 from src.dao.postgresql.models import CanonicalEvidenceItem
 
@@ -37,7 +37,7 @@ router = APIRouter()
 async def get_evidence_group_detail(
     group_id: str | None = Query(None, description="Evidence group identifier"),
     source_document_id: UUID | None = Query(None, description="Source document UUID to scope results"),
-    session: AsyncSession = Depends(get_db_session),
+    store: EvidenceQueryStore = Depends(get_evidence_store),
     account: AuthContext = Depends(get_current_account),
 ) -> EvidenceGroupDetailResponse:
     """Return grouped evidence detail with distribution and traceability.
@@ -51,9 +51,8 @@ async def get_evidence_group_detail(
             status_code=400,
             detail="Provide at least one of group_id or source_document_id",
         )
-    service = SearchService(session)
     try:
-        return await service.get_group_detail(
+        return await store.group_detail(
             group_id=group_id,
             source_document_id=str(source_document_id) if source_document_id else None,
             owner_user_id=account.owner_user_id,
@@ -94,7 +93,7 @@ async def patch_evidence(
 
 @router.get("/search", response_model=EvidenceSearchResponse)
 async def search_evidence(
-    session: AsyncSession = Depends(get_db_session),
+    store: EvidenceQueryStore = Depends(get_evidence_store),
     account: AuthContext = Depends(get_current_account),
     gene: str | None = Query(None, description="Filter by gene (partial match on A.gene_symbol)"),
     variant: str | None = Query(None, description="Filter by variant (partial match on HGVS fields)"),
@@ -109,8 +108,7 @@ async def search_evidence(
     Groups field-level extractions by group_id and pivots them into summary
     rows with gene/variant/disease/classification columns.
     """
-    service = SearchService(session)
-    return await service.search_evidence(
+    return await store.search_evidence(
         gene=gene,
         variant=variant,
         disease=disease,
@@ -124,7 +122,7 @@ async def search_evidence(
 
 @router.get("/variants", response_model=VariantSearchResponse)
 async def search_variants(
-    session: AsyncSession = Depends(get_db_session),
+    store: EvidenceQueryStore = Depends(get_evidence_store),
     account: AuthContext = Depends(get_current_account),
     gene: str | None = Query(None, description="Filter variants by gene (partial, case-insensitive)"),
     variant: str | None = Query(None, description="Filter variants by variant site (partial, case-insensitive)"),
@@ -156,8 +154,7 @@ async def search_variants(
     stats and autocomplete candidates. Replaces the previous client-side flow
     that downloaded the full evidence-group corpus.
     """
-    service = SearchService(session)
-    return await service.search_variants(
+    return await store.search_variants(
         gene=gene,
         variant=variant,
         disease=disease,

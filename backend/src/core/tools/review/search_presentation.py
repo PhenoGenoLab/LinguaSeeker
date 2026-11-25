@@ -19,7 +19,7 @@ from src.core.tools.review.contracts import (
 )
 from src.utils.text.content import parse_gene_from_group_id, parse_variant_from_group_id
 
-from src.core.tools.review.evidence_search_repository import (
+from src.dao.postgresql.review.evidence_search_repository import (
     CLASSIFICATION_FIELDS as _CLASSIFICATION_FIELDS,
     DISEASE_FIELDS as _DISEASE_FIELDS,
     GENE_FIELDS as _GENE_FIELDS,

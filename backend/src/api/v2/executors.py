@@ -322,7 +322,7 @@ class AgentExecutor:
         request = ReviewSearchRequest.model_validate(job.request_data)
         if self._session_factory is None:
             raise AgentJobFailure("review search requires a database session", kind="transient")
-        from src.core.tools.review.search_service import SearchService
+        from src.dao.postgresql.review.search_service import SearchService
 
         page_size = min(request.offset + request.limit, _REVIEW_SEARCH_MAX_ROWS)
         async with self._session_factory() as session:

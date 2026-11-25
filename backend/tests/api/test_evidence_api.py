@@ -83,10 +83,10 @@ async def test_get_evidence_group_detail(async_client: AsyncClient):
         traces=[],
     )
 
-    with patch("src.api.v1.evidence.SearchService") as mock_service_cls:
-        mock_service = MagicMock()
-        mock_service.get_group_detail = AsyncMock(return_value=mock_response)
-        mock_service_cls.return_value = mock_service
+    with patch("src.api.deps.PostgresEvidenceStore") as mock_store_cls:
+        mock_store = MagicMock()
+        mock_store.group_detail = AsyncMock(return_value=mock_response)
+        mock_store_cls.return_value = mock_store
 
         response = await async_client.get("/api/v1/evidence/groups/detail", params={"group_id": group_id})
 
@@ -102,10 +102,10 @@ async def test_get_evidence_group_detail_returns_404(async_client: AsyncClient):
     """GET /api/v1/evidence/groups/{group_id} returns 404 when group is missing."""
     from sqlalchemy.exc import NoResultFound
 
-    with patch("src.api.v1.evidence.SearchService") as mock_service_cls:
-        mock_service = MagicMock()
-        mock_service.get_group_detail = AsyncMock(side_effect=NoResultFound())
-        mock_service_cls.return_value = mock_service
+    with patch("src.api.deps.PostgresEvidenceStore") as mock_store_cls:
+        mock_store = MagicMock()
+        mock_store.group_detail = AsyncMock(side_effect=NoResultFound())
+        mock_store_cls.return_value = mock_store
 
         response = await async_client.get("/api/v1/evidence/groups/detail", params={"group_id": "missing-group"})
 
