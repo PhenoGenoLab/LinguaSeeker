@@ -13,7 +13,7 @@ from src.core.tools.extraction.contracts import (
     EvidenceStatus,
     Track,
 )
-from src.pipeline.skills.standardization import api as api_module
+from src.dao.postgresql.standardization import runner as runner_module
 from src.core.tools.standardization.contracts import (
     EntityMatch,
     EntityType,
@@ -159,8 +159,8 @@ class FakeConfig:
         self.api_key = ""
 
 
-def build_service_with_fake_repository(monkeypatch: pytest.MonkeyPatch) -> api_module.EntityStandardizationService:
-    """Create the facade service with an in-memory repository implementation."""
+def build_service_with_fake_repository(monkeypatch: pytest.MonkeyPatch) -> tuple[object, dict]:
+    """Create the runner with an in-memory repository implementation."""
     lookup = {
         (EntityType.GENE, "BRCA1"): (
             TerminologyCandidate(
@@ -208,13 +208,28 @@ def build_service_with_fake_repository(monkeypatch: pytest.MonkeyPatch) -> api_m
         ),
     }
 
-    monkeypatch.setattr(api_module, "StandardizationRepository", FakeRepository)
+    monkeypatch.setattr(runner_module, "StandardizationRepository", lambda session: FakeRepository(lookup))
     monkeypatch.setattr(
-        api_module,
+        runner_module,
         "HybridTerminologyMatcher",
         lambda precise, sim, **kwargs: HybridTerminologyMatcher(precise, FakeSimilarityMatcher()),
     )
-    return api_module.EntityStandardizationService(cfg=FakeConfig()), lookup
+    monkeypatch.setattr(runner_module, "PgvectorTerminologyRepository", lambda session: object())
+    monkeypatch.setattr(runner_module, "CrossLingualDiseaseResolver", lambda session: None)
+    from contextlib import asynccontextmanager
+    from unittest.mock import AsyncMock, MagicMock
+
+    session = MagicMock()
+    session.commit = AsyncMock()
+
+    @asynccontextmanager
+    async def session_factory():
+        yield session
+
+    return runner_module.PostgresStandardizationRunner(
+        cfg=FakeConfig(),
+        session_factory=session_factory,
+    ), lookup
 
 
 @pytest.mark.asyncio
@@ -231,7 +246,6 @@ async def test_dual_result_standardization_pipeline_standardizes_gene_variant_di
     service, lookup = build_service_with_fake_repository(monkeypatch)
 
     output = await service.run_dual_result(
-        lookup,
         result,
         source_document_id="source-1",
         processing_run_id="run-1",
@@ -298,21 +312,35 @@ async def test_dual_result_standardization_pipeline_reports_unmapped_and_ambiguo
     }
     created_repositories: list[FakeRepository] = []
 
-    def _factory(session_lookup):
-        repo = FakeRepository(session_lookup)
+    def _factory(_session):
+        repo = FakeRepository(lookup)
         created_repositories.append(repo)
         return repo
 
-    monkeypatch.setattr(api_module, "StandardizationRepository", _factory)
+    monkeypatch.setattr(runner_module, "StandardizationRepository", _factory)
     monkeypatch.setattr(
-        api_module,
+        runner_module,
         "HybridTerminologyMatcher",
         lambda precise, sim, **kwargs: HybridTerminologyMatcher(precise, FakeSimilarityMatcher()),
     )
-    service = api_module.EntityStandardizationService(cfg=FakeConfig())
+    monkeypatch.setattr(runner_module, "PgvectorTerminologyRepository", lambda session: object())
+    monkeypatch.setattr(runner_module, "CrossLingualDiseaseResolver", lambda session: None)
+    from contextlib import asynccontextmanager
+    from unittest.mock import AsyncMock, MagicMock
+
+    session = MagicMock()
+    session.commit = AsyncMock()
+
+    @asynccontextmanager
+    async def session_factory():
+        yield session
+
+    service = runner_module.PostgresStandardizationRunner(
+        cfg=FakeConfig(),
+        session_factory=session_factory,
+    )
 
     output = await service.run_dual_result(
-        lookup,
         result,
         source_document_id="source-2",
         processing_run_id="run-2",

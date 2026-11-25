@@ -8,7 +8,7 @@
 from src.core.config import get_config
 from src.dao.neo4j.connection import build_neo4j_driver
 from src.dao.neo4j.repository import Neo4jRepository
-from src.core.agents.graph_retrieval.api import GraphRagService
+from src.pipeline.skills.graph_retrieval.api import GraphRagService
 
 cfg = get_config()
 driver = build_neo4j_driver(cfg)
@@ -35,7 +35,7 @@ EvidenceExtractionState   SubgraphRetriever + ContextFormatter
                                    ▼
                            Neo4jRepository.get_subgraph()
 
-EntityStandardizationService.run()
+PostgresStandardizationRunner.run_dual_result()
     │
     ▼
 GraphRagService.write_literature_graph()

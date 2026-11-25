@@ -27,7 +27,7 @@ from src.core.tools.standardization.normalizers import (
     make_entity_scope_hash,
     make_target_scope_bindings,
 )
-from src.core.tools.standardization.repositories._shared import (
+from ._shared import (
     CANONICAL_ELIGIBLE_STATUSES,
     CANONICAL_STATUS_PRIORITY,
     CLINVAR_ASSERTION_REVIEW_STATUS,

@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy import select
 
 from src.core.tools.standardization.contracts import EntityMatch, EntityType, MatchStatus
-from src.core.tools.standardization.repositories._shared import normalize_entity_text
+from ._shared import normalize_entity_text
 from src.core.tools.standardization.variant_id import make_internal_variant_id
 from src.dao.postgresql.models import NormalizedEntity
 

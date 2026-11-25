@@ -9,13 +9,13 @@ from src.core.tools.graph_retrieval.contracts import (
     LiteratureGraphEdge,
     LiteratureGraphNode,
 )
-from src.dao.neo4j.repository import Neo4jRepository
+from src.ports.graph import GraphRepository
 
 
 class Neo4jGraphProvider:
     """Write LiteratureGraphBatch structures into Neo4j."""
 
-    def __init__(self, repository: Neo4jRepository) -> None:
+    def __init__(self, repository: GraphRepository) -> None:
         self._repository = repository
 
     async def write_batch(

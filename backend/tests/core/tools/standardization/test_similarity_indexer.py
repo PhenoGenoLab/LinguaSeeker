@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.tools.standardization.similarity_match.indexer import (
+from src.dao.postgresql.standardization.indexer import (
     TerminologyEmbeddingIndexer,
     build_embedding_text,
     make_embedding_text_hash,

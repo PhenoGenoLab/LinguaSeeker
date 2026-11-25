@@ -147,9 +147,11 @@ async def lifespan(app: FastAPI):
     import src.api.wiring as _wiring
 
     wire_dependencies = _wiring.wire_dependencies
+    from src.api.health import register_default_health_checks
     from src.utils.health import check_all_connections
 
     wire_dependencies()
+    register_default_health_checks()
     logger.info("Pipeline orchestrator initialized")
 
     # Start the job dispatcher (background polling for queued jobs)
@@ -169,8 +171,6 @@ async def lifespan(app: FastAPI):
 
     # Ensure standalone tables (independent MetaData, not managed by Alembic) exist
     # Use advisory lock to prevent multi-worker races on table creation and recovery
-    from src.dao.postgresql.search_index_repo import search_index_metadata
-
     _wiring.get_session_factory()  # trigger lazy engine creation
     engine = _wiring.get_engine()
 
@@ -178,8 +178,7 @@ async def lifespan(app: FastAPI):
     if engine is not None:
         startup_lock_acquired = await _try_startup_lock(engine)
     if engine is not None and startup_lock_acquired:
-        async with engine.begin() as conn:
-            await conn.run_sync(search_index_metadata.create_all)
+        await _wiring.create_search_index_tables(engine)
 
     # Recover pipeline runs and jobs interrupted by server restart (only if we hold the lock)
     from src.api.v1.pipeline import get_job_queue, get_pipeline_runner

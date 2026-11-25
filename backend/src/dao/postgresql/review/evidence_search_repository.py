@@ -22,16 +22,11 @@ from src.dao.postgresql.models import (
     SourceDocumentIdentifier,
 )
 
-# Field ID prefixes that map to summary columns
-GENE_FIELDS = ("A.gene_symbol", "A.gene_aliases")
-VARIANT_FIELDS = (
-    "A.variant_hgvs_c",
-    "A.variant_hgvs_p",
-    "A.variant_hgvs_g",
-    "A.variant_legacy_name",
+from src.core.tools.review.search_fields import (
+    DISEASE_FIELDS,
+    GENE_FIELDS,
+    VARIANT_FIELDS,
 )
-DISEASE_FIELDS = ("B.disease_diagnosis", "B.clinical_diagnosis", "B.hpo_terms")
-CLASSIFICATION_FIELDS = ("J.authority_classification", "J.clinvar_assertion")
 
 
 @dataclass(frozen=True)

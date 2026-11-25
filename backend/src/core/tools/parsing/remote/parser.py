@@ -22,11 +22,9 @@ from ..common.converters import block_to_markdown, html_table_to_structured
 from ..contracts import (
     DocumentMetadata,
     MinerUBatchStatus,
-    MinerUExtraFormat,
     MinerULocalBatchOptions,
     MinerULocalBatchParseResult,
     MinerULocalBatchUploadResult,
-    MinerUModelVersion,
     ParseResult,
     pages_from_raw,
 )

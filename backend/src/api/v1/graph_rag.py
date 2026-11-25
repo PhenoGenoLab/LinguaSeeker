@@ -17,19 +17,20 @@ from src.core.config import get_config
 from src.core.tools.graph_retrieval.contracts import (
     GraphEntityType,
     GraphEdgeResponse,
+    GraphNode,
     GraphNodeResponse,
     GraphRagQueryRequest,
     GraphRagQueryResponse,
     GraphSubgraphResponse,
+    SubgraphContext,
 )
 from src.pipeline.skills.graph_retrieval.core.qa_engine import GraphRagQaEngine, QaEngineConfig
-from src.dao.neo4j.contracts import GraphNode, SubgraphContext
-from src.dao.neo4j.repository import Neo4jRepository
+from src.ports.graph import GraphRepository
 
 router = APIRouter()
 
 
-def _build_qa_engine(repository: Neo4jRepository | None) -> GraphRagQaEngine:
+def _build_qa_engine(repository: GraphRepository | None) -> GraphRagQaEngine:
     """Build a GraphRagQaEngine from the global Neo4j repository."""
     if repository is None:
         raise HTTPException(status_code=503, detail="Neo4j repository is not available")
@@ -51,7 +52,7 @@ def _build_qa_engine(repository: Neo4jRepository | None) -> GraphRagQaEngine:
 async def query_graph_rag(
     request: Request,
     body: GraphRagQueryRequest,
-    repository: Neo4jRepository | None = Depends(get_neo4j_repository),
+    repository: GraphRepository | None = Depends(get_neo4j_repository),
     account: AuthContext = Depends(get_current_account),
 ) -> GraphRagQueryResponse:
     """Answer a natural-language question using the knowledge graph."""
@@ -72,7 +73,7 @@ async def get_knowledge_graph(
     hops: int = Query(2, ge=1, le=4, description="Subgraph expansion hops"),
     mode: str = Query("full", description="terminology_only or full"),
     limit: int = Query(200, ge=1, le=500, description="Maximum nodes to return"),
-    repository: Neo4jRepository | None = Depends(get_neo4j_repository),
+    repository: GraphRepository | None = Depends(get_neo4j_repository),
     account: AuthContext = Depends(get_current_account),
 ) -> GraphSubgraphResponse:
     """Return a subgraph centered on the provided biomedical entities."""

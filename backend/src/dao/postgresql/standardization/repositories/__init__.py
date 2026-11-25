@@ -17,7 +17,7 @@ from src.core.tools.standardization.contracts import (
 )
 from src.core.tools.standardization.db_ready_gate import DbReadyGateReport
 from src.core.tools.standardization.importers import ImportBatch
-from src.core.tools.standardization.repositories._shared import (
+from ._shared import (
     CANONICAL_ELIGIBLE_STATUSES,
     CanonicalIdentityKey,
     RunItemEntityBindings,
@@ -27,10 +27,10 @@ from src.core.tools.standardization.repositories._shared import (
     normalize_enum_like_string,
     sanitize_jsonb_value,
 )
-from src.core.tools.standardization.repositories.entities import EntityResolutionRepository
-from src.core.tools.standardization.repositories.evidence import EvidenceProjectionRepository
-from src.core.tools.standardization.repositories.search_index import SearchIndexRepository
-from src.core.tools.standardization.repositories.terminology import TerminologyImportRepository
+from .entities import EntityResolutionRepository
+from .evidence import EvidenceProjectionRepository
+from .search_index import SearchIndexRepository
+from .terminology import TerminologyImportRepository
 
 __all__ = [
     "CANONICAL_ELIGIBLE_STATUSES",

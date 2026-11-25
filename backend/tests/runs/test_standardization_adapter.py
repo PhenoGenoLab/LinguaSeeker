@@ -61,10 +61,7 @@ async def test_standardization_adapter_success(sample_state: PipelineGraphState)
     mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
     mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
 
-    adapter = StandardizationAdapter(
-        standardization_service=mock_standardization,
-        session_factory=mock_session_factory,
-    )
+    adapter = StandardizationAdapter(mock_standardization)
 
     with patch(
         "src.pipeline.graph.phases.standardization.DualEvidenceExtractionResult.model_validate",
@@ -72,7 +69,6 @@ async def test_standardization_adapter_success(sample_state: PipelineGraphState)
     ):
         result_state = await adapter.run(sample_state)
 
-    mock_session.commit.assert_awaited_once()
     assert result_state.standardization_output is not None
     assert result_state.standardization_output.match_count == 10
     assert isinstance(result_state.standardization_output, StandardizationOutput)
@@ -86,11 +82,7 @@ async def test_standardization_adapter_skipped_not_relevant(sample_state: Pipeli
     mock_standardization = MagicMock()
     mock_standardization.run_dual_result = AsyncMock()
 
-    mock_session_factory = MagicMock()
-    adapter = StandardizationAdapter(
-        standardization_service=mock_standardization,
-        session_factory=mock_session_factory,
-    )
+    adapter = StandardizationAdapter(mock_standardization)
 
     result_state = await adapter.run(sample_state)
 
@@ -106,11 +98,7 @@ async def test_standardization_adapter_skipped_no_entities(sample_state: Pipelin
 
     mock_standardization = MagicMock()
 
-    mock_session_factory = MagicMock()
-    adapter = StandardizationAdapter(
-        standardization_service=mock_standardization,
-        session_factory=mock_session_factory,
-    )
+    adapter = StandardizationAdapter(mock_standardization)
 
     result_state = await adapter.run(sample_state)
 
@@ -146,10 +134,7 @@ async def test_standardization_adapter_skipped_when_zero_standardized(
     mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
     mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
 
-    adapter = StandardizationAdapter(
-        standardization_service=mock_standardization,
-        session_factory=mock_session_factory,
-    )
+    adapter = StandardizationAdapter(mock_standardization)
 
     with patch(
         "src.pipeline.graph.phases.standardization.DualEvidenceExtractionResult.model_validate",
@@ -157,7 +142,6 @@ async def test_standardization_adapter_skipped_when_zero_standardized(
     ):
         result_state = await adapter.run(sample_state)
 
-    mock_session.commit.assert_awaited_once()
     assert result_state.standardization_status.status == PhaseStatus.COMPLETED
     assert result_state.skip_standardization_reason == SkipStandardizationReason.NO_CANDIDATES
     assert result_state.standardization_status.summary["skip_reason"] == "no_candidates"
@@ -231,10 +215,7 @@ async def _run_standardization_with_counts(
     mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
     mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
 
-    adapter = StandardizationAdapter(
-        standardization_service=mock_standardization,
-        session_factory=mock_session_factory,
-    )
+    adapter = StandardizationAdapter(mock_standardization)
 
     with patch(
         "src.pipeline.graph.phases.standardization.DualEvidenceExtractionResult.model_validate",

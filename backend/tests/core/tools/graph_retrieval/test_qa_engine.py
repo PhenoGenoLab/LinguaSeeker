@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from src.pipeline.skills.graph_retrieval.core.qa_engine import GraphRagQaEngine, QaEngineConfig
-from src.dao.neo4j.contracts import GraphEdge, GraphNode, SubgraphContext
+from src.core.tools.graph_retrieval.contracts import GraphEdge, GraphNode, SubgraphContext
 
 
 @pytest.fixture

@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING
 
 import aiofiles
 from loguru import logger
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.runs.contracts import (
     StandardizationOutput,
@@ -31,7 +30,7 @@ _RETRYABLE_ERRORS = build_retryable_errors()
 
 
 class StandardizationAdapter:
-    """Thin adapter wrapping EntityStandardizationService.
+    """Thin adapter wrapping the standardization runner.
 
     Standardizes extracted entities against terminology databases,
     skipping when Phase 3 marked the document as not relevant.
@@ -40,10 +39,8 @@ class StandardizationAdapter:
     def __init__(
         self,
         standardization_service: StandardizationSkill,
-        session_factory: async_sessionmaker[AsyncSession],
     ):
         self._standardization = standardization_service
-        self._session_factory = session_factory
 
     async def run(self, state: PipelineGraphState) -> PipelineGraphState:
         """Execute Phase 4: standardize entities.
@@ -91,16 +88,12 @@ class StandardizationAdapter:
                 trans_items,
             )
 
-            # Run standardization with a fresh session
-            async with self._session_factory() as session:
-                standardization_result = await self._standardization.run_dual_result(
-                    session,
-                    dual_result,
-                    source_document_id=state.source_document_id,
-                    processing_run_id=state.processing_run_id,
-                    owner_user_id=state.owner_user_id,
-                )
-                await session.commit()
+            standardization_result = await self._standardization.run_dual_result(
+                dual_result,
+                source_document_id=state.source_document_id,
+                processing_run_id=state.processing_run_id,
+                owner_user_id=state.owner_user_id,
+            )
 
             state.standardization_output = StandardizationOutput(
                 match_count=standardization_result.match_count,

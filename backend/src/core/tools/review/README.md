@@ -80,14 +80,14 @@ LLM 对话管理：
 Phase 3 CanonicalEvidenceItem
         │
         ▼
-   SearchService.search()
+   PostgresEvidenceStore.search_evidence()
         ├─→ 字段透视 → 分组证据行 → 分页结果
         └─→ 文档内容加载 → 正文过滤 → 高亮构建
         │
         ▼
    ChatService.send_message()
         ├─→ LLM 推理 → ChatAction 解析
-        └─→ FeedbackService.patch_evidence()
+        └─→ PostgresFeedbackStore.patch_evidence()
                 ├─→ DeltaAuditService.compute_deltas()
                 ├─→ 审计事件持久化
                 └─→ 文献档案/搜索索引刷新
@@ -112,20 +112,27 @@ Phase 3 CanonicalEvidenceItem
 ## 使用方式
 
 ```python
-# 证据搜索
-search_service = SearchService(session)
-results = await search_service.search(EvidenceSearchRequest(...))
+# 证据搜索（端口 + PostgreSQL 适配器）
+from src.dao.postgresql.review.evidence_store import PostgresEvidenceStore
+
+store = PostgresEvidenceStore(session_factory)
+results = await store.search_evidence(page=1, page_size=50)
 
 # 证据纠错
-feedback_service = FeedbackService(session)
-patch_result = await feedback_service.patch_evidence(
+from src.dao.postgresql.review.feedback_store import PostgresFeedbackStore
+
+patch_result = await PostgresFeedbackStore(session_factory).patch_evidence(
     canonical_evidence_id=evidence_id,
-    request=EvidencePatchRequest(review_status="approved", field_patches={...}),
+    patch=EvidencePatchRequest(new_status=ReviewStatus.APPROVED, fields={...}),
     reviewer_id=user_id,
 )
 
-# LLM 对话
-chat_service = ChatService(session, llm_provider)
+# LLM 对话（store 由组合根注入）
+chat_service = ChatService(
+    store=PostgresChatStore(session_factory),
+    chat_provider=ChatLLMProvider(),
+    feedback_store=PostgresFeedbackStore(session_factory),
+)
 async for chunk in chat_service.send_message_stream(session_id, "这个基因的变异分类是什么？"):
     yield chunk  # SSE 流式输出
 ```

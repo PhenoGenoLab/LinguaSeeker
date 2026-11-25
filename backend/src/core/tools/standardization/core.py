@@ -9,15 +9,13 @@ from src.core.tools.standardization.contracts import (
 )
 from src.core.tools.standardization.acmg_projection import AcmgReadyProjector
 from src.core.tools.standardization.matchers import TerminologyMatcher
-from src.core.tools.standardization.repositories import (
-    StandardizationRepository,
-)
+from src.ports.standardization import TerminologyRepository
 
 
 class StandardizationService:
     """Match candidates and orchestrate persistence side effects."""
 
-    def __init__(self, matcher: TerminologyMatcher, repository: StandardizationRepository):
+    def __init__(self, matcher: TerminologyMatcher, repository: TerminologyRepository):
         self._matcher = matcher
         self._repository = repository
         self._acmg_projector = AcmgReadyProjector()

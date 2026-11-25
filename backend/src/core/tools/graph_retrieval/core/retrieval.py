@@ -4,18 +4,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from src.core.tools.graph_retrieval.contracts import GraphEntityType
-from src.dao.neo4j.contracts import SubgraphContext
+from src.core.tools.graph_retrieval.contracts import GraphEntityType, SubgraphContext
 
 if TYPE_CHECKING:
     from src.core.tools.extraction.contracts import ExtractionTarget
-    from src.dao.neo4j.repository import Neo4jRepository
+    from src.ports.graph import GraphRepository
 
 
 class SubgraphRetriever:
     """Retrieve relevant subgraphs from Neo4j for a given extraction target."""
 
-    def __init__(self, repository: Neo4jRepository) -> None:
+    def __init__(self, repository: GraphRepository) -> None:
         self._repository = repository
 
     async def retrieve_for_target(

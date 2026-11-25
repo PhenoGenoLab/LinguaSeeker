@@ -1,7 +1,7 @@
 """Ports for the run lifecycle.
 
-These protocols are owned by the code that consumes them. Adapters under
-``src.dao`` implement them, so nothing in ``src.runs`` (or any API route)
+These protocols are owned by the code that consumes them. Persistence
+adapters implement them, so nothing in ``src.runs`` (or any API route)
 needs to know whether a database exists, which driver is used, or how a
 transaction is scoped.
 """
@@ -68,7 +68,7 @@ class RunStateStore(Protocol):
         self,
         *,
         processing_run_id: str,
-        source_document_id: str | None,
+        source_document_id: str,
         owner_user_id: str | None = None,
         target_phase: int,
     ) -> None: ...
@@ -78,8 +78,6 @@ class RunStateStore(Protocol):
     async def heartbeat(self, processing_run_id: str, owner_worker_id: str) -> bool: ...
 
     async def has_active_source_key(self, source_key: str, owner_user_id: str | None = None) -> bool: ...
-
-    async def finalize_review(self, processing_run_id: str) -> PipelineGraphState | None: ...
 
     async def latest_state_for_document(self, source_document_id: str) -> PipelineGraphState | None:
         """Return the newest state for one source document, if any."""
@@ -106,10 +104,10 @@ class RunJobQueue(Protocol):
     async def enqueue(
         self,
         *,
-        job_id: object,
-        processing_run_id: object,
-        source_document_id: object,
-        owner_user_id: object,
+        job_id: UUID,
+        processing_run_id: UUID,
+        source_document_id: UUID,
+        owner_user_id: UUID | None,
         request_data: dict[str, object],
     ) -> None: ...
 
@@ -119,7 +117,7 @@ class RunJobQueue(Protocol):
 
     async def fail(self, job_id: str, error_message: str) -> None: ...
 
-    async def get_status(self, processing_run_id: str, owner_user_id: object | None = None) -> str | None: ...
+    async def get_status(self, processing_run_id: str, owner_user_id: UUID | None = None) -> str | None: ...
 
     async def get_running_count(self) -> int: ...
 
@@ -132,20 +130,20 @@ class AgentJobStore(Protocol):
     async def enqueue(
         self,
         *,
-        job_id: object,
+        job_id: UUID,
         agent: str,
         action: str | None,
         request_data: dict[str, object],
-        owner_user_id: object | None = None,
+        owner_user_id: UUID | None = None,
     ) -> None: ...
 
     async def claim_next(self, worker_id: str) -> AgentJob | None: ...
 
-    async def complete(self, job_id: object, result: dict[str, object]) -> None: ...
+    async def complete(self, job_id: UUID, result: dict[str, object]) -> None: ...
 
-    async def fail(self, job_id: object, error_message: str, *, kind: str = "permanent") -> None: ...
+    async def fail(self, job_id: UUID, error_message: str, *, kind: str = "permanent") -> None: ...
 
-    async def get(self, job_id: object, *, owner_user_id: object | None = None) -> AgentJob | None: ...
+    async def get(self, job_id: UUID, *, owner_user_id: UUID | None = None) -> AgentJob | None: ...
 
 
 class ProcessingCache(Protocol):

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.dao.neo4j.contracts import GraphEdge, SubgraphContext
+from src.core.tools.graph_retrieval.contracts import GraphEdge, SubgraphContext
 
 
 class ContextFormatter:

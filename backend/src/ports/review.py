@@ -222,3 +222,13 @@ class EvidenceQueryStore(Protocol):
         page_size: int = 24,
         owner_user_id: UUID | None = None,
     ) -> VariantSearchResponse: ...
+
+
+class ReviewStores(Protocol):
+    """Create the stores used by review services."""
+
+    def chat_store(self) -> ChatStore: ...
+
+    def feedback_store(self) -> FeedbackStore: ...
+
+    def source_link_store(self) -> SourceLinkStore: ...

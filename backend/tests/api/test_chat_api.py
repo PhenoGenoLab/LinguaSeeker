@@ -9,22 +9,15 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.utils.health import HealthResult
 
 
 @pytest_asyncio.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
-    """Create an API client with chat route DB dependency overridden."""
+    """Create an API client for chat route tests."""
     from app.main import create_app
-    from src.api.deps import get_db_session
     from src.core.config import Settings
-
-    db_session = AsyncMock(spec=AsyncSession)
-
-    async def override_session() -> AsyncGenerator[AsyncSession, None]:
-        yield db_session
 
     mock_settings = Settings(api_key="")
     with (
@@ -38,16 +31,9 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
     ):
         mock_cfg.return_value = mock_settings
         app = create_app()
-        app.state.test_db_session = db_session
-        app.dependency_overrides[get_db_session] = override_session
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             yield client
-
-
-def _test_db_session(client: AsyncClient) -> AsyncMock:
-    """Return the mock DB session attached to this test app."""
-    return client._transport.app.state.test_db_session
 
 
 @pytest.mark.asyncio

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -30,7 +29,6 @@ async def test_patch_evidence_event_is_queryable_by_source_document(
 ) -> None:
     """PATCH evidence through API records an audit event queryable by source document."""
     from app.main import create_app
-    from src.api.deps import get_db_session
     from src.core.config import Settings
     from src.dao.postgresql.models import CanonicalEvidenceItem, SourceDocument
 
@@ -55,9 +53,6 @@ async def test_patch_evidence_event_is_queryable_by_source_document(
     )
     await db_session.flush()
 
-    async def override_session() -> AsyncGenerator[AsyncSession, None]:
-        yield db_session
-
     from contextlib import asynccontextmanager
 
     @asynccontextmanager
@@ -81,7 +76,6 @@ async def test_patch_evidence_event_is_queryable_by_source_document(
         ),
     ):
         app = create_app()
-        app.dependency_overrides[get_db_session] = override_session
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             patch_response = await client.patch(

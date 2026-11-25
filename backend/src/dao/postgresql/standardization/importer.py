@@ -23,7 +23,7 @@ from src.core.tools.standardization.importers import (
     parse_hpo_rows,
     parse_omim_rows,
 )
-from src.core.tools.standardization.repositories import (
+from src.dao.postgresql.standardization.repositories import (
     StandardizationRepository,
 )
 from src.dao.postgresql import async_session_factory, build_async_engine, get_async_session
@@ -105,7 +105,7 @@ async def build_terminology_embeddings(
     source_dbs: set[str] | None = None,
 ) -> int:
     """Build pgvector embeddings for imported terminology entries."""
-    from src.core.tools.standardization.similarity_match.indexer import (
+    from src.dao.postgresql.standardization.indexer import (
         TerminologyEmbeddingIndexer,
     )
     from src.core.tools.standardization.similarity_match.providers import (

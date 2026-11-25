@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.tools.standardization.cross_lingual_disease import (
+from src.dao.postgresql.standardization.cross_lingual_disease import (
     CrossLingualDiseaseResolver,
 )
 

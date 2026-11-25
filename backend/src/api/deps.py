@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
-
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from src.core.config import get_config
 from src.pipeline.skills.review.factory import ReviewServiceFactory
 from src.api.wiring import get_session_factory
 from src.dao.neo4j.repository import Neo4jRepository
+from src.dao.postgresql.standardization.runner import PostgresStandardizationRunner
 from src.dao.postgresql.users import PostgresUserStore
 from src.dao.postgresql.review.annotation_store import PostgresAnnotationStore
 from src.dao.postgresql.review.evidence_store import PostgresEvidenceStore
@@ -25,6 +23,7 @@ from src.ports.review import (
     LiteratureStore,
 )
 from src.ports.users import UserStore
+from src.ports.standardization import StandardizationRunner
 
 _review_factory: ReviewServiceFactory | None = None
 _neo4j_repository: Neo4jRepository | None = None
@@ -95,22 +94,9 @@ def get_run_state_store() -> RunStateStore:
     return PostgresRunStateStore(get_session_factory())
 
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Dependency: yield an async database session.
-
-    Commits on successful handler exit; rolls back on exception.
-
-    Tradeoff: commit runs after the response is sent (FastAPI dependency
-    cleanup). If commit fails (e.g. deferred constraint violation), the
-    client already received 200 OK but data was rolled back. This is a
-    known FastAPI limitation — the alternative (commit inside the handler)
-    forces every route to manage transactions explicitly.
-    """
-    factory = get_session_factory()
-    async with factory() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
+def get_standardization_runner() -> StandardizationRunner:
+    """Return the PostgreSQL-backed standardization runner."""
+    return PostgresStandardizationRunner(
+        cfg=get_config(),
+        session_factory=get_session_factory(),
+    )

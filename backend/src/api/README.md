@@ -39,12 +39,12 @@ cfg → engine → session_factory
   → Redis client → DocumentProcessingCacheService
   → DocumentAcquisitionService + ParseDocumentService
   → SourceFactChainService（fact_chain：分窗→抽取→核验→事实英译→双语行）
-  → EntityStandardizationService
+  → PostgresStandardizationRunner
   → AcquisitionAdapter + ParsingAdapter + FactChainAdapter
   → SessionBoundStatePersistence
   → PipelineOrchestrator → PipelineRunner
   → SingleJobDispatcher
-  → ReviewServiceFactory
+  → ReviewServiceFactory（注入 PostgresReviewStoreFactory）
   → JobQueueRepository
 ```
 
@@ -69,7 +69,8 @@ async def handler(_api_key: str | None = Depends(require_api_key)):
 
 | 依赖 | 说明 |
 |------|------|
-| `get_db_session()` | 提供异步数据库会话（自动 commit/rollback） |
+| `get_evidence_store()` / `get_feedback_store()` / `get_audit_store()` | 返回请求作用域存储适配器 |
+| `get_standardization_runner()` | 返回 PostgreSQL 后端的标准化执行器 |
 | `get_review_factory()` | 返回全局 ReviewServiceFactory 实例 |
 
 ### `body_size_limit.py` — 请求体限制
@@ -110,16 +111,15 @@ check_all_connections()       # 健康检查
 ### 路由中访问数据库
 
 ```python
-async def handler(session: AsyncSession = Depends(get_db_session)):
-    result = await session.execute(select(Model))
+async def handler(store: EvidenceQueryStore = Depends(get_evidence_store)):
+    result = await store.search_evidence(gene="BRCA1")
 ```
 
 ### 路由中访问 standardization 服务
 
 ```python
-async def handler(session: AsyncSession = Depends(get_db_session)):
-    factory = get_phase5_factory()
-    service = factory.create_feedback_service(session)
+async def handler(runner: StandardizationRunner = Depends(get_standardization_runner)):
+    output = await runner.run_dual_result(dual_result, source_document_id=..., processing_run_id=...)
 ```
 
 ## Dependencies

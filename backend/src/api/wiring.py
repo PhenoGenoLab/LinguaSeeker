@@ -116,6 +116,14 @@ async def dispose_neo4j() -> None:
         _neo4j_driver = None
 
 
+async def create_search_index_tables(engine) -> None:
+    """Create standalone search-index tables that Alembic does not manage."""
+    from src.dao.postgresql.search_index_repo import search_index_metadata
+
+    async with engine.begin() as conn:
+        await conn.run_sync(search_index_metadata.create_all)
+
+
 def get_local_parser() -> MinerULocalParser | None:
     """Return the singleton MinerU local parser (or None if not yet initialized)."""
     return _local_parser
@@ -167,6 +175,7 @@ def wire_dependencies() -> None:
         RetryablePhaseExecutor,
         SingleJobDispatcher,
     )
+    from src.dao.postgresql.review.store_factory import PostgresReviewStoreFactory
     from src.pipeline.skills.review.factory import ReviewServiceFactory
     from src.dao.postgresql.run_state_store import PostgresRunStateStore
     from src.api.deps import set_neo4j_repository, set_review_factory
@@ -184,9 +193,7 @@ def wire_dependencies() -> None:
     from src.core.tools.parsing.service import (
         ParseDocumentService,
     )
-    from src.pipeline.skills.standardization.api import (
-        EntityStandardizationService,
-    )
+    from src.dao.postgresql.standardization.runner import PostgresStandardizationRunner
     from src.pipeline.graph.phases.acquisition import AcquisitionAdapter
     from src.pipeline.graph.phases.parsing import ParsingAdapter
     from src.pipeline.graph.phases.fact_chain import FactChainAdapter
@@ -274,12 +281,13 @@ def wire_dependencies() -> None:
     parsing_skill = ParsingSkill(cfg=cfg, service=parse_service)
     graph_rag_service = GraphRagService(_neo4j_repository) if _neo4j_repository is not None else None
     source_fact_chain = SourceFactChainService(cfg=cfg)
-    standardization_service = EntityStandardizationService(
+    standardization_service = PostgresStandardizationRunner(
         cfg=cfg,
+        session_factory=session_factory,
         graph_rag_service=graph_rag_service,
     )
 
-    standardization_skill = StandardizationSkill(cfg=cfg, service=standardization_service)
+    standardization_skill = StandardizationSkill(cfg=cfg, runner=standardization_service)
 
     # ── Phase adapters ──
 
@@ -287,7 +295,7 @@ def wire_dependencies() -> None:
         "acquisition": AcquisitionAdapter(acquisition_skill),
         "parsing": ParsingAdapter(parsing_skill),
         "fact_chain": FactChainAdapter(source_fact_chain),
-        "standardization": StandardizationAdapter(standardization_skill, session_factory),
+        "standardization": StandardizationAdapter(standardization_skill),
     }
 
     # ── Orchestrator + Runner ──
@@ -317,7 +325,7 @@ def wire_dependencies() -> None:
 
     # ── Phase 5 factory (interactive review layer) ──
 
-    review_factory = ReviewServiceFactory(cfg=cfg, session_factory=session_factory)
+    review_factory = ReviewServiceFactory(stores=PostgresReviewStoreFactory(session_factory))
 
     # ── Job queue + dispatcher ──
 

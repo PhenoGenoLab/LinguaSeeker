@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from src.core.tools.standardization.contracts import EntityType
-from src.core.tools.standardization.similarity_match.repositories import (
+from src.dao.postgresql.standardization.similarity_repositories import (
     PgvectorTerminologyRepository,
 )
 

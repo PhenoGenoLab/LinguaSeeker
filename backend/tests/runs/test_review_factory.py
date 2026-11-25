@@ -11,22 +11,13 @@ from src.pipeline.skills.review.chat_service import ChatService
 from src.core.tools.review.delta_audit_service import (
     DeltaAuditService,
 )
-from src.dao.postgresql.review.feedback_store import (
-    FeedbackService,
-)
+from src.dao.postgresql.review.store_factory import PostgresReviewStoreFactory
 from src.dao.postgresql.review.source_link_store import PostgresSourceLinkStore
 
 
 @pytest.fixture
 def factory() -> ReviewServiceFactory:
-    return ReviewServiceFactory(cfg=MagicMock(), session_factory=MagicMock())
-
-
-def test_create_feedback_service(factory: ReviewServiceFactory):
-    """create_feedback_service returns a FeedbackService instance."""
-    session = MagicMock()
-    service = factory.create_feedback_service(session)
-    assert isinstance(service, FeedbackService)
+    return ReviewServiceFactory(stores=PostgresReviewStoreFactory(MagicMock()))
 
 
 def test_create_chat_service(factory: ReviewServiceFactory):

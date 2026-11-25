@@ -8,7 +8,7 @@ import pytest
 
 from src.core.tools.extraction.contracts import ExtractionTarget
 from src.core.tools.graph_retrieval.core.retrieval import SubgraphRetriever
-from src.dao.neo4j.contracts import GraphEdge, GraphNode, SubgraphContext
+from src.core.tools.graph_retrieval.contracts import GraphEdge, GraphNode, SubgraphContext
 
 
 @pytest.fixture

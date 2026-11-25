@@ -13,9 +13,7 @@ from src.core.tools.standardization.contracts import (
     MatchStatus,
     StandardizationCandidate,
 )
-from src.core.tools.standardization.cross_lingual_disease import (
-    CrossLingualDiseaseResolver,
-)
+from src.ports.standardization import CrossLingualResolver
 from src.core.tools.standardization.precise_match.core import (
     ALIAS_TYPE_PRIORITY,
     PreciseTerminologyMatcher,
@@ -39,7 +37,7 @@ class HybridTerminologyMatcher:
         self,
         precise_matcher,
         similarity_matcher,
-        cross_lingual_disease_resolver: CrossLingualDiseaseResolver | None = None,
+        cross_lingual_disease_resolver: CrossLingualResolver | None = None,
     ) -> None:
         self._precise_matcher = precise_matcher
         self._similarity_matcher = similarity_matcher

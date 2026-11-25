@@ -11,7 +11,7 @@ from typing import Any
 
 from neo4j import AsyncDriver
 
-from src.dao.neo4j.contracts import GraphEdge, GraphNode, SubgraphContext
+from src.core.tools.graph_retrieval.contracts import GraphEdge, GraphNode, SubgraphContext
 
 
 _BIOMEDICAL_LABEL_FILTER = "+Gene|+Disease|+Variant|+Phenotype"

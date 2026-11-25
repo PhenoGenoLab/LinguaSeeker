@@ -24,7 +24,6 @@ from src.runs.contracts import (
     PipelineMode,
     RunSummary,
     derive_error_phase,
-    stage_status_field,
     PhaseStatus,
     PipelineGraphState,
     PipelineStatus,

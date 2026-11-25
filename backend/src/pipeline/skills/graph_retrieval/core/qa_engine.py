@@ -18,13 +18,13 @@ from src.core.tools.graph_retrieval.contracts import (
     GraphNodeResponse,
     GraphRagQueryResponse,
     GraphSubgraphResponse,
+    SubgraphContext,
 )
 from src.core.tools.graph_retrieval.core.retrieval import SubgraphRetriever
-from src.dao.neo4j.contracts import SubgraphContext
 
 if TYPE_CHECKING:
     from src.core.config import Settings
-    from src.dao.neo4j.repository import Neo4jRepository
+    from src.ports.graph import GraphRepository
 
 
 class _ExtractedEntities(BaseModel):
@@ -62,7 +62,7 @@ class GraphRagQaEngine:
 
     def __init__(
         self,
-        repository: Neo4jRepository,
+        repository: GraphRepository,
         config: QaEngineConfig | None = None,
         settings: Settings | None = None,
     ) -> None:

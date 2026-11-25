@@ -23,13 +23,13 @@ if TYPE_CHECKING:
         EntityMatch,
         StandardizationInput,
     )
-    from src.dao.neo4j.repository import Neo4jRepository
+    from src.ports.graph import GraphRepository
 
 
 class GraphRagService:
     """Service for building, querying, and writing the knowledge graph."""
 
-    def __init__(self, repository: Neo4jRepository) -> None:
+    def __init__(self, repository: GraphRepository) -> None:
         self._repository = repository
         self._provider = Neo4jGraphProvider(repository)
         self._retriever = SubgraphRetriever(repository)

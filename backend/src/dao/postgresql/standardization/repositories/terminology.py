@@ -13,7 +13,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from src.core.tools.standardization.contracts import EntityType, TerminologyCandidate
 from src.core.tools.standardization.importers import ImportBatch
 from src.core.tools.standardization.normalizers import normalize_lookup_text
-from src.core.tools.standardization.repositories._shared import normalize_entity_text
+from ._shared import normalize_entity_text
 from src.dao.postgresql.models import (
     TerminologyAlias,
     TerminologyEntry,

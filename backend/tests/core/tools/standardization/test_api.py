@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from src.pipeline.skills.standardization import api as api_module
-from src.pipeline.skills.standardization import importer as importer_module
+from src.dao.postgresql.standardization import importer as importer_module
 from src.core.tools.standardization.contracts import EntityType
 from src.core.tools.standardization.importers import (
     ImportAlias,
@@ -18,11 +18,15 @@ from src.core.tools.standardization.importers import (
 )
 
 
-def test_api_exposes_standardization_service_class() -> None:
-    """The public facade exports the entity standardization service."""
-    from src.pipeline.skills.standardization.api import EntityStandardizationService
+def test_api_exposes_standardization_helpers() -> None:
+    """The presentation module exports serialization and summary helpers."""
+    from src.pipeline.skills.standardization.api import (
+        build_summary_metadata,
+        serialize_matches,
+    )
 
-    assert EntityStandardizationService is not None
+    assert callable(build_summary_metadata)
+    assert callable(serialize_matches)
 
 
 def test_load_import_batches_dispatches_requested_sources_only(monkeypatch) -> None:
@@ -331,7 +335,7 @@ async def test_build_terminology_embeddings_passes_scope_filters(monkeypatch) ->
     monkeypatch.setattr(importer_module, "async_session_factory", lambda engine: "factory")
     monkeypatch.setattr(importer_module, "get_async_session", fake_get_async_session)
     monkeypatch.setattr(
-        "src.core.tools.standardization.similarity_match.indexer.TerminologyEmbeddingIndexer",
+        "src.dao.postgresql.standardization.indexer.TerminologyEmbeddingIndexer",
         FakeIndexer,
     )
 

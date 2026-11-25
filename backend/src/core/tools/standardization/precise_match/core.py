@@ -12,7 +12,7 @@ from src.core.tools.standardization.contracts import (
 )
 from src.core.tools.standardization.hgvs_normalizer import expand_hgvs_aliases
 from src.core.tools.standardization.normalizers import normalize_gene_symbol
-from src.core.tools.standardization.repositories import StandardizationRepository
+from src.ports.standardization import TerminologyRepository
 
 
 ALIAS_TYPE_PRIORITY = {
@@ -27,7 +27,7 @@ ALIAS_TYPE_PRIORITY = {
 class PreciseTerminologyMatcher:
     """Apply deterministic source-priority matching against terminology candidates."""
 
-    def __init__(self, repository: StandardizationRepository):
+    def __init__(self, repository: TerminologyRepository):
         self._repository = repository
 
     async def match(self, candidate: StandardizationCandidate) -> EntityMatch:

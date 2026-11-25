@@ -20,31 +20,34 @@ Phase 3 是 Lingua Seeker 管道的核心标准化阶段。它接收 Phase 2 输
 ```
 standardization/
 ├── __init__.py              # 包声明
-├── api.py                   # 公共门面：EntityStandardizationService、术语导入/嵌入构建
-├── core.py                  # StandardizationService：编排匹配与持久化
+├── api.py                   # API 表示层：摘要元数据、匹配序列化
+├── core.py                  # StandardizationService：纯匹配与投影逻辑
 ├── contracts.py             # 类型化数据契约（EntityType, EntityMatch, StandardizationResult 等）
 ├── adapters.py              # DualResultAdapter：Phase 2 输出 → Phase 3 输入
 ├── matchers.py              # HybridTerminologyMatcher：精确 + 语义混合匹配门面
 ├── normalizers.py           # 共享规范化工具（文本折叠、基因符号、疾病跨语言映射）
-├── repositories/            # 持久化协作者：terminology / entities / evidence / search_index + facade
-├── importers.py             # 术语导入解析器（HGNC、OMIM、HPO、ClinGen、ClinVar）
 ├── variant_id.py            # 未匹配变异的确定性内部 ID 生成
 ├── hgvs_normalizer.py       # HGVS 变异规范化与别名扩展
 ├── acmg_projection.py       # AcmgReadyProjector：标准化实体 → ACMG-ready 证据事实
-├── cross_lingual_disease.py # CrossLingualDiseaseResolver：非英文疾病名 token 模糊匹配
 ├── db_ready_gate/           # DB-ready 候选证据准入门控（纯函数 + 审计原因）
 ├── precise_match/           # 精确术语匹配子模块
 ├── similarity_match/        # 语义相似度匹配子模块
 └── context_pack/            # 目标安全上下文包子模块
 ```
 
+持久化适配器（仓储、导入器、索引器、跨语言解析器、事务型 runner）位于
+`src/dao/postgresql/standardization/`，通过 `src/ports/standardization.py`
+暴露给业务层。
+
 ## 核心组件
 
-### EntityStandardizationService（`api.py`）
-请求路径门面，负责组装依赖链（适配器→匹配器→仓储→服务），提供：
-- `standardize()` — 处理一次标准化运行
+### PostgresStandardizationRunner（`src/dao/postgresql/standardization/runner.py`）
+请求路径的组合根，负责组装依赖链（适配器→匹配器→仓储→服务）、拥有
+session 与事务，并提供：
+- `run_dual_result()` — 处理一次标准化运行并提交所有持久化副作用
+- `standardize()` — 以已在事务中的 inputs 处理一次运行
 
-### 术语导入（`importer.py`）
+### 术语导入（`src/dao/postgresql/standardization/importer.py`）
 离线运维入口，不参与请求路径：
 - `import_terminology()` — 导入本地术语源
 - `build_terminology_embeddings()` — 构建 pgvector 嵌入索引
@@ -117,15 +120,19 @@ Phase 2 DualEvidenceExtractionResult
 ## 使用方式
 
 ```python
-from src.pipeline.skills.standardization.api import EntityStandardizationService
-from src.pipeline.skills.standardization.importer import (
+from src.dao.postgresql.standardization.runner import PostgresStandardizationRunner
+from src.dao.postgresql.standardization.importer import (
     build_terminology_embeddings,
     import_terminology,
 )
 
-# 标准化一次运行的证据
-service = EntityStandardizationService(settings)
-result = await service.standardize(dual_extraction_result)
+# 标准化一次运行的证据（runner 拥有 session 与提交）
+runner = PostgresStandardizationRunner(cfg=settings, session_factory=session_factory)
+result = await runner.run_dual_result(
+    dual_extraction_result,
+    source_document_id=source_document_id,
+    processing_run_id=processing_run_id,
+)
 
 # 导入术语数据（离线运维入口）
 await import_terminology(cfg=settings, terminology_root=root, version="v1", sources=["hgnc", "omim", "hpo", "clingen", "clinvar"])

@@ -23,7 +23,7 @@ from src.core.tools.standardization.importers import (
     ImportEntry,
     ImportRelationship,
 )
-from src.core.tools.standardization.repositories import (
+from src.dao.postgresql.standardization.repositories import (
     StandardizationRepository,
 )
 
@@ -1196,7 +1196,7 @@ async def test_upsert_canonical_evidence_matches_existing_uuid_document_id() -> 
 
 
 def test_context_contamination_is_not_canonical_eligible() -> None:
-    from src.core.tools.standardization.repositories import (
+    from src.dao.postgresql.standardization.repositories import (
         CANONICAL_ELIGIBLE_STATUSES,
     )
 

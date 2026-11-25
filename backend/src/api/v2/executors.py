@@ -11,15 +11,13 @@ import asyncio
 import hashlib
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Awaitable, Callable
+from typing import TYPE_CHECKING, Any, Awaitable, Callable
 
 from pydantic import ValidationError
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-
     from src.core.config import Settings
-    from src.dao.neo4j.repository import Neo4jRepository
+    from src.ports.graph import GraphRepository
     from src.pipeline.skills.review.factory import ReviewServiceFactory
     from src.runs import RunStateStore
 
@@ -60,8 +58,8 @@ class AgentExecutor:
         self,
         cfg: "Settings",
         *,
-        session_factory: "async_sessionmaker[AsyncSession] | None" = None,
-        neo4j_repository: "Neo4jRepository | None" = None,
+        session_factory: Callable[[], Any] | None = None,
+        neo4j_repository: "GraphRepository | None" = None,
         review_factory: "ReviewServiceFactory | None" = None,
         state_store: "RunStateStore | None" = None,
     ):
@@ -244,19 +242,16 @@ class AgentExecutor:
         if self._session_factory is None:
             raise AgentJobFailure("standardization requires a database session", kind="transient")
 
+        from src.api.deps import get_standardization_runner
         from src.core.tools.extraction.contracts import DualEvidenceExtractionResult
-        from src.pipeline.skills.standardization.api import EntityStandardizationService
 
         dual = DualEvidenceExtractionResult.model_validate_json(Path(dual_path).read_text(encoding="utf-8"))
-        async with self._session_factory() as session:
-            service = EntityStandardizationService(self._cfg)
-            result = await service.run_dual_result(
-                session,
-                dual,
-                source_document_id=document_id or str(job.job_id),
-                processing_run_id=str(job.job_id),
-            )
-            await session.commit()
+        result = await get_standardization_runner().run_dual_result(
+            dual,
+            source_document_id=document_id or str(job.job_id),
+            processing_run_id=str(job.job_id),
+            owner_user_id=job.owner_user_id,
+        )
 
         return StandardizationResult(
             document_id=document_id,
@@ -324,15 +319,14 @@ class AgentExecutor:
         request = ReviewSearchRequest.model_validate(job.request_data)
         if self._session_factory is None:
             raise AgentJobFailure("review search requires a database session", kind="transient")
-        from src.dao.postgresql.review.search_service import SearchService
+        from src.api.deps import get_evidence_store
 
         page_size = min(request.offset + request.limit, _REVIEW_SEARCH_MAX_ROWS)
-        async with self._session_factory() as session:
-            response = await SearchService(session).search_evidence(
-                page=1,
-                page_size=page_size,
-                owner_user_id=job.owner_user_id,
-            )
+        response = await get_evidence_store().search_evidence(
+            page=1,
+            page_size=page_size,
+            owner_user_id=job.owner_user_id,
+        )
         needle = request.query.strip().lower()
         hits: list[ReviewEvidenceHit] = []
         for row in response.items:
@@ -362,7 +356,7 @@ class AgentExecutor:
         from src.utils.exceptions import RecordNotFoundError
 
         from src.core.tools.review.contracts import EvidencePatchRequest, ReviewStatus
-        from src.dao.postgresql.review.feedback_store import PostgresFeedbackStore
+        from src.api.deps import get_feedback_store
 
         if request.action == "correct" and not request.field_name:
             raise AgentJobFailure("review feedback 'correct' action requires field_name")
@@ -381,7 +375,7 @@ class AgentExecutor:
         }[request.action]
         patch = EvidencePatchRequest(fields=fields, change_reason=request.note, new_status=new_status)
         try:
-            result = await PostgresFeedbackStore(self._session_factory).patch_evidence(
+            result = await get_feedback_store().patch_evidence(
                 canonical_evidence_id=evidence_uuid,
                 patch=patch,
                 reviewer_id=job.owner_user_id,

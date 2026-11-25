@@ -12,33 +12,24 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from loguru import logger
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.pipeline.skills.review.chat_service import ChatService
 from src.core.tools.review.delta_audit_service import DeltaAuditService
-from src.dao.postgresql.review.chat_store import PostgresChatStore
-from src.dao.postgresql.review.feedback_store import PostgresFeedbackStore
+from src.pipeline.skills.review.chat_service import ChatService
 from src.pipeline.skills.review.providers import ChatLLMProvider
-from src.dao.postgresql.review.source_link_store import PostgresSourceLinkStore
 
 if TYPE_CHECKING:
-    from src.core.config import Settings
+    from src.ports.review import ReviewStores, SourceLinkStore
 
 
 class ReviewServiceFactory:
-    """Creates Phase 5 services with per-request sessions.
+    """Creates Phase 5 services from injected store factories.
 
-    Long-lived dependencies (cfg, providers) are injected at construction time.
-    Short-lived dependencies (AsyncSession) are passed per-method-call.
+    Persistence stores are injected by the composition root so this module
+    never imports database implementations.
     """
 
-    def __init__(
-        self,
-        cfg: Settings,
-        session_factory: async_sessionmaker[AsyncSession] | None = None,
-    ):
-        self._cfg = cfg
-        self._session_factory = session_factory
+    def __init__(self, *, stores: ReviewStores | None = None):
+        self._stores = stores
         self._delta_audit = DeltaAuditService()
         self._chat_provider = ChatLLMProvider()
 
@@ -46,18 +37,13 @@ class ReviewServiceFactory:
     def chat_provider(self) -> ChatLLMProvider:
         return self._chat_provider
 
-    def create_feedback_service(self, session: AsyncSession) -> "FeedbackService":
-        from src.dao.postgresql.review.feedback_store import FeedbackService
-
-        return FeedbackService(session)
-
     def create_chat_service(self) -> ChatService:
-        if self._session_factory is None:
-            raise RuntimeError("ChatService requires a configured session factory")
+        if self._stores is None:
+            raise RuntimeError("ChatService requires configured review stores")
         return ChatService(
-            store=PostgresChatStore(self._session_factory),
+            store=self._stores.chat_store(),
             chat_provider=self._chat_provider,
-            feedback_store=PostgresFeedbackStore(self._session_factory),
+            feedback_store=self._stores.feedback_store(),
         )
 
     def schedule_session_title_generation(
@@ -67,8 +53,8 @@ class ReviewServiceFactory:
         user_message: str,
     ) -> None:
         """Generate a chat title in a separate DB session without blocking chat."""
-        if self._session_factory is None:
-            logger.warning("Chat session title generation skipped: session factory is not configured")
+        if self._stores is None:
+            logger.warning("Chat session title generation skipped: review stores are not configured")
             return
 
         task = asyncio.create_task(
@@ -86,7 +72,7 @@ class ReviewServiceFactory:
         user_message: str,
     ) -> None:
         """Generate and persist a chat title after the message transaction commits."""
-        if self._session_factory is None:
+        if self._stores is None:
             return
 
         service = self.create_chat_service()
@@ -104,8 +90,10 @@ class ReviewServiceFactory:
         except Exception as exc:
             logger.warning("Chat session title generation background task failed: {}", exc)
 
-    def create_source_linker(self) -> "PostgresSourceLinkStore":
-        return PostgresSourceLinkStore(self._session_factory)
+    def create_source_linker(self) -> "SourceLinkStore":
+        if self._stores is None:
+            raise RuntimeError("Source linking requires configured review stores")
+        return self._stores.source_link_store()
 
     @property
     def delta_audit(self) -> DeltaAuditService:
