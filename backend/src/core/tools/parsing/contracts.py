@@ -127,6 +127,7 @@ class SavedFiles:
     output_dir: Path
     created_at: datetime
     images_dir: Path | None = None
+    failed_images: tuple[str, ...] = ()
 
 
 @dataclass

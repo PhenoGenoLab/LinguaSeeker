@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.core.tools.parsing.contracts import ParseResult
+from src.core.tools.parsing.contracts import MinerULocalBatchOptions, ParseResult
 from src.core.tools.parsing.exceptions import (
     MinerUAPIError,
     MinerUTimeoutError,
@@ -432,7 +432,10 @@ class TestMinerURemoteParser:
         with patch(
             "rust_io.net.mineru_upload_local_files", new_callable=AsyncMock, return_value=upload_response
         ) as upload:
-            result = await parser.upload_local_files([str(file_path)], data_ids=["paper-1"], model_version="vlm")
+            result = await parser.upload_local_files(
+                [str(file_path)],
+                options=MinerULocalBatchOptions(data_ids=["paper-1"], model_version="vlm"),
+            )
 
         assert result.batch_id == "batch-1"
         assert result.file_paths == [str(file_path)]
@@ -462,7 +465,7 @@ class TestMinerURemoteParser:
 
         with patch("rust_io.net.mineru_upload_local_files", new_callable=AsyncMock, return_value=upload_response):
             with pytest.raises(MinerUAPIError, match="file too large"):
-                await parser.upload_local_files([str(file_path)])
+                await parser.upload_local_files([str(file_path)], options=MinerULocalBatchOptions())
 
     @pytest.mark.asyncio
     async def test_poll_batch_result_returns_terminal_status(self, parser):
@@ -550,7 +553,7 @@ class TestMinerURemoteParser:
             patch("rust_io.net.mineru_batch_result", new_callable=AsyncMock, return_value=status_response),
             patch.object(parser, "_download_and_parse_zip", new_callable=AsyncMock, return_value=raw),
         ):
-            result = await parser.parse_local_files([str(first), str(second)])
+            result = await parser.parse_local_files([str(first), str(second)], options=MinerULocalBatchOptions())
 
         assert result.batch_id == "batch-1"
         assert list(result.results.keys()) == ["first.pdf"]

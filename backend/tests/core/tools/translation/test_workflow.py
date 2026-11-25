@@ -1,21 +1,37 @@
 import pytest
-from unittest.mock import MagicMock
+from types import SimpleNamespace
 
 from src.pipeline.skills.translation.config_context import TranslationConfigContext
 from src.pipeline.skills.translation.api import TranslationService
 
 
+def _translation_cfg(**overrides) -> SimpleNamespace:
+    """Build an object shaped like the real ``TranslationLLMConfig``."""
+    values = {
+        "model": "test-model",
+        "api_key": "test-key",
+        "api_keys": ["test-key"],
+        "all_api_keys": ["test-key"],
+        "base_url": "http://localhost:8001/v1",
+        "local_base_url": "",
+        "local_target_lang": "en",
+        "local_timeout": 30.0,
+        "remote_base_url": "",
+        "remote_api_key": "",
+        "remote_api_keys": [],
+        "remote_model": "",
+        "remote_all_api_keys": [],
+        "temperature": 0.0,
+        "max_tokens": 1024,
+        "timeout": 1,
+    }
+    values.update(overrides)
+    return SimpleNamespace(**values)
+
+
 @pytest.fixture
 def mock_config():
-    cfg = MagicMock()
-    cfg.llm.api_key = "test-key"
-    cfg.llm.all_api_keys = ["test-key"]
-    cfg.llm.base_url = "http://localhost:8001/v1"
-    cfg.llm.model = "test-model"
-    cfg.llm.temperature = 0.0
-    cfg.llm.max_tokens = 1024
-    cfg.llm.timeout = 1
-    return cfg
+    return SimpleNamespace(translation=_translation_cfg())
 
 
 @pytest.fixture
@@ -49,20 +65,15 @@ def test_service_has_router(mock_config):
 
 
 def test_config_context_from_config(mock_config):
-    mock_config.translation.model = "translation-model"
-    mock_config.translation.api_key = "translation-key"
-    mock_config.translation.all_api_keys = ["translation-key"]
-    mock_config.translation.base_url = "https://remote.example/v1"
-    mock_config.translation.local_base_url = "http://localhost:59062/api"
-    mock_config.translation.local_target_lang = "en"
-    mock_config.translation.local_timeout = 30
-    mock_config.translation.remote_base_url = ""
-    mock_config.translation.remote_model = ""
-    mock_config.translation.remote_api_key = ""
-    mock_config.translation.remote_all_api_keys = []
-    mock_config.translation.temperature = 0.0
-    mock_config.translation.max_tokens = 1024
-    mock_config.translation.timeout = 1
+    mock_config.translation = _translation_cfg(
+        model="translation-model",
+        api_key="translation-key",
+        all_api_keys=["translation-key"],
+        base_url="https://remote.example/v1",
+        local_base_url="http://localhost:59062/api",
+        local_target_lang="en",
+        local_timeout=30,
+    )
 
     ctx = TranslationConfigContext.from_config(mock_config)
     assert ctx.model == "translation-model"
@@ -73,21 +84,19 @@ def test_config_context_from_config(mock_config):
 
 
 def test_config_context_prefers_remote_override_for_fallback():
-    cfg = MagicMock()
-    cfg.translation.model = "local-default-model"
-    cfg.translation.api_key = "default-key"
-    cfg.translation.all_api_keys = ["default-key"]
-    cfg.translation.base_url = "https://default.example/v1"
-    cfg.translation.local_base_url = "http://localhost:59062/api"
-    cfg.translation.local_target_lang = "en"
-    cfg.translation.local_timeout = 30
-    cfg.translation.remote_base_url = "https://remote.example/v1"
-    cfg.translation.remote_model = "remote-model"
-    cfg.translation.remote_api_key = "remote-key"
-    cfg.translation.remote_all_api_keys = ["remote-key"]
-    cfg.translation.temperature = 0.0
-    cfg.translation.max_tokens = 1024
-    cfg.translation.timeout = 1
+    cfg = SimpleNamespace(
+        translation=_translation_cfg(
+            model="local-default-model",
+            api_key="default-key",
+            all_api_keys=["default-key"],
+            base_url="https://default.example/v1",
+            local_base_url="http://localhost:59062/api",
+            remote_base_url="https://remote.example/v1",
+            remote_model="remote-model",
+            remote_api_key="remote-key",
+            remote_all_api_keys=["remote-key"],
+        )
+    )
 
     ctx = TranslationConfigContext.from_config(cfg)
 
@@ -99,14 +108,7 @@ def test_config_context_prefers_remote_override_for_fallback():
 
 
 def test_config_context_from_config_default_temperature():
-    cfg = MagicMock()
-    cfg.llm.api_key = "key"
-    cfg.llm.all_api_keys = ["key"]
-    cfg.llm.base_url = "http://localhost"
-    cfg.llm.model = "model"
-    cfg.llm.max_tokens = 1024
-    cfg.llm.timeout = 1
-    del cfg.llm.temperature  # getattr will return default
+    cfg = SimpleNamespace(translation=_translation_cfg(temperature=None))
     ctx = TranslationConfigContext.from_config(cfg)
     assert ctx.temperature == 0.0
 
@@ -118,13 +120,7 @@ def test_translation_service_save(tmp_path):
     """TranslationService.save() persists result and returns output."""
     from src.core.tools.translation.contracts import TranslationResult
 
-    cfg = MagicMock()
-    cfg.llm.model = "test-model"
-    cfg.llm.api_key = "test-key"
-    cfg.llm.all_api_keys = ["test-key"]
-    cfg.llm.base_url = "http://localhost:8001"
-    cfg.llm.max_tokens = 1024
-    cfg.llm.timeout = 1
+    cfg = SimpleNamespace(translation=_translation_cfg())
 
     service = TranslationService(cfg=cfg)
 
@@ -160,13 +156,7 @@ def test_translation_service_save_with_images(tmp_path):
     img = src_dir / "fig1.png"
     img.write_bytes(b"fake_png")
 
-    cfg = MagicMock()
-    cfg.llm.model = "test-model"
-    cfg.llm.api_key = "test-key"
-    cfg.llm.all_api_keys = ["test-key"]
-    cfg.llm.base_url = "http://localhost:8001"
-    cfg.llm.max_tokens = 1024
-    cfg.llm.timeout = 1
+    cfg = SimpleNamespace(translation=_translation_cfg())
 
     service = TranslationService(cfg=cfg)
 

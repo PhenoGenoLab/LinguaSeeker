@@ -52,6 +52,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.core.config import get_config
 from src.pipeline.skills.translation.api import TranslationService
+from src.core.tools.parsing.contracts import MinerULocalBatchOptions
 from src.core.tools.parsing.remote.parser import MinerURemoteParser
 from src.pipeline.skills.review.chat_service import ChatService
 from src.core.tools.review.contracts import (
@@ -113,9 +114,11 @@ async def stage_parse(
     logger.info("[parse] {}", pdf_path.name)
     result = await parser.parse_local_files(
         file_paths=[str(pdf_path)],
-        model_version="vlm",
-        enable_formula=True,
-        enable_table=True,
+        options=MinerULocalBatchOptions(
+            model_version="vlm",
+            enable_formula=True,
+            enable_table=True,
+        ),
     )
 
     if result.failed_files:

@@ -17,6 +17,7 @@ mirror the TypeScript cases to guard against drift.
 
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import cmp_to_key
@@ -410,10 +411,22 @@ class VariantIndexData:
     candidates: VariantIndexCandidates
 
 
+def _base_key(text: str) -> str:
+    """Return a case- and accent-insensitive key for base-letter comparison."""
+    decomposed = unicodedata.normalize("NFD", text)
+    return "".join(ch for ch in decomposed if not unicodedata.combining(ch)).casefold()
+
+
 def _cmp_str(a: str, b: str) -> int:
-    """Case-insensitive, base-sensitivity comparison mirroring
-    ``a.localeCompare(b, undefined, { sensitivity: 'base' })``."""
-    return (a.lower() > b.lower()) - (a.lower() < b.lower())
+    """Compare two labels the way ``localeCompare(..., {sensitivity: 'base'})`` does.
+
+    Base sensitivity ignores case and accents. A locale-aware collator is not
+    available without adding ICU as a runtime dependency, so this normalises to
+    base letters and compares the result, which matches for the gene/variant/
+    disease labels this index sorts.
+    """
+    left, right = _base_key(a), _base_key(b)
+    return (left > right) - (left < right)
 
 
 def _sort_entries(

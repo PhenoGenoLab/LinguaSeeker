@@ -10,15 +10,20 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import TypeAdapter
 
 from src.api.auth import get_current_account
 from src.api.v2.contracts import (
     AcquisitionRequest,
     AgentJobAccepted,
+    AgentJobError,
     AgentJobResultResponse,
     AgentJobStatus,
+    AgentName,
+    AgentResult,
     FactChainRequest,
     GraphRetrievalRequest,
+    JobStatus,
     ParsingRequest,
     ReviewChatRequest,
     ReviewFeedbackRequest,
@@ -31,13 +36,15 @@ from src.dao.postgresql.agent_jobs import AgentJobRepository
 
 router = APIRouter()
 
-_AGENT_STATUS = {
+_AGENT_STATUS: dict[str, JobStatus] = {
     "queued": "queued",
     "running": "running",
     "succeeded": "succeeded",
     "failed": "failed",
     "cancelled": "cancelled",
 }
+
+_AGENT_RESULT_ADAPTER: TypeAdapter[AgentResult] = TypeAdapter(AgentResult)
 
 
 def _repository() -> AgentJobRepository:
@@ -46,7 +53,7 @@ def _repository() -> AgentJobRepository:
 
 async def _enqueue(
     *,
-    agent: str,
+    agent: AgentName,
     action: str | None,
     request_data: dict[str, object],
     account: AuthContext,
@@ -62,7 +69,7 @@ async def _enqueue(
     )
     return AgentJobAccepted(
         job_id=str(job_id),
-        agent=agent,  # type: ignore[arg-type]
+        agent=agent,
         status="queued",
         status_url=f"/api/v2/agents/jobs/{job_id}",
         result_url=f"/api/v2/agents/jobs/{job_id}/result",
@@ -196,18 +203,18 @@ async def get_job(
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
     error = None
     if job.error_message:
-        error = {
-            "kind": job.error_kind or "permanent",
-            "message": job.error_message,
-        }
+        error = AgentJobError(
+            kind=job.error_kind if job.error_kind in ("transient", "permanent") else "permanent",
+            message=job.error_message,
+        )
     return AgentJobStatus(
         job_id=job_id,
-        agent=job.agent,  # type: ignore[arg-type]
-        status=_AGENT_STATUS.get(job.status, "queued"),  # type: ignore[arg-type]
+        agent=AgentName(job.agent),
+        status=_AGENT_STATUS.get(job.status, "queued"),
         created_at=job.created_at.isoformat() if job.created_at else None,
         started_at=job.started_at.isoformat() if job.started_at else None,
         finished_at=job.finished_at.isoformat() if job.finished_at else None,
-        error=error,  # type: ignore[arg-type]
+        error=error,
         result_url=f"/api/v2/agents/jobs/{job_id}/result" if job.status == "succeeded" else None,
     )
 
@@ -227,4 +234,7 @@ async def get_job_result(
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
     if job.status != "succeeded" or job.result is None:
         raise HTTPException(status_code=409, detail=f"Job {job_id} has no result yet")
-    return AgentJobResultResponse(job_id=job_uuid, result=job.result)  # type: ignore[arg-type]
+    return AgentJobResultResponse(
+        job_id=job_uuid,
+        result=_AGENT_RESULT_ADAPTER.validate_python(job.result),
+    )

@@ -13,7 +13,12 @@ import re
 
 from loguru import logger
 
-from src.pipeline.skills.extraction.infrastructure.chunking import STRONG_TIER_INPUT_BUDGET_TOKENS, build_block_prompt_chunks
+from src.pipeline.skills.extraction.infrastructure.chunking import (
+    STRONG_TIER_INPUT_BUDGET_TOKENS,
+    append_chunk_label,
+    build_block_prompt_chunks,
+    split_chunk_results,
+)
 from src.core.tools.extraction.contracts import DocumentEvidenceMap, EvidenceItem, EvidenceStatus, TrackDocument
 from src.pipeline.skills.extraction.prompts import get_clinical_context_prompt
 from src.pipeline.skills.extraction.providers import EvidenceModelTier, AgentScopeEvidenceProvider
@@ -69,8 +74,9 @@ class ClinicalContextStage:
             prompt_overhead_tokens=overhead,
         )
         all_new: list[EvidenceItem] = []
+        failed_chunks = 0
         for chunk in chunks:
-            chunk_summary = self._chunk_summary(summary, chunk)
+            chunk_summary = append_chunk_label(summary, chunk)
             try:
                 prompt = get_clinical_context_prompt(
                     document_id=document.document_id,
@@ -87,12 +93,23 @@ class ClinicalContextStage:
                 )
                 if isinstance(items, list):
                     all_new.extend(items)
-            except Exception:
-                logger.warning(
-                    "clinical_context chunk {}/{} failed, skipping",
+            except Exception as exc:
+                failed_chunks += 1
+                logger.error(
+                    "clinical_context chunk {}/{} failed: {}",
                     chunk.index,
                     chunk.total,
+                    exc,
                 )
+        if failed_chunks:
+            # This supplement degrades by design; the catalog backfill marks the
+            # affected fields NOT_FOUND so the loss stays visible downstream.
+            logger.error(
+                "clinical_context: {}/{} chunks failed for document {}",
+                failed_chunks,
+                len(chunks),
+                document.document_id,
+            )
         return self._merge(all_new, current_items, document.formatted_text)
 
     async def run_async(
@@ -119,7 +136,7 @@ class ClinicalContextStage:
         sem = asyncio.Semaphore(_DEFAULT_CHUNK_CONCURRENCY)
 
         async def _extract_chunk(chunk):  # noqa: ANN001
-            chunk_summary = self._chunk_summary(summary, chunk)
+            chunk_summary = append_chunk_label(summary, chunk)
             prompt = get_clinical_context_prompt(
                 document_id=document.document_id,
                 track=document.track,
@@ -139,11 +156,17 @@ class ClinicalContextStage:
             *[_extract_chunk(c) for c in chunks],
             return_exceptions=True,
         )
+        outputs, failures = split_chunk_results(results, "clinical_context")
+        if failures:
+            logger.error(
+                "clinical_context: {}/{} chunks failed for document {}; "
+                "affected fields fall back to NOT_FOUND",
+                len(failures),
+                len(chunks),
+                document.document_id,
+            )
         all_new: list[EvidenceItem] = []
-        for i, result in enumerate(results):
-            if isinstance(result, BaseException):
-                logger.warning("clinical_context chunk {}/{} failed: {}", i + 1, len(chunks), result)
-                continue
+        for result in outputs:
             if isinstance(result, list):
                 all_new.extend(result)
         return self._merge(all_new, current_items, document.formatted_text)
@@ -151,11 +174,6 @@ class ClinicalContextStage:
     # ------------------------------------------------------------------
     # Merge logic
     # ------------------------------------------------------------------
-
-    # Counters for audit / evaluation diagnostics.
-    # Reset on each _merge call via instance state; class-level defaults
-    # allow external inspection after a run.
-    _rejection_reasons: dict[str, int] = {}
 
     @staticmethod
     def _normalize_ws(text: str) -> str:
@@ -240,7 +258,6 @@ class ClinicalContextStage:
 
         # Log rejection summary for evaluation audit
         if rejection_counts:
-            cls._rejection_reasons = rejection_counts
             for reason, count in sorted(rejection_counts.items()):
                 logger.debug("clinical_context rejected: {} ×{}", reason, count)
 
@@ -259,9 +276,3 @@ class ClinicalContextStage:
         if len(found) > 20:
             lines.append(f"... and {len(found) - 20} more")
         return "\n".join(lines)
-
-    @staticmethod
-    def _chunk_summary(summary: str, chunk: object) -> str:  # noqa: ANN001
-        if chunk.total > 1:
-            return f"{summary}\nCurrent document chunk: {chunk.index}/{chunk.total}"
-        return summary

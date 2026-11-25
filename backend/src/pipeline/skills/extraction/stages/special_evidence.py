@@ -7,7 +7,12 @@ import asyncio
 from loguru import logger
 from pydantic import ValidationError
 
-from src.pipeline.skills.extraction.infrastructure.chunking import STRONG_TIER_INPUT_BUDGET_TOKENS, build_block_prompt_chunks, merge_special_evidence_records
+from src.pipeline.skills.extraction.infrastructure.chunking import (
+    STRONG_TIER_INPUT_BUDGET_TOKENS,
+    build_block_prompt_chunks,
+    merge_special_evidence_records,
+    split_chunk_results,
+)
 from src.core.tools.extraction.contracts import EvidenceItem, SpecialEvidenceRecord, SpecialEvidenceResponse, TrackDocument
 from src.core.tools.extraction.core.normalization import RawSourceNormalizer
 from src.core.tools.extraction.core.special_evidence import SpecialEvidenceValidator
@@ -137,11 +142,17 @@ class SpecialEvidenceStage:
             *[_extract_chunk(c) for c in chunks],
             return_exceptions=True,
         )
+        outputs, failures = split_chunk_results(results, "special_evidence")
+        if failures:
+            logger.error(
+                "special_evidence: {}/{} chunks failed for document {}; "
+                "special records from those chunks are missing",
+                len(failures),
+                len(chunks),
+                document.document_id,
+            )
         all_records: list[SpecialEvidenceRecord] = []
-        for i, result in enumerate(results):
-            if isinstance(result, BaseException):
-                logger.error("special_evidence chunk {}/{} failed: {}", i + 1, len(chunks), result)
-                continue
+        for result in outputs:
             parsed = self._parse_records(result)
             parsed = self._raw_source_normalizer.normalize_special_records(parsed)
             all_records.extend(parsed)

@@ -383,8 +383,8 @@ def test_source_visible_gate_case_sensitive():
 # ---------------------------------------------------------------------------
 
 
-def test_rejection_counters_exposed():
-    """After _merge, rejection reasons should be accessible for audit."""
+def test_snippet_absent_from_document_is_rejected():
+    """A supplementary item whose snippet is not in the document must be dropped."""
     text = "The patient was a 4-year-old female."
     provider = MagicMock()
     provider.invoke_structured.return_value = [
@@ -404,11 +404,8 @@ def test_rejection_counters_exposed():
     ]
     stage = ClinicalContextStage(provider)
     result = stage.run(_doc_with_text(text), [], DocumentEvidenceMap(relevant=True))
+    # A snippet that is absent from the document text must be rejected.
     assert len(result) == 0
-    # Rejection counters should be set
-    assert hasattr(ClinicalContextStage, "_rejection_reasons")
-    counters = ClinicalContextStage._rejection_reasons
-    assert any("not_in_document" in k for k in counters), f"Expected not_in_document rejection, got: {counters}"
 
 
 # ---------------------------------------------------------------------------

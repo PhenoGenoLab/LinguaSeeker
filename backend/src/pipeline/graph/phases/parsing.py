@@ -6,7 +6,6 @@ Raises classified errors for orchestrator-level retry decisions.
 from __future__ import annotations
 
 import json
-from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -15,13 +14,12 @@ from loguru import logger
 
 from src.runs.contracts import (
     ParseOutput,
-    PhaseStatus,
-    PhaseStatusDetail,
     PipelineGraphState,
     PermanentPhaseError,
     build_retryable_errors,
     classify_phase_error,
 )
+from src.pipeline.graph.phases.lifecycle import begin_phase, complete_phase
 
 if TYPE_CHECKING:
     from src.pipeline.skills.parsing import ParsingSkill
@@ -55,10 +53,7 @@ class ParsingAdapter:
             state.pre_parsed_markdown is not None,
         )
 
-        state.parsing_status = PhaseStatusDetail(
-            status=PhaseStatus.RUNNING,
-            started_at=datetime.now().isoformat(),
-        )
+        begin_phase(state, 2)
 
         try:
             # Fast path: pre-parsed markdown bypasses MinerU entirely
@@ -100,9 +95,7 @@ class ParsingAdapter:
                 images_dir=str(first_file.images_dir) if first_file.images_dir else None,
             )
 
-            state.parsing_status = PhaseStatusDetail.complete(
-                started_at=state.parsing_status.started_at,
-            )
+            complete_phase(state, 2)
 
             logger.info("Phase 2 completed: run={}", state.processing_run_id)
             return state
@@ -115,8 +108,9 @@ class ParsingAdapter:
         state: PipelineGraphState,
     ) -> PipelineGraphState:
         """Construct ParseOutput from pre-parsed markdown, skipping MinerU."""
-        assert state.pre_parsed_markdown is not None  # noqa: S101
         markdown_text = state.pre_parsed_markdown
+        if markdown_text is None:
+            raise PermanentPhaseError("pre-parsed markdown missing from state", phase=2)
 
         backend_root = Path(__file__).resolve().parents[5]
         output_dir = backend_root / "data" / "pipeline" / state.processing_run_id / "parsing"
@@ -163,10 +157,7 @@ class ParsingAdapter:
             images_dir=None,
         )
 
-        state.parsing_status = PhaseStatusDetail.complete(
-            started_at=state.parsing_status.started_at,
-            summary={"source": "pre_parsed_markdown"},
-        )
+        complete_phase(state, 2, summary={"source": "pre_parsed_markdown"})
 
         logger.info(
             "Phase 2 completed (pre-parsed): run={}, {} chars",

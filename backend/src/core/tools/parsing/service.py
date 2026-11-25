@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +15,7 @@ from loguru import logger
 from .contracts import (
     DedupResult,
     MinerUBatchStatus,
+    MinerULocalBatchOptions,
     MinerULocalBatchParseResult,
     MinerULocalBatchSaveResult,
     ParseAndSaveResult,
@@ -41,18 +44,24 @@ class ParseDocumentService:
         """
         return await self._orchestrator.parse(pdf_path)
 
-    async def parse_local_files(self, file_paths: list[str], **kwargs: object) -> MinerULocalBatchParseResult:
+    async def parse_local_files(
+        self,
+        file_paths: list[str],
+        *,
+        options: MinerULocalBatchOptions | None = None,
+    ) -> MinerULocalBatchParseResult:
         """Parse local files through a MinerU remote batch upload workflow."""
         parser = getattr(self._orchestrator, "parse_local_files", None)
         if parser is None:
             raise AttributeError("Configured parser does not support parse_local_files")
-        return await parser(file_paths, **kwargs)
+        return await parser(file_paths, options=options or MinerULocalBatchOptions())
 
     async def parse_local_files_and_save(
         self,
         file_paths: list[str],
         output_dir: str,
-        **kwargs: object,
+        *,
+        options: MinerULocalBatchOptions | None = None,
     ) -> MinerULocalBatchSaveResult:
         """Parse local files as a MinerU batch and save each completed result."""
         from src.core.config import get_config
@@ -61,7 +70,7 @@ class ParseDocumentService:
         if cfg.mcp.mineru.enabled is True:
             return await self._parse_local_files_via_mcp(file_paths, output_dir)
 
-        batch = await self.parse_local_files(file_paths, **kwargs)
+        batch = await self.parse_local_files(file_paths, options=options)
         saved = {}
         for name, result in batch.results.items():
             saved[name] = await self.save(result, output_dir)
@@ -141,19 +150,27 @@ class ParseDocumentService:
         meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
 
         images_dir: Path | None = None
+        failed_images: list[str] = []
         if result.images:
             images_dir = out / "images"
             images_dir.mkdir(parents=True, exist_ok=True)
             for name, data in result.images.items():
                 try:
                     if isinstance(data, str):
-                        import base64
-
                         data = base64.b64decode(data.split(",", 1)[-1])
                     img_path = images_dir / Path(name).name
                     img_path.write_bytes(data)
-                except Exception as exc:
-                    logger.warning(f"Failed to decode image {name}: {exc}")
+                except (binascii.Error, OSError) as exc:
+                    failed_images.append(name)
+                    logger.error("Failed to write image {}: {}", name, exc)
+            if failed_images:
+                logger.error(
+                    "Parse output {} is missing {}/{} images: {}",
+                    out,
+                    len(failed_images),
+                    len(result.images),
+                    ", ".join(failed_images),
+                )
 
         return SavedFiles(
             md_path=md_path,
@@ -161,6 +178,7 @@ class ParseDocumentService:
             output_dir=out,
             created_at=created_at,
             images_dir=images_dir,
+            failed_images=tuple(failed_images),
         )
 
     async def dedup(

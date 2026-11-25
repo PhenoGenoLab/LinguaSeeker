@@ -194,7 +194,7 @@ ChatActionIntent = Literal[
     "start-pipeline",  # deprecated: kept for back-compat with persisted messages
     "upload-pdf",  # deprecated: kept for back-compat with persisted messages
     "search-evidence",
-    "classify-variant",
+    "classify-variant",  # deprecated: no executor; kept so persisted messages still validate
     "interpret-evidence",
     "review-changes",
     "check-pipeline-status",
@@ -247,7 +247,7 @@ class EvidencePatchRequest(BaseModel):
 
     @field_validator("fields")
     @classmethod
-    def validate_fields(cls, v: dict[str, str | list[str] | None]) -> dict:
+    def validate_fields(cls, v: dict[str, str | list[str] | None]) -> dict[str, str | list[str] | None]:
         """Ensure all field names are in DIFF_FIELDS."""
         invalid = set(v.keys()) - set(EvidenceCardPayload.DIFF_FIELDS)
         if invalid:

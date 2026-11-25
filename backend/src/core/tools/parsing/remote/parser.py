@@ -132,34 +132,9 @@ class MinerURemoteParser(ParserStrategy):
         self,
         file_paths: list[str],
         *,
-        model_version: MinerUModelVersion = "vlm",
-        enable_formula: bool | None = True,
-        enable_table: bool | None = True,
-        language: str | None = "ch",
-        data_ids: list[str] | None = None,
-        is_ocr: bool | None = None,
-        page_ranges: str | None = None,
-        callback: str | None = None,
-        seed: str | None = None,
-        extra_formats: list[MinerUExtraFormat] | None = None,
-        timeout_ms: int | None = None,
-        proxy: str | None = None,
+        options: MinerULocalBatchOptions,
     ) -> MinerULocalBatchUploadResult:
         """Upload local files through MinerU batch upload URLs."""
-        options = MinerULocalBatchOptions(
-            model_version=model_version,
-            enable_formula=enable_formula,
-            enable_table=enable_table,
-            language=language,
-            data_ids=data_ids,
-            is_ocr=is_ocr,
-            page_ranges=page_ranges,
-            callback=callback,
-            seed=seed,
-            extra_formats=extra_formats,
-            timeout_ms=timeout_ms,
-            proxy=proxy,
-        )
         self._validate_local_batch_inputs(file_paths, options.data_ids)
 
         if net_io is None:
@@ -243,36 +218,15 @@ class MinerURemoteParser(ParserStrategy):
         self,
         file_paths: list[str],
         *,
-        model_version: MinerUModelVersion = "vlm",
-        enable_formula: bool | None = True,
-        enable_table: bool | None = True,
-        language: str | None = "ch",
-        data_ids: list[str] | None = None,
-        is_ocr: bool | None = None,
-        page_ranges: str | None = None,
-        callback: str | None = None,
-        seed: str | None = None,
-        extra_formats: list[MinerUExtraFormat] | None = None,
-        timeout_ms: int | None = None,
-        proxy: str | None = None,
+        options: MinerULocalBatchOptions,
     ) -> MinerULocalBatchParseResult:
         """Upload local files, wait for MinerU completion, and parse completed zips."""
-        upload = await self.upload_local_files(
-            file_paths,
-            model_version=model_version,
-            enable_formula=enable_formula,
-            enable_table=enable_table,
-            language=language,
-            data_ids=data_ids,
-            is_ocr=is_ocr,
-            page_ranges=page_ranges,
-            callback=callback,
-            seed=seed,
-            extra_formats=extra_formats,
-            timeout_ms=timeout_ms,
-            proxy=proxy,
+        upload = await self.upload_local_files(file_paths, options=options)
+        status = await self.poll_batch_until_terminal(
+            upload.batch_id,
+            timeout_ms=options.timeout_ms,
+            proxy=options.proxy,
         )
-        status = await self.poll_batch_until_terminal(upload.batch_id, timeout_ms=timeout_ms, proxy=proxy)
 
         parsed: dict[str, ParseResult] = {}
         failures: list[str] = []

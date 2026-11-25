@@ -11,10 +11,17 @@ import asyncio
 import hashlib
 import uuid
 from pathlib import Path
-from typing import Any, Awaitable, Callable
+from typing import TYPE_CHECKING, Awaitable, Callable
 
 from pydantic import ValidationError
 from sqlalchemy import select
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+    from src.core.config import Settings
+    from src.dao.neo4j.repository import Neo4jRepository
+    from src.runs.review_factory import ReviewServiceFactory
 
 from src.api.v2.contracts import (
     AcquiredDocument,
@@ -44,16 +51,19 @@ from src.dao.postgresql.agent_jobs import AgentJobRow
 from src.runs.agent_worker import AgentJobFailure
 
 
+_REVIEW_SEARCH_MAX_ROWS = 2_000
+
+
 class AgentExecutor:
     """Dispatch a claimed agent job to its feature service."""
 
     def __init__(
         self,
-        cfg: Any,
+        cfg: "Settings",
         *,
-        session_factory: Any = None,
-        neo4j_repository: Any = None,
-        review_factory: Any = None,
+        session_factory: "async_sessionmaker[AsyncSession] | None" = None,
+        neo4j_repository: "Neo4jRepository | None" = None,
+        review_factory: "ReviewServiceFactory | None" = None,
     ):
         self._cfg = cfg
         self._session_factory = session_factory
@@ -315,8 +325,13 @@ class AgentExecutor:
             raise AgentJobFailure("review search requires a database session", kind="transient")
         from src.core.tools.review.search_service import SearchService
 
+        page_size = min(request.offset + request.limit, _REVIEW_SEARCH_MAX_ROWS)
         async with self._session_factory() as session:
-            response = await SearchService(session).search_evidence(page=1, page_size=200)
+            response = await SearchService(session).search_evidence(
+                page=1,
+                page_size=page_size,
+                owner_user_id=job.owner_user_id,
+            )
         needle = request.query.strip().lower()
         hits: list[ReviewEvidenceHit] = []
         for row in response.items:
@@ -329,7 +344,7 @@ class AgentExecutor:
                 continue
             hits.append(
                 ReviewEvidenceHit(
-                    evidence_id=row.group_id,
+                    evidence_id=str(row.canonical_evidence_id) if row.canonical_evidence_id else None,
                     document_id=str(row.source_document_id),
                     group_id=row.group_id,
                     snippet=text or None,
@@ -343,8 +358,17 @@ class AgentExecutor:
         request = ReviewFeedbackRequest.model_validate(job.request_data)
         if self._session_factory is None:
             raise AgentJobFailure("review feedback requires a database session", kind="transient")
+        from sqlalchemy.exc import NoResultFound
+
         from src.core.tools.review.contracts import EvidencePatchRequest, ReviewStatus
         from src.core.tools.review.feedback_service import FeedbackService
+
+        if request.action == "correct" and not request.field_name:
+            raise AgentJobFailure("review feedback 'correct' action requires field_name")
+        try:
+            evidence_uuid = uuid.UUID(request.evidence_id)
+        except ValueError as exc:
+            raise AgentJobFailure(f"invalid evidence_id: {request.evidence_id}") from exc
 
         fields: dict[str, str | None] = {}
         if request.action == "correct":
@@ -356,10 +380,15 @@ class AgentExecutor:
         }[request.action]
         patch = EvidencePatchRequest(fields=fields, change_reason=request.note, new_status=new_status)
         async with self._session_factory() as session:
-            result = await FeedbackService(session).patch_evidence(
-                canonical_evidence_id=uuid.UUID(request.evidence_id),
-                patch=patch,
-            )
+            try:
+                result = await FeedbackService(session).patch_evidence(
+                    canonical_evidence_id=evidence_uuid,
+                    patch=patch,
+                    reviewer_id=job.owner_user_id,
+                    owner_user_id=job.owner_user_id,
+                )
+            except NoResultFound as exc:
+                raise AgentJobFailure(f"evidence {request.evidence_id} not found for this account") from exc
             await session.commit()
         return ReviewFeedbackResult(
             evidence_id=request.evidence_id,
@@ -373,20 +402,30 @@ class AgentExecutor:
         if self._review_factory is None:
             raise AgentJobFailure("review chat requires the chat LLM provider", kind="transient")
 
+        try:
+            session_id = uuid.UUID(request.session_id) if request.session_id else None
+        except ValueError as exc:
+            raise AgentJobFailure(f"invalid session_id: {request.session_id}") from exc
+
         async with self._session_factory() as session:
             service = self._review_factory.create_chat_service(session)
-            session_id = uuid.UUID(request.session_id) if request.session_id else None
             if session_id is None:
-                created = await service.create_session(processing_run_id=None)
+                created = await service.create_session(
+                    processing_run_id=None,
+                    user_id=job.owner_user_id,
+                )
                 session_id = created.chat_session_id
             await service.append_message(
                 session_id=session_id,
                 role="user",
                 content=request.message,
+                owner_user_id=job.owner_user_id,
             )
             reply = await service.generate_reply(
                 session_id=session_id,
                 user_message=request.message,
+                owner_user_id=job.owner_user_id,
+                reviewer_id=job.owner_user_id,
             )
             if not reply:
                 raise AgentJobFailure("chat provider returned an empty reply", kind="transient")
@@ -394,6 +433,7 @@ class AgentExecutor:
                 session_id=session_id,
                 role="assistant",
                 content=reply,
+                owner_user_id=job.owner_user_id,
             )
             await session.commit()
         return ReviewChatResult(

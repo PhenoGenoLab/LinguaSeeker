@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
+
+from loguru import logger
 
 from src.core.tools.extraction.contracts import ContentBlock, DocumentEvidenceMap, EvidenceItem, EvidenceStatus, SpecialEvidenceRecord, TrackDocument
 from src.pipeline.skills.extraction.prompts import block_readable_text, format_block_prompt_entry
@@ -23,6 +26,33 @@ class EvidencePromptChunk:
     total: int
     text: str
     block_indices: tuple[int, ...] = ()
+
+
+def append_chunk_label(summary: str, chunk: EvidencePromptChunk) -> str:
+    """Return a prompt summary labelled with the chunk's document position."""
+    if chunk.total > 1:
+        return f"{summary}\nCurrent document chunk: {chunk.index}/{chunk.total}"
+    return summary
+
+
+def split_chunk_results(
+    results: Sequence[Any],
+    stage: str,
+) -> tuple[list[Any], list[BaseException]]:
+    """Split ``gather(..., return_exceptions=True)`` output and log every failure.
+
+    Returns the successful results in chunk order plus the failures, so each
+    stage can apply its own escalation policy (fail-fast or degrade).
+    """
+    successes: list[Any] = []
+    failures: list[BaseException] = []
+    for index, result in enumerate(results, start=1):
+        if isinstance(result, BaseException):
+            logger.error("{} chunk {}/{} failed: {}", stage, index, len(results), result)
+            failures.append(result)
+            continue
+        successes.append(result)
+    return successes, failures
 
 
 def build_text_prompt_chunks(

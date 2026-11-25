@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import Any
 
 import httpx
 from loguru import logger
 
 from .base import ParserStrategy
-from .contracts import MinerULocalBatchParseResult, ParseResult
+from .contracts import MinerULocalBatchOptions, MinerULocalBatchParseResult, ParseResult
 from .exceptions import MinerUAPIError, ParserExhaustedError
 from src.utils.ssrf import validate_url_safe
 
@@ -120,7 +119,8 @@ class DocumentParseOrchestrator(ParserStrategy):
     async def parse_local_files(
         self,
         file_paths: list[str],
-        **kwargs: Any,
+        *,
+        options: MinerULocalBatchOptions,
     ) -> MinerULocalBatchParseResult:
         """Delegate batch local-file parsing to the remote MinerU parser.
 
@@ -129,4 +129,4 @@ class DocumentParseOrchestrator(ParserStrategy):
         parser = getattr(self._remote, "parse_local_files", None)
         if parser is None:
             raise AttributeError(f"Remote parser '{self._remote.name}' does not support parse_local_files")
-        return await parser(file_paths, **kwargs)
+        return await parser(file_paths, options=options)

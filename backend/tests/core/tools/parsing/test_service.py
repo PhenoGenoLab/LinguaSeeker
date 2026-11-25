@@ -9,6 +9,7 @@ import pytest
 
 from src.core.tools.parsing.contracts import (
     DocumentMetadata,
+    MinerULocalBatchOptions,
     PageContent,
     ParseResult,
 )
@@ -185,10 +186,16 @@ class TestParseDocumentService:
         expected = MagicMock()
         mock_orchestrator.parse_local_files = AsyncMock(return_value=expected)
 
-        result = await service.parse_local_files([str(file_path)], data_ids=["paper-1"])
+        result = await service.parse_local_files(
+            [str(file_path)],
+            options=MinerULocalBatchOptions(data_ids=["paper-1"]),
+        )
 
         assert result is expected
-        mock_orchestrator.parse_local_files.assert_awaited_once_with([str(file_path)], data_ids=["paper-1"])
+        mock_orchestrator.parse_local_files.assert_awaited_once_with(
+            [str(file_path)],
+            options=MinerULocalBatchOptions(data_ids=["paper-1"]),
+        )
 
     @pytest.mark.asyncio
     async def test_parse_local_files_requires_orchestrator_support(self, service, mock_orchestrator, tmp_path):

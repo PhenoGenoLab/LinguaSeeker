@@ -488,7 +488,7 @@ class ReviewChatRequest(BaseModel):
 class ReviewEvidenceHit(BaseModel):
     """One search hit."""
 
-    evidence_id: str
+    evidence_id: str | None = None
     document_id: str | None = None
     group_id: str | None = None
     field_name: str | None = None

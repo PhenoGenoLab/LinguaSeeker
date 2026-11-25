@@ -17,6 +17,7 @@ from uuid import UUID
 from loguru import logger
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.runs.contracts import (
@@ -246,10 +247,13 @@ async def _reset_phase_rerun_artifacts(
             await session.execute(
                 delete(frontend_search_index).where(frontend_search_index.c.canonical_evidence_id.in_(canonical_ids))
             )
-        except Exception:
-            logger.debug(
-                "Skipping frontend_search_index cleanup during phase rerun reset",
-                exc_info=True,
+        except ProgrammingError:
+            # Older deployments may lack the optional search index table. Any
+            # other database error must surface: silently keeping stale index
+            # rows would make the rerun return deleted evidence.
+            logger.warning(
+                "frontend_search_index missing; skipped cleanup for run={}",
+                run_id,
             )
 
         run_item_ids = select(RunEvidenceItem.run_evidence_item_id).where(RunEvidenceItem.processing_run_id == run_id)

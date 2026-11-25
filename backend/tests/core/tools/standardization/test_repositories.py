@@ -69,11 +69,22 @@ class FakeSession:
         return None
 
 
+class _FakeDialect:
+    name = "postgresql"
+
+
+class _FakeBind:
+    dialect = _FakeDialect()
+
+
 class BulkSession:
     """Async session stub that exercises the repository bulk upsert path."""
 
     def __init__(self) -> None:
         self.statements: list[object] = []
+
+    def get_bind(self) -> _FakeBind:
+        return _FakeBind()
 
     async def execute(self, statement):
         self.statements.append(statement)

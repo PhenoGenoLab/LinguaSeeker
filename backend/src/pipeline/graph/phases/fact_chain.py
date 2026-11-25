@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime
 from pathlib import Path
 
 import aiofiles
@@ -25,14 +24,13 @@ from loguru import logger
 
 from src.runs.contracts import (
     PermanentPhaseError,
-    PhaseStatus,
-    PhaseStatusDetail,
     PipelineGraphState,
     SkipStandardizationReason,
     TranslationExtractionOutput,
     build_retryable_errors,
     classify_phase_error,
 )
+from src.pipeline.graph.phases.lifecycle import begin_phase, complete_phase
 from src.core.tools.translation.translate.language_detector import detect_language
 from src.pipeline.skills.extraction.service import SourceFactChainService
 from src.core.shared.tools.fact_chain.contracts import ChainRun, sha256_text
@@ -96,10 +94,7 @@ class FactChainAdapter:
         persisted run and call the provider again.
         """
         logger.info("Phase 3 started: run={}", state.processing_run_id)
-        state.fact_chain_status = PhaseStatusDetail(
-            status=PhaseStatus.RUNNING,
-            started_at=datetime.now().isoformat(),
-        )
+        begin_phase(state, 3)
 
         try:
             if state.parsing_output is None:
@@ -215,8 +210,9 @@ class FactChainAdapter:
                 source_facts_path=str(doc_dir / "facts.jsonl"),
                 chain_run_path=str(chain_run_path),
             )
-            state.fact_chain_status = PhaseStatusDetail.complete(
-                started_at=state.fact_chain_status.started_at,
+            complete_phase(
+                state,
+                3,
                 summary={
                     "route": "source_fact_chain",
                     "windows": len(run.windows),

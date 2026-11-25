@@ -51,9 +51,13 @@ from src.core.tools.review.variant_aggregation import (
 )
 
 # Page size used when fetching the full evidence-group corpus for server-side
-# variant aggregation. The corpus is small (~10^3 groups), so a single pass is
-# cheaper than paging; the value just needs to exceed the group count.
-_VARIANT_AGGREGATE_PAGE_SIZE = 1_000_000
+# variant aggregation. This cap bounds a single request's memory; crossing it
+# means aggregation must move into SQL (GROUP BY on the variant slug).
+_VARIANT_AGGREGATE_MAX_ROWS = 50_000
+
+
+class VariantAggregationLimitError(RuntimeError):
+    """Raised when the evidence corpus exceeds the in-memory aggregation cap."""
 
 
 class SearchService:
@@ -201,9 +205,14 @@ class SearchService:
         # client-side behaviour.
         all_groups = await self.search_evidence(
             page=1,
-            page_size=_VARIANT_AGGREGATE_PAGE_SIZE,
+            page_size=_VARIANT_AGGREGATE_MAX_ROWS,
             owner_user_id=owner_user_id,
         )
+        if all_groups.total > _VARIANT_AGGREGATE_MAX_ROWS:
+            raise VariantAggregationLimitError(
+                f"Variant aggregation requires SQL pushdown: {all_groups.total} groups "
+                f"exceed the {_VARIANT_AGGREGATE_MAX_ROWS}-row in-memory cap"
+            )
 
         entries = aggregate_variants(all_groups.items)
         filters = _VariantIndexFilters(

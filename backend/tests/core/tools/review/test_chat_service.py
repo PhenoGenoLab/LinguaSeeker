@@ -29,7 +29,7 @@ def test_graph_qa_capability_is_read_only_in_prompt():
         CHAT_AGENT_CAPABILITIES_PROMPT,
     )
 
-    assert "7. graph-qa" in CHAT_AGENT_CAPABILITIES_PROMPT
+    assert "graph-qa — answer a knowledge question" in CHAT_AGENT_CAPABILITIES_PROMPT
     assert "EXCEPTION (graph-qa)" in CHAT_AGENT_CAPABILITIES_PROMPT
     assert "READ-ONLY" in CHAT_AGENT_CAPABILITIES_PROMPT
 

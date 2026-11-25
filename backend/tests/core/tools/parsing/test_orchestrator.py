@@ -10,6 +10,7 @@ import pytest
 from src.core.tools.parsing.base import ParserStrategy
 from src.core.tools.parsing.contracts import (
     DocumentMetadata,
+    MinerULocalBatchOptions,
     PageContent,
     ParseResult,
 )
@@ -119,10 +120,13 @@ async def test_parse_local_files_delegates_to_remote(mock_remote, mock_local):
     mock_remote.parse_local_files = AsyncMock(return_value=expected)
 
     orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
-    result = await orchestrator.parse_local_files(["/tmp/a.pdf"], data_ids=["a"])
+    result = await orchestrator.parse_local_files(["/tmp/a.pdf"], options=MinerULocalBatchOptions(data_ids=["a"]))
 
     assert result is expected
-    mock_remote.parse_local_files.assert_awaited_once_with(["/tmp/a.pdf"], data_ids=["a"])
+    mock_remote.parse_local_files.assert_awaited_once_with(
+        ["/tmp/a.pdf"],
+        options=MinerULocalBatchOptions(data_ids=["a"]),
+    )
 
 
 @pytest.mark.asyncio
@@ -134,7 +138,7 @@ async def test_parse_local_files_raises_if_remote_lacks_method(mock_remote, mock
     orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
 
     with pytest.raises(AttributeError, match="does not support parse_local_files"):
-        await orchestrator.parse_local_files(["/tmp/a.pdf"])
+        await orchestrator.parse_local_files(["/tmp/a.pdf"], options=MinerULocalBatchOptions())
 
 
 class _FakeStreamCM:

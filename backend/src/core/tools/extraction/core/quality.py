@@ -148,14 +148,7 @@ class QualityValidator:
         chains = chains or []
         special_records = special_records or []
         issues: list[QualityIssue] = []
-        human_review_reasons: list[str] = []
-        human_review_by_category: dict[str, list[str]] = {
-            "source_grounding": [],
-            "table_grounding": [],
-            "scoring_gate": [],
-            "contradictions": [],
-            "workflow": [],
-        }
+        review_notes: list[tuple[str, str]] = []
         found_count = 0
         not_found_count = 0
         source_invalid_count = 0
@@ -170,8 +163,7 @@ class QualityValidator:
                 if item.source is None:
                     if item.field_id == "B.case_count":
                         reason = f"{item.field_id} is inferred from document structure and has no traceable source"
-                        human_review_by_category["workflow"].append(reason)
-                        human_review_reasons.append(reason)
+                        review_notes.append(("workflow", reason))
                     else:
                         issues.append(
                             QualityIssue(
@@ -184,25 +176,21 @@ class QualityValidator:
                 elif item.source.source_precision == SourcePrecision.AMBIGUOUS:
                     ambiguous_source_count += 1
                     reason = f"{item.field_id} has ambiguous source grounding"
-                    human_review_reasons.append(reason)
-                    human_review_by_category["source_grounding"].append(reason)
+                    review_notes.append(("source_grounding", reason))
             elif item.status == EvidenceStatus.NOT_FOUND:
                 not_found_count += 1
             elif item.status == EvidenceStatus.SOURCE_INVALID:
                 source_invalid_count += 1
                 reason = f"{item.field_id} has invalid source grounding"
-                human_review_reasons.append(reason)
-                human_review_by_category["source_grounding"].append(reason)
+                review_notes.append(("source_grounding", reason))
             elif item.status == EvidenceStatus.OCR_GAP:
                 ocr_gap_count += 1
                 reason = f"{item.field_id} may require OCR/image review"
-                human_review_reasons.append(reason)
-                human_review_by_category["source_grounding"].append(reason)
+                review_notes.append(("source_grounding", reason))
             elif item.status == EvidenceStatus.TABLE_UNGROUNDED:
                 table_ungrounded_count += 1
                 reason = f"{item.field_id} may require table-path grounding"
-                human_review_reasons.append(reason)
-                human_review_by_category["table_grounding"].append(reason)
+                review_notes.append(("table_grounding", reason))
             elif item.status == EvidenceStatus.CONTEXT_CONTAMINATION:
                 context_contamination_count += 1
                 reason = f"{item.field_id} rejected as target context contamination: {item.notes}"
@@ -214,15 +202,8 @@ class QualityValidator:
                         severity="error",
                     )
                 )
-                human_review_reasons.append(reason)
-                human_review_by_category["workflow"].append(reason)
-        missing_required = self._required - {
-            item.field_id
-            for item in items
-            if item.status == EvidenceStatus.FOUND
-            and item.source is not None
-            and item.source.source_precision != SourcePrecision.AMBIGUOUS
-        }
+                review_notes.append(("workflow", reason))
+        missing_required = self._ungrounded_required(items)
         for field_id in missing_required:
             issues.append(
                 QualityIssue(
@@ -233,8 +214,7 @@ class QualityValidator:
                 )
             )
             reason = f"{field_id} is required for scoring but is not grounded"
-            human_review_reasons.append(reason)
-            human_review_by_category["scoring_gate"].append(reason)
+            review_notes.append(("scoring_gate", reason))
 
         for contradiction in contradictions:
             issues.append(
@@ -246,61 +226,37 @@ class QualityValidator:
                 )
             )
             reason = f"Contradiction requires review: {contradiction}"
-            human_review_reasons.append(reason)
-            human_review_by_category["contradictions"].append(reason)
+            review_notes.append(("contradictions", reason))
 
         for record in special_records:
             if record.raw_source is not None and record.source is None:
                 reason = f"Special evidence {record.record_type} requires source grounding review"
-                human_review_reasons.append(reason)
-                human_review_by_category["source_grounding"].append(reason)
+                review_notes.append(("source_grounding", reason))
 
-        passed = not any(i.severity == "error" for i in issues)
-        full_chains = [chain for chain in chains if chain.chain_level == "full"]
-        incomplete_chains = [chain for chain in chains if chain.chain_level in {"partial", "singleton"}]
-        full_chain_group_ids = {chain.chain_id for chain in full_chains}
-        full_chain_items = [item for item in items if item.group_id in full_chain_group_ids]
-        full_chain_missing_required = self._required - {
-            item.field_id
-            for item in full_chain_items
-            if item.status == EvidenceStatus.FOUND
-            and item.source is not None
-            and item.source.source_precision != SourcePrecision.AMBIGUOUS
-        }
-
-        scorable = len(full_chains) > 0 and len(full_chain_missing_required) == 0
-        if any(
-            item.status
-            in {
-                EvidenceStatus.SOURCE_INVALID,
-                EvidenceStatus.OCR_GAP,
-                EvidenceStatus.TABLE_UNGROUNDED,
-                EvidenceStatus.CONTEXT_CONTAMINATION,
-            }
-            for item in full_chain_items
-        ):
-            scorable = False
-        if any(
-            item.status == EvidenceStatus.FOUND
-            and item.source is not None
-            and item.source.source_precision == SourcePrecision.AMBIGUOUS
-            for item in full_chain_items
-        ):
-            scorable = False
+        passed = not any(issue.severity == "error" for issue in issues)
+        full_chains, incomplete_chains, scorable = self._score_gate(items, chains)
         score_gate_passed = passed and scorable
 
         if incomplete_chains:
             reason = "Incomplete evidence chain requires review"
-            human_review_reasons.append(reason)
-            human_review_by_category["workflow"].append(reason)
+            review_notes.append(("workflow", reason))
         if passed and items and not full_chains and evidence_chain_count == 0:
             reason = "No full evidence chain was produced"
-            human_review_reasons.append(reason)
-            human_review_by_category["workflow"].append(reason)
+            review_notes.append(("workflow", reason))
         if passed and scorable and not chains and evidence_chain_count == 0:
             reason = "No grounded evidence chain was produced"
-            human_review_reasons.append(reason)
-            human_review_by_category["workflow"].append(reason)
+            review_notes.append(("workflow", reason))
+
+        human_review_reasons = [reason for _category, reason in review_notes]
+        human_review_by_category: dict[str, list[str]] = {
+            "source_grounding": [],
+            "table_grounding": [],
+            "scoring_gate": [],
+            "contradictions": [],
+            "workflow": [],
+        }
+        for category, reason in review_notes:
+            human_review_by_category[category].append(reason)
 
         return QualityReport(
             passed=passed,
@@ -318,6 +274,46 @@ class QualityValidator:
             human_review_reasons=human_review_reasons,
             human_review_by_category=human_review_by_category,
         )
+
+    def _ungrounded_required(self, items: list[EvidenceItem]) -> set[str]:
+        """Return required fields without a grounded (non-ambiguous) FOUND item."""
+        grounded = {
+            item.field_id
+            for item in items
+            if item.status == EvidenceStatus.FOUND
+            and item.source is not None
+            and item.source.source_precision != SourcePrecision.AMBIGUOUS
+        }
+        return self._required - grounded
+
+    def _score_gate(
+        self,
+        items: list[EvidenceItem],
+        chains: list[EvidenceChain],
+    ) -> tuple[list[EvidenceChain], list[EvidenceChain], bool]:
+        """Return full chains, incomplete chains, and whether scoring is allowed."""
+        full_chains = [chain for chain in chains if chain.chain_level == "full"]
+        incomplete_chains = [chain for chain in chains if chain.chain_level in {"partial", "singleton"}]
+        full_chain_group_ids = {chain.chain_id for chain in full_chains}
+        full_chain_items = [item for item in items if item.group_id in full_chain_group_ids]
+
+        scorable = len(full_chains) > 0 and not self._ungrounded_required(full_chain_items)
+        degraded_statuses = {
+            EvidenceStatus.SOURCE_INVALID,
+            EvidenceStatus.OCR_GAP,
+            EvidenceStatus.TABLE_UNGROUNDED,
+            EvidenceStatus.CONTEXT_CONTAMINATION,
+        }
+        if any(item.status in degraded_statuses for item in full_chain_items):
+            scorable = False
+        if any(
+            item.status == EvidenceStatus.FOUND
+            and item.source is not None
+            and item.source.source_precision == SourcePrecision.AMBIGUOUS
+            for item in full_chain_items
+        ):
+            scorable = False
+        return full_chains, incomplete_chains, scorable
 
 
 class IntraTrackConflictChecker:

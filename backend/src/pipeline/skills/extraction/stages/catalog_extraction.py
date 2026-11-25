@@ -17,7 +17,13 @@ from loguru import logger
 from src.core.tools.extraction.domain.catalog import CATALOG_GROUPS
 from src.core.tools.extraction.domain.channel_contracts import DocumentChannelClassification
 from src.core.tools.extraction.domain.field_profile import build_profiled_catalog
-from src.pipeline.skills.extraction.infrastructure.chunking import STRONG_TIER_INPUT_BUDGET_TOKENS, build_block_prompt_chunks, merge_sparse_evidence_items
+from src.pipeline.skills.extraction.infrastructure.chunking import (
+    STRONG_TIER_INPUT_BUDGET_TOKENS,
+    append_chunk_label,
+    build_block_prompt_chunks,
+    merge_sparse_evidence_items,
+    split_chunk_results,
+)
 from src.core.tools.extraction.contracts import DocumentEvidenceMap, EvidenceItem, EvidenceStatus, ExtractionTarget, Track, TrackDocument
 from src.core.tools.extraction.core.normalization import FieldValueNormalizer, RawSourceNormalizer
 from src.core.tools.extraction.domain.field_eligibility import FieldEligibilityPolicy
@@ -109,7 +115,7 @@ class CatalogExtractionStage:
         )
         extracted: list[EvidenceItem] = []
         for chunk in chunks:
-            chunk_summary = self._chunk_summary(summary, chunk)
+            chunk_summary = append_chunk_label(summary, chunk)
             for group_name, catalog in catalog_groups.items():
                 prompt = get_catalog_extraction_prompt(
                     document_id=document.document_id,
@@ -159,7 +165,7 @@ class CatalogExtractionStage:
         num_tasks = len(chunks) * len(catalog_groups)
 
         async def _extract_group(chunk, group_name: str, catalog: tuple):  # noqa: ANN001
-            chunk_summary = self._chunk_summary(summary, chunk)
+            chunk_summary = append_chunk_label(summary, chunk)
             prompt = get_catalog_extraction_prompt(
                 document_id=document.document_id,
                 track=document.track,
@@ -194,19 +200,16 @@ class CatalogExtractionStage:
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
+        outputs, failures = split_chunk_results(results, "catalog_extraction")
         extracted: list[EvidenceItem] = []
-        failed = 0
-        last_error: BaseException | None = None
-        for i, result in enumerate(results):
-            if isinstance(result, BaseException):
-                logger.error("catalog_extraction task {}/{} failed: {}", i + 1, num_tasks, result)
-                failed += 1
-                last_error = result
-            elif isinstance(result, list):
+        for result in outputs:
+            if isinstance(result, list):
                 normalized = self._raw_source_normalizer.normalize_items(result)
                 extracted.extend(FieldValueNormalizer.normalize_items(normalized))
 
         # Escalate based on failure rate
+        failed = len(failures)
+        last_error = failures[-1] if failures else None
         if num_tasks:
             failure_rate = failed / num_tasks
             if failure_rate == 1.0:
@@ -415,12 +418,6 @@ class CatalogExtractionStage:
             for group_name, catalog in self._catalog_groups.items()
             if (eligible_catalog := tuple(spec for spec in catalog if spec.field_id in decision.allowed_field_ids))
         }
-
-    @staticmethod
-    def _chunk_summary(summary: str, chunk: object) -> str:  # noqa: ANN001
-        if chunk.total > 1:
-            return f"{summary}\nCurrent document chunk: {chunk.index}/{chunk.total}"
-        return summary
 
     @staticmethod
     def _stage_name(chunk: object, group_name: str) -> str:  # noqa: ANN001

@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from src.pipeline.skills.standardization import api as api_module
+from src.pipeline.skills.standardization import importer as importer_module
 from src.core.tools.standardization.contracts import EntityType
 from src.core.tools.standardization.importers import (
     ImportAlias,
@@ -36,12 +37,12 @@ def test_load_import_batches_dispatches_requested_sources_only(monkeypatch) -> N
         calls.append(("omim", path))
         return "omim-batch"
 
-    monkeypatch.setattr(api_module, "parse_hgnc_rows", _fake_hgnc)
-    monkeypatch.setattr(api_module, "parse_omim_rows", _fake_omim)
-    monkeypatch.setattr(api_module, "parse_hpo_rows", lambda *args, **kwargs: "hpo-batch")
-    monkeypatch.setattr(api_module, "parse_clingen_rows", lambda *args, **kwargs: "clingen-batch")
+    monkeypatch.setattr(importer_module, "parse_hgnc_rows", _fake_hgnc)
+    monkeypatch.setattr(importer_module, "parse_omim_rows", _fake_omim)
+    monkeypatch.setattr(importer_module, "parse_hpo_rows", lambda *args, **kwargs: "hpo-batch")
+    monkeypatch.setattr(importer_module, "parse_clingen_rows", lambda *args, **kwargs: "clingen-batch")
 
-    batches = api_module._load_import_batches(
+    batches = importer_module._load_import_batches(
         terminology_root=Path("/tmp/terminology"),
         version="test-version",
         sources=("hgnc", "omim", "unknown"),
@@ -68,24 +69,24 @@ async def test_import_terminology_loads_batches_and_calls_repository(monkeypatch
         async def dispose(self) -> None:
             disposed["value"] = True
 
-    monkeypatch.setattr(api_module, "_load_import_batches", lambda **kwargs: tuple(loaded_batches))
+    monkeypatch.setattr(importer_module, "_load_import_batches", lambda **kwargs: tuple(loaded_batches))
     clinvar_stream_calls: list[tuple[Path, str, int]] = []
     preprocess_calls: list[tuple[Path, Path]] = []
     monkeypatch.setattr(
-        api_module,
+        importer_module,
         "_import_clinvar_stream",
         lambda *, repository, path, version, chunk_size: clinvar_stream_calls.append((path, version, chunk_size)),
     )
     monkeypatch.setattr(
-        api_module,
+        importer_module,
         "_ensure_clinvar_core_path",
         lambda path: (
             preprocess_calls.append((path, path.with_name("variant_summary.core.tsv")))
             or path.with_name("variant_summary.core.tsv")
         ),
     )
-    monkeypatch.setattr(api_module, "build_async_engine", lambda cfg: FakeEngine())
-    monkeypatch.setattr(api_module, "async_session_factory", lambda engine: "factory")
+    monkeypatch.setattr(importer_module, "build_async_engine", lambda cfg: FakeEngine())
+    monkeypatch.setattr(importer_module, "async_session_factory", lambda engine: "factory")
     commit_called = {"value": False}
 
     class FakeRepository:
@@ -105,10 +106,10 @@ async def test_import_terminology_loads_batches_and_calls_repository(monkeypatch
 
         yield FakeSession()
 
-    monkeypatch.setattr(api_module, "StandardizationRepository", FakeRepository)
-    monkeypatch.setattr(api_module, "get_async_session", fake_get_async_session)
+    monkeypatch.setattr(importer_module, "StandardizationRepository", FakeRepository)
+    monkeypatch.setattr(importer_module, "get_async_session", fake_get_async_session)
 
-    await api_module.import_terminology(
+    await importer_module.import_terminology(
         cfg=object(),
         terminology_root=tmp_path,
         version="test-version",
@@ -151,7 +152,7 @@ async def test_import_clinvar_stream_commits_each_chunk(monkeypatch, tmp_path: P
             chunk_commit_calls["value"] += 1
 
     monkeypatch.setattr(
-        api_module,
+        importer_module,
         "iter_clinvar_batches",
         lambda **kwargs: iter(
             (
@@ -187,7 +188,7 @@ async def test_import_clinvar_stream_commits_each_chunk(monkeypatch, tmp_path: P
         ),
     )
 
-    await api_module._import_clinvar_stream(
+    await importer_module._import_clinvar_stream(
         repository=FakeRepository(FakeSession()),
         path=tmp_path / "variant_summary.core.tsv",
         version="v1",
@@ -239,10 +240,10 @@ def test_describe_batch_source_prefers_entries_then_aliases_then_relationships()
     )
     empty_batch = ImportBatch()
 
-    assert api_module._describe_batch_source(batch_from_entries) == "HGNC"
-    assert api_module._describe_batch_source(batch_from_aliases) == "OMIM"
-    assert api_module._describe_batch_source(batch_from_relationships) == "ClinVar"
-    assert api_module._describe_batch_source(empty_batch) == "empty"
+    assert importer_module._describe_batch_source(batch_from_entries) == "HGNC"
+    assert importer_module._describe_batch_source(batch_from_aliases) == "OMIM"
+    assert importer_module._describe_batch_source(batch_from_relationships) == "ClinVar"
+    assert importer_module._describe_batch_source(empty_batch) == "empty"
 
 
 def test_matches_json_serialization() -> None:
@@ -326,9 +327,9 @@ async def test_build_terminology_embeddings_passes_scope_filters(monkeypatch) ->
 
         yield FakeSession()
 
-    monkeypatch.setattr(api_module, "build_async_engine", lambda cfg: FakeEngine())
-    monkeypatch.setattr(api_module, "async_session_factory", lambda engine: "factory")
-    monkeypatch.setattr(api_module, "get_async_session", fake_get_async_session)
+    monkeypatch.setattr(importer_module, "build_async_engine", lambda cfg: FakeEngine())
+    monkeypatch.setattr(importer_module, "async_session_factory", lambda engine: "factory")
+    monkeypatch.setattr(importer_module, "get_async_session", fake_get_async_session)
     monkeypatch.setattr(
         "src.core.tools.standardization.similarity_match.indexer.TerminologyEmbeddingIndexer",
         FakeIndexer,
@@ -351,7 +352,7 @@ async def test_build_terminology_embeddings_passes_scope_filters(monkeypatch) ->
             },
         )()
 
-    count = await api_module.build_terminology_embeddings(
+    count = await importer_module.build_terminology_embeddings(
         cfg=FakeCfg(),
         entity_types={EntityType.DISEASE, EntityType.PHENOTYPE},
         source_dbs={"OMIM", "HPO", "MONDO"},

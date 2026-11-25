@@ -38,6 +38,28 @@ RELATIONSHIP_OBJECT_TYPE = {
     "gene_has_dosage_sensitivity": None,
 }
 
+# Conflict targets and updatable columns per terminology table. Both the
+# RETURNING-based bulk path and the COPY staging path build their upserts from
+# these, so a schema change is a single edit.
+_ENTRY_CONFLICT_CONSTRAINT = "uq_terminology_entries_source_external_id"
+_ENTRY_UPDATABLE_COLUMNS = (
+    "entity_type",
+    "display_name",
+    "normalized_name",
+    "aliases",
+    "raw_payload",
+    "version",
+)
+_ALIAS_CONFLICT_CONSTRAINT = "uq_terminology_aliases_entry_alias_type"
+_ALIAS_UPDATABLE_COLUMNS = ("entity_type", "alias_text", "source_db")
+_RELATIONSHIP_CONFLICT_COLUMNS = ("subject_entry_id", "object_entry_id", "relationship_type", "source_db")
+_RELATIONSHIP_UPDATABLE_COLUMNS = ("evidence_level", "raw_payload")
+
+
+def _excluded_assignments(columns: tuple[str, ...]) -> str:
+    """Render ``column = EXCLUDED.column`` assignments for raw upsert SQL."""
+    return ",\n                    ".join(f"{column} = EXCLUDED.{column}" for column in columns)
+
 
 class TerminologyImportRepository:
     """Persist terminology entries, aliases, and relationships."""
@@ -198,8 +220,15 @@ class TerminologyImportRepository:
         await self._bulk_upsert_relationships(batch.relationships, entry_id_map, alias_reference_map)
 
     def _supports_bulk_terminology_upsert(self) -> bool:
-        """Return whether the current session can execute bulk PostgreSQL statements."""
-        return self.session.__class__.__name__ != "FakeSession"
+        """Return whether the bound session speaks PostgreSQL.
+
+        The COPY/bulk path relies on PostgreSQL-only statements, so detect the
+        dialect rather than guessing from the session class.
+        """
+        get_bind = getattr(self.session, "get_bind", None)
+        bind = get_bind() if callable(get_bind) else None
+        dialect_name = getattr(getattr(bind, "dialect", None), "name", "")
+        return dialect_name == "postgresql"
 
     async def _bulk_upsert_entries(self, entries: tuple[Any, ...]) -> dict[str, Any]:
         """Bulk upsert terminology entries by (source_db, external_id) and return resolved IDs."""
@@ -220,14 +249,10 @@ class TerminologyImportRepository:
         ]
         statement = pg_insert(TerminologyEntry).values(values)
         statement = statement.on_conflict_do_update(
-            constraint="uq_terminology_entries_source_external_id",
+            constraint=_ENTRY_CONFLICT_CONSTRAINT,
             set_={
-                "entity_type": statement.excluded.entity_type,
-                "display_name": statement.excluded.display_name,
-                "normalized_name": statement.excluded.normalized_name,
-                "aliases": statement.excluded.aliases,
-                "raw_payload": statement.excluded.raw_payload,
-                "version": statement.excluded.version,
+                column: getattr(statement.excluded, column)
+                for column in _ENTRY_UPDATABLE_COLUMNS
             },
         )
         statement = statement.returning(TerminologyEntry.entry_id, TerminologyEntry.external_id)
@@ -262,11 +287,10 @@ class TerminologyImportRepository:
             return
         statement = pg_insert(TerminologyAlias).values(values)
         statement = statement.on_conflict_do_update(
-            constraint="uq_terminology_aliases_entry_alias_type",
+            constraint=_ALIAS_CONFLICT_CONSTRAINT,
             set_={
-                "entity_type": statement.excluded.entity_type,
-                "alias_text": statement.excluded.alias_text,
-                "source_db": statement.excluded.source_db,
+                column: getattr(statement.excluded, column)
+                for column in _ALIAS_UPDATABLE_COLUMNS
             },
         )
         await self.session.execute(statement)
@@ -315,14 +339,12 @@ class TerminologyImportRepository:
         statement = pg_insert(TerminologyRelationship).values(values)
         statement = statement.on_conflict_do_update(
             index_elements=[
-                TerminologyRelationship.subject_entry_id,
-                TerminologyRelationship.object_entry_id,
-                TerminologyRelationship.relationship_type,
-                TerminologyRelationship.source_db,
+                getattr(TerminologyRelationship, column)
+                for column in _RELATIONSHIP_CONFLICT_COLUMNS
             ],
             set_={
-                "evidence_level": statement.excluded.evidence_level,
-                "raw_payload": statement.excluded.raw_payload,
+                column: getattr(statement.excluded, column)
+                for column in _RELATIONSHIP_UPDATABLE_COLUMNS
             },
         )
         await self.session.execute(statement)
@@ -407,14 +429,9 @@ class TerminologyImportRepository:
                 raw_payload_json::jsonb,
                 version
             FROM {temp_table}
-            ON CONFLICT ON CONSTRAINT uq_terminology_entries_source_external_id
+            ON CONFLICT ON CONSTRAINT {_ENTRY_CONFLICT_CONSTRAINT}
             DO UPDATE SET
-                entity_type = EXCLUDED.entity_type,
-                display_name = EXCLUDED.display_name,
-                normalized_name = EXCLUDED.normalized_name,
-                aliases = EXCLUDED.aliases,
-                raw_payload = EXCLUDED.raw_payload,
-                version = EXCLUDED.version
+                {_excluded_assignments(_ENTRY_UPDATABLE_COLUMNS)}
             RETURNING entry_id, external_id
             """,
         )
@@ -505,11 +522,9 @@ class TerminologyImportRepository:
                     alias_type,
                     source_db
                 FROM {temp_table}
-                ON CONFLICT ON CONSTRAINT uq_terminology_aliases_entry_alias_type
+                ON CONFLICT ON CONSTRAINT {_ALIAS_CONFLICT_CONSTRAINT}
                 DO UPDATE SET
-                    entity_type = EXCLUDED.entity_type,
-                    alias_text = EXCLUDED.alias_text,
-                    source_db = EXCLUDED.source_db
+                    {_excluded_assignments(_ALIAS_UPDATABLE_COLUMNS)}
                 """,
             ),
         )
@@ -621,10 +636,9 @@ class TerminologyImportRepository:
                     evidence_level,
                     raw_payload_json::jsonb
                 FROM {temp_table}
-                ON CONFLICT (subject_entry_id, object_entry_id, relationship_type, source_db)
+                ON CONFLICT ({", ".join(_RELATIONSHIP_CONFLICT_COLUMNS)})
                 DO UPDATE SET
-                    evidence_level = EXCLUDED.evidence_level,
-                    raw_payload = EXCLUDED.raw_payload
+                    {_excluded_assignments(_RELATIONSHIP_UPDATABLE_COLUMNS)}
                 """,
             ),
         )

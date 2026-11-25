@@ -1,5 +1,6 @@
 """Integration test for the full translation pipeline with mocked model calls."""
 
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -14,12 +15,26 @@ _MODEL_FACTORY = "src.pipeline.skills.runtime.agentscope_llm.create_chat_model"
 
 @pytest.fixture
 def mock_cfg():
-    cfg = MagicMock()
-    cfg.llm.api_key = "test-key"
-    cfg.llm.base_url = "http://localhost:8001/v1"
-    cfg.llm.model = "test-model"
-    cfg.llm.temperature = 0.0
-    return cfg
+    return SimpleNamespace(
+        translation=SimpleNamespace(
+            model="test-model",
+            api_key="test-key",
+            api_keys=["test-key"],
+            all_api_keys=["test-key"],
+            base_url="http://localhost:8001/v1",
+            local_base_url="",
+            local_target_lang="en",
+            local_timeout=30.0,
+            remote_base_url="",
+            remote_api_key="",
+            remote_api_keys=[],
+            remote_model="",
+            remote_all_api_keys=[],
+            temperature=0.0,
+            max_tokens=1024,
+            timeout=1,
+        )
+    )
 
 
 @pytest.fixture

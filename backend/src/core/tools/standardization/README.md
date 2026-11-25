@@ -41,8 +41,11 @@ standardization/
 ## 核心组件
 
 ### EntityStandardizationService（`api.py`）
-公共门面，负责组装依赖链（适配器→匹配器→仓储→服务），提供：
+请求路径门面，负责组装依赖链（适配器→匹配器→仓储→服务），提供：
 - `standardize()` — 处理一次标准化运行
+
+### 术语导入（`importer.py`）
+离线运维入口，不参与请求路径：
 - `import_terminology()` — 导入本地术语源
 - `build_terminology_embeddings()` — 构建 pgvector 嵌入索引
 
@@ -114,19 +117,19 @@ Phase 2 DualEvidenceExtractionResult
 ## 使用方式
 
 ```python
-from src.core.agents.standardization.api import (
-    EntityStandardizationService,
-    import_terminology,
+from src.pipeline.skills.standardization.api import EntityStandardizationService
+from src.pipeline.skills.standardization.importer import (
     build_terminology_embeddings,
+    import_terminology,
 )
 
 # 标准化一次运行的证据
 service = EntityStandardizationService(settings)
 result = await service.standardize(dual_extraction_result)
 
-# 导入术语数据
-await import_terminology(settings, sources=("hgnc", "omim", "hpo", "clingen", "clinvar"))
+# 导入术语数据（离线运维入口）
+await import_terminology(cfg=settings, terminology_root=root, version="v1", sources=["hgnc", "omim", "hpo", "clingen", "clinvar"])
 
 # 构建语义嵌入
-count = await build_terminology_embeddings(settings, entity_type="gene")
+count = await build_terminology_embeddings(cfg=settings, entity_types={"gene"})
 ```

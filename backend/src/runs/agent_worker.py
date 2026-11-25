@@ -14,6 +14,7 @@ from typing import Protocol
 from loguru import logger
 
 from src.dao.postgresql.agent_jobs import AgentJobRepository, AgentJobRow
+from src.runs.polling import run_polling_loop, stop_polling_task
 
 
 class AgentJobFailure(Exception):
@@ -58,33 +59,22 @@ class AgentJobWorker:
         logger.info("Agent job worker started (worker_id={})", self._worker_id)
 
     async def stop(self, timeout: float = 30.0) -> None:
-        self._stopping = True
         if self._task is None or self._task.done():
             return
-        self._task.cancel()
-        try:
-            await asyncio.wait_for(self._task, timeout=timeout)
-        except (asyncio.CancelledError, asyncio.TimeoutError):
-            pass
+        self._stopping = True
+        await stop_polling_task(self._task, timeout=timeout)
         self._task = None
         logger.info("Agent job worker stopped")
 
     async def _loop(self) -> None:
-        idle_delay = self._poll_interval
-        while not self._stopping:
-            try:
-                job = await self._repository.claim_next(self._worker_id)
-                if job is None:
-                    await asyncio.sleep(idle_delay)
-                    idle_delay = min(idle_delay * 2, self._idle_max_interval)
-                    continue
-                idle_delay = self._poll_interval
-                await self._execute(job)
-            except asyncio.CancelledError:
-                break
-            except Exception:
-                logger.exception("Agent worker loop error")
-                await asyncio.sleep(self._poll_interval)
+        await run_polling_loop(
+            claim=lambda: self._repository.claim_next(self._worker_id),
+            handle=self._execute,
+            poll_interval=self._poll_interval,
+            idle_max_interval=self._idle_max_interval,
+            loop_name="Agent worker",
+            should_stop=lambda: self._stopping,
+        )
 
     async def _execute(self, job: AgentJobRow) -> None:
         logger.info("Executing agent job: job_id={}, agent={}, action={}", job.job_id, job.agent, job.action)

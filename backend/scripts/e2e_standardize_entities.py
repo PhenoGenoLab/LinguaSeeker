@@ -34,9 +34,9 @@ from src.core.tools.extraction.contracts import (
 from src.pipeline.skills.standardization.api import (
     EntityStandardizationService,
     build_summary_metadata,
-    import_terminology,
     serialize_matches,
 )
+from src.pipeline.skills.standardization.importer import import_terminology
 from src.core.tools.standardization.contracts import StandardizationResult
 from src.dao.postgresql.connection import async_session_factory, build_async_engine, get_async_session
 

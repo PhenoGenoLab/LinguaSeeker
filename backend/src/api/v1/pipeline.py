@@ -53,6 +53,8 @@ from src.dao.postgresql.job_queue import JobQueueRepository
 
 router = APIRouter()
 
+_UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data" / "pipeline" / "uploads"
+
 
 # ── Global pipeline runner (initialized in app lifespan) ─────────────────────
 
@@ -318,78 +320,178 @@ async def start_pipeline_run(
 
     # Phase re-run: resume from existing state for target_phase 2/3/4
     if body.mode == "phase" and body.processing_run_id:
-        existing_state = await runner.get_last_state(body.processing_run_id)
-        if existing_state is None or existing_state.owner_user_id != owner_user_id:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Pipeline run {body.processing_run_id} not found",
-            )
-        if existing_state.pipeline_status in (PipelineStatus.PENDING, PipelineStatus.RUNNING):
-            raise HTTPException(
-                status_code=409,
-                detail=f"Pipeline run {body.processing_run_id} is still active",
-            )
-
-        request_data: dict[str, Any] = {
-            "mode": "phase",
-            "source_type": body.source_type,
-            "target_phase": body.target_phase,
-            "processing_run_id_ref": body.processing_run_id,
-            "owner_user_id": owner_user_id,
-        }
-
-        if jq is not None:
-            job_id = uuid.uuid4()
-            await jq.enqueue(
-                job_id=job_id,
-                processing_run_id=uuid.UUID(existing_state.processing_run_id),
-                source_document_id=uuid.UUID(existing_state.source_document_id),
-                owner_user_id=account.owner_user_id,
-                request_data=request_data,
-            )
-        else:
-            # Fallback: direct start when job queue is not configured
-            initial_state = _prepare_phase_rerun_state(existing_state, body.target_phase)
-            await runner.start(initial_state)
-
-        return PipelineRunResponse(
-            processing_run_id=existing_state.processing_run_id,
-            source_document_id=existing_state.source_document_id,
-            status="queued" if jq is not None else "accepted",
-            status_url=f"/api/v1/pipeline/runs/{existing_state.processing_run_id}/status",
+        return await _start_phase_rerun(
+            body=body,
+            account=account,
+            owner_user_id=owner_user_id,
+            runner=runner,
+            job_queue=jq,
         )
 
     processing_run_id = str(uuid.uuid4())
     source_document_id = str(uuid.uuid4())
 
     # Decode base64 content and write to temp file if provided
-    upload_file_path = None
-    if body.content_base64:
-        max_size_bytes = get_config().mineru.max_file_size_mb * 1024 * 1024
-        estimated_size = len(body.content_base64) * 3 // 4
-        if estimated_size > max_size_bytes:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File too large. Maximum size: {get_config().mineru.max_file_size_mb}MB",
-            )
-
-        try:
-            content_bytes = base64.b64decode(body.content_base64, validate=True)
-        except binascii.Error as exc:
-            raise HTTPException(status_code=422, detail=f"Invalid base64 content: {exc}") from exc
-        raw_fname = body.filename or f"{processing_run_id}.bin"
-        fname = PurePosixPath(raw_fname.replace("\\", "/")).name
-        temp_dir = Path(__file__).resolve().parent.parent.parent.parent / "data" / "pipeline" / "uploads"
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        upload_file_path = str(temp_dir / f"{processing_run_id}_{fname}")
-        async with aiofiles.open(upload_file_path, "wb") as f:
-            await f.write(content_bytes)
+    upload_file_path = await _store_upload(body, processing_run_id)
 
     online_action = "download" if body.source_type == "online" else None
     source_key = _build_source_key(body)
 
     # Build a temporary state for optional content-hash based cache/dedup.
-    temp_state = PipelineGraphState(
+    temp_state = _build_initial_state(
+        body,
+        processing_run_id=processing_run_id,
+        source_document_id=source_document_id,
+        owner_user_id=owner_user_id,
+        source_key=source_key,
+        upload_file_path=upload_file_path,
+        online_action=online_action,
+    )
+    content_hash = None
+    hash_required = runner.processing_cache_enabled or runner.duplicate_run_prevention_enabled
+    if hash_required:
+        content_hash = await runner.compute_initial_content_hash(temp_state)
+    if content_hash:
+        temp_state.content_hash = content_hash
+        temp_state.source_key = _build_source_key(body, content_hash)
+        source_key = temp_state.source_key
+        cached_response = await _cached_run_response(runner, content_hash, owner_user_id)
+        if cached_response is not None:
+            _discard_upload(upload_file_path)
+            return cached_response
+
+    # N3: Duplicate run prevention
+    if (
+        runner.duplicate_run_prevention_enabled
+        and source_key
+        and await runner.is_running_for_source(source_key, owner_user_id=owner_user_id)
+    ):
+        _discard_upload(upload_file_path)
+        raise HTTPException(
+            status_code=409,
+            detail=f"A pipeline run is already in progress for this source: {source_key}",
+        )
+
+    # Build request data for the job queue
+    request_data = _build_queue_request_data(
+        body,
+        owner_user_id=owner_user_id,
+        source_key=source_key,
+        upload_file_path=upload_file_path,
+        online_action=online_action,
+    )
+
+    if jq is not None:
+        await jq.enqueue(
+            job_id=uuid.uuid4(),
+            processing_run_id=uuid.UUID(processing_run_id),
+            source_document_id=uuid.UUID(source_document_id),
+            owner_user_id=account.owner_user_id,
+            request_data=request_data,
+        )
+    else:
+        # Fallback: direct start when job queue is not configured
+        await _start_without_queue(
+            runner,
+            temp_state,
+            source_key=source_key,
+            upload_file_path=upload_file_path,
+        )
+
+    return PipelineRunResponse(
+        processing_run_id=processing_run_id,
+        source_document_id=source_document_id,
+        status="queued" if jq is not None else "accepted",
+        status_url=f"/api/v1/pipeline/runs/{processing_run_id}/status",
+    )
+
+
+async def _start_phase_rerun(
+    *,
+    body: PipelineRunRequest,
+    account: AuthContext,
+    owner_user_id: str | None,
+    runner: Any,
+    job_queue: JobQueueRepository | None,
+) -> PipelineRunResponse:
+    """Enqueue (or start) a re-run of phases 2-4 for an existing run."""
+    existing_state = await runner.get_last_state(body.processing_run_id)
+    if existing_state is None or existing_state.owner_user_id != owner_user_id:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Pipeline run {body.processing_run_id} not found",
+        )
+    if existing_state.pipeline_status in (PipelineStatus.PENDING, PipelineStatus.RUNNING):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Pipeline run {body.processing_run_id} is still active",
+        )
+
+    if job_queue is not None:
+        await job_queue.enqueue(
+            job_id=uuid.uuid4(),
+            processing_run_id=uuid.UUID(existing_state.processing_run_id),
+            source_document_id=uuid.UUID(existing_state.source_document_id),
+            owner_user_id=account.owner_user_id,
+            request_data={
+                "mode": "phase",
+                "source_type": body.source_type,
+                "target_phase": body.target_phase,
+                "processing_run_id_ref": body.processing_run_id,
+                "owner_user_id": owner_user_id,
+            },
+        )
+    else:
+        await runner.start(_prepare_phase_rerun_state(existing_state, body.target_phase))
+
+    return PipelineRunResponse(
+        processing_run_id=existing_state.processing_run_id,
+        source_document_id=existing_state.source_document_id,
+        status="queued" if job_queue is not None else "accepted",
+        status_url=f"/api/v1/pipeline/runs/{existing_state.processing_run_id}/status",
+    )
+
+
+async def _store_upload(body: PipelineRunRequest, processing_run_id: str) -> str | None:
+    """Decode ``content_base64`` into a temp file, enforcing the size limit."""
+    if not body.content_base64:
+        return None
+    max_size_mb = get_config().mineru.max_file_size_mb
+    estimated_size = len(body.content_base64) * 3 // 4
+    if estimated_size > max_size_mb * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"File too large. Maximum size: {max_size_mb}MB")
+    try:
+        content_bytes = base64.b64decode(body.content_base64, validate=True)
+    except binascii.Error as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid base64 content: {exc}") from exc
+
+    raw_fname = body.filename or f"{processing_run_id}.bin"
+    fname = PurePosixPath(raw_fname.replace("\\", "/")).name
+    _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    upload_file_path = str(_UPLOAD_DIR / f"{processing_run_id}_{fname}")
+    async with aiofiles.open(upload_file_path, "wb") as handle:
+        await handle.write(content_bytes)
+    return upload_file_path
+
+
+def _discard_upload(upload_file_path: str | None) -> None:
+    """Remove a temp upload that no run will consume."""
+    if upload_file_path:
+        Path(upload_file_path).unlink(missing_ok=True)
+
+
+def _build_initial_state(
+    body: PipelineRunRequest,
+    *,
+    processing_run_id: str,
+    source_document_id: str,
+    owner_user_id: str | None,
+    source_key: str | None,
+    upload_file_path: str | None,
+    online_action: str | None,
+) -> PipelineGraphState:
+    """Build the state used for cache/dedup checks and a queue-less start."""
+    return PipelineGraphState(
         processing_run_id=processing_run_id,
         source_document_id=source_document_id,
         owner_user_id=owner_user_id,
@@ -415,48 +517,17 @@ async def start_pipeline_run(
         review_reject_policy=body.review_reject_policy,
         extraction_track_mode=body.extraction_track_mode,
     )
-    content_hash = None
-    hash_required = runner.processing_cache_enabled or runner.duplicate_run_prevention_enabled
-    if hash_required:
-        content_hash = await runner.compute_initial_content_hash(temp_state)
-    if content_hash:
-        temp_state.content_hash = content_hash
-        temp_state.source_key = _build_source_key(body, content_hash)
-        source_key = temp_state.source_key
-        cached_state = (
-            await runner.check_processing_cache(content_hash, owner_user_id=owner_user_id)
-            if runner.processing_cache_enabled
-            else None
-        )
-        if cached_state is not None and cached_state.pipeline_status == PipelineStatus.COMPLETED:
-            logger.info(
-                "Processing cache hit for content_hash={}, returning cached run={}",
-                content_hash[:12],
-                cached_state.processing_run_id,
-            )
-            if upload_file_path:
-                Path(upload_file_path).unlink(missing_ok=True)
-            return PipelineRunResponse(
-                processing_run_id=cached_state.processing_run_id,
-                source_document_id=cached_state.source_document_id,
-                status="cached",
-                status_url=f"/api/v1/pipeline/runs/{cached_state.processing_run_id}/status",
-            )
 
-    # N3: Duplicate run prevention
-    if (
-        runner.duplicate_run_prevention_enabled
-        and source_key
-        and await runner.is_running_for_source(source_key, owner_user_id=owner_user_id)
-    ):
-        if upload_file_path:
-            Path(upload_file_path).unlink(missing_ok=True)
-        raise HTTPException(
-            status_code=409,
-            detail=f"A pipeline run is already in progress for this source: {source_key}",
-        )
 
-    # Build request data for the job queue
+def _build_queue_request_data(
+    body: PipelineRunRequest,
+    *,
+    owner_user_id: str | None,
+    source_key: str | None,
+    upload_file_path: str | None,
+    online_action: str | None,
+) -> dict[str, Any]:
+    """Build the job-queue payload for a new run."""
     request_data: dict[str, Any] = {
         "mode": body.mode,
         "source_type": body.source_type,
@@ -482,36 +553,51 @@ async def start_pipeline_run(
     }
     if body.extraction_target is not None:
         request_data["extraction_target"] = body.extraction_target.model_dump()
+    return request_data
 
-    if jq is not None:
-        job_id = uuid.uuid4()
-        await jq.enqueue(
-            job_id=job_id,
-            processing_run_id=uuid.UUID(processing_run_id),
-            source_document_id=uuid.UUID(source_document_id),
-            owner_user_id=account.owner_user_id,
-            request_data=request_data,
-        )
-    else:
-        # Fallback: direct start when job queue is not configured
-        from sqlalchemy.exc import IntegrityError
 
-        try:
-            await runner.start(temp_state)
-        except IntegrityError:
-            if upload_file_path:
-                Path(upload_file_path).unlink(missing_ok=True)
-            raise HTTPException(
-                status_code=409,
-                detail=f"A pipeline run is already in progress for this source: {source_key}",
-            )
-
-    return PipelineRunResponse(
-        processing_run_id=processing_run_id,
-        source_document_id=source_document_id,
-        status="queued" if jq is not None else "accepted",
-        status_url=f"/api/v1/pipeline/runs/{processing_run_id}/status",
+async def _cached_run_response(
+    runner: Any,
+    content_hash: str,
+    owner_user_id: str | None,
+) -> PipelineRunResponse | None:
+    """Return a completed cached run for *content_hash*, if caching is enabled."""
+    if not runner.processing_cache_enabled:
+        return None
+    cached_state = await runner.check_processing_cache(content_hash, owner_user_id=owner_user_id)
+    if cached_state is None or cached_state.pipeline_status != PipelineStatus.COMPLETED:
+        return None
+    logger.info(
+        "Processing cache hit for content_hash={}, returning cached run={}",
+        content_hash[:12],
+        cached_state.processing_run_id,
     )
+    return PipelineRunResponse(
+        processing_run_id=cached_state.processing_run_id,
+        source_document_id=cached_state.source_document_id,
+        status="cached",
+        status_url=f"/api/v1/pipeline/runs/{cached_state.processing_run_id}/status",
+    )
+
+
+async def _start_without_queue(
+    runner: Any,
+    initial_state: PipelineGraphState,
+    *,
+    source_key: str | None,
+    upload_file_path: str | None,
+) -> None:
+    """Start a run directly when no job queue is configured."""
+    from sqlalchemy.exc import IntegrityError
+
+    try:
+        await runner.start(initial_state)
+    except IntegrityError:
+        _discard_upload(upload_file_path)
+        raise HTTPException(
+            status_code=409,
+            detail=f"A pipeline run is already in progress for this source: {source_key}",
+        )
 
 
 @router.get("/runs", response_model=PipelineRunListResponse)

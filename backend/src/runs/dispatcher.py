@@ -19,6 +19,7 @@ from src.runs.contracts import (
     PipelineGraphState,
     PipelineStatus,
 )
+from src.runs.polling import run_polling_loop, stop_polling_task
 from src.dao.postgresql.job_queue import JobQueueRepository
 
 
@@ -64,14 +65,10 @@ class SingleJobDispatcher:
         Args:
             timeout: Maximum seconds to wait for the current job.
         """
-        self._stopping = True
         if self._task is None or self._task.done():
             return
-        self._task.cancel()
-        try:
-            await asyncio.wait_for(self._task, timeout=timeout)
-        except (asyncio.CancelledError, asyncio.TimeoutError):
-            pass
+        self._stopping = True
+        await stop_polling_task(self._task, timeout=timeout)
         self._task = None
         logger.info("Job dispatcher stopped")
 
@@ -81,27 +78,16 @@ class SingleJobDispatcher:
         When the queue is empty, the poll interval doubles from
         ``poll_interval`` up to ``idle_max_interval``, so an idle dispatcher
         performs a single cheap claim query per backoff window instead of a
-        fixed-frequency poll.  A successful claim resets the backoff.
-
-        ``idle_delay`` is doubled in place and clamped each iteration rather
-        than computing ``2 ** idle_streak``, which overflows float conversion
-        after ~1024 consecutive idle polls (idle_streak grows without bound).
+        fixed-frequency poll. A successful claim resets the backoff.
         """
-        idle_delay = self._poll_interval
-        while not self._stopping:
-            try:
-                job = await self._job_queue.claim_next(self._worker_id)
-                if job is None:
-                    await asyncio.sleep(idle_delay)
-                    idle_delay = min(idle_delay * 2, self._idle_max_interval)
-                    continue
-                idle_delay = self._poll_interval
-                await self._execute(job)
-            except asyncio.CancelledError:
-                break
-            except Exception:
-                logger.exception("Dispatcher loop error")
-                await asyncio.sleep(self._poll_interval)
+        await run_polling_loop(
+            claim=lambda: self._job_queue.claim_next(self._worker_id),
+            handle=self._execute,
+            poll_interval=self._poll_interval,
+            idle_max_interval=self._idle_max_interval,
+            loop_name="Job dispatcher",
+            should_stop=lambda: self._stopping,
+        )
 
     async def _execute(self, job: Any) -> None:
         """Run a claimed job through the pipeline."""
@@ -110,10 +96,12 @@ class SingleJobDispatcher:
             job.job_id,
             job.processing_run_id,
         )
-        rd = job.request_data
-        rd["processing_run_id"] = job.processing_run_id
-        rd["source_document_id"] = job.source_document_id
-        rd["owner_user_id"] = job.owner_user_id
+        rd = {
+            **job.request_data,
+            "processing_run_id": job.processing_run_id,
+            "source_document_id": job.source_document_id,
+            "owner_user_id": job.owner_user_id,
+        }
         try:
             initial_state = PipelineGraphState.from_request_data(rd)
         except Exception as exc:
@@ -129,6 +117,7 @@ class SingleJobDispatcher:
                 await self._job_queue.complete(job.job_id)
                 self._cleanup_upload_file(rd)
             else:
+                # Failed runs keep the upload so a phase re-run can reuse it.
                 error_msg = result.error_message or "Pipeline ended in non-completed state"
                 await self._job_queue.fail(job.job_id, error_msg)
         except Exception as exc:

@@ -5,7 +5,6 @@ Raises classified errors for orchestrator-level retry decisions.
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -14,8 +13,6 @@ from loguru import logger
 
 from src.runs.contracts import (
     AcquisitionOutput,
-    PhaseStatus,
-    PhaseStatusDetail,
     PipelineGraphState,
     PermanentPhaseError,
     build_retryable_errors,
@@ -24,7 +21,9 @@ from src.runs.contracts import (
 from src.core.tools.acquisition import (
     AcquisitionSource,
     DocumentAcquisitionRequest,
+    DocumentDownloadEntry,
 )
+from src.pipeline.graph.phases.lifecycle import begin_phase, complete_phase, skip_phase
 
 if TYPE_CHECKING:
     from src.pipeline.skills.acquisition.service import AcquisitionSkill
@@ -61,21 +60,13 @@ class AcquisitionAdapter:
             state.pre_parsed_markdown is not None,
         )
 
-        state.acquisition_status = PhaseStatusDetail(
-            status=PhaseStatus.RUNNING,
-            started_at=datetime.now().isoformat(),
-        )
+        begin_phase(state, 1)
 
         try:
             # Fast path: pre-parsed markdown needs no acquisition at all
             if state.pre_parsed_markdown:
                 state.acquisition_output = AcquisitionOutput(pdf_path="")
-                state.acquisition_status = PhaseStatusDetail(
-                    status=PhaseStatus.SKIPPED,
-                    started_at=state.acquisition_status.started_at,
-                    completed_at=datetime.now().isoformat(),
-                    summary={"reason": "pre_parsed_markdown"},
-                )
+                skip_phase(state, 1, summary={"reason": "pre_parsed_markdown"})
                 logger.info("Phase 1 skipped (pre-parsed markdown): run={}", state.processing_run_id)
                 return state
 
@@ -111,11 +102,16 @@ class AcquisitionAdapter:
                 )
 
             # Extract file path
-            entry: object | None = None
+            entry: DocumentDownloadEntry | None = None
             if acquisition_result.stored_file:
                 pdf_path = acquisition_result.stored_file.file_path
             elif acquisition_result.downloads:
                 entry = acquisition_result.downloads[0]
+                if not entry.file_path:
+                    raise PermanentPhaseError(
+                        "Acquisition returned a download entry without a file path",
+                        phase=1,
+                    )
                 pdf_path = entry.file_path
             else:
                 # Acquisition returned metadata/items but no downloadable PDF.
@@ -135,17 +131,14 @@ class AcquisitionAdapter:
             # If the acquisition pipeline already parsed the PDF (multilingual
             # workflow's early MinerU batch), hand the markdown to Phase 2 so
             # it writes the canonical layout without re-parsing.
-            pre_parsed = getattr(entry, "pre_parsed_markdown", None) if entry else None
+            pre_parsed = entry.pre_parsed_markdown if entry is not None else None
             if pre_parsed:
                 state.pre_parsed_markdown = pre_parsed
 
-            summary: dict = {"pdf_path": pdf_path}
+            summary: dict[str, object] = {"pdf_path": pdf_path}
             if pre_parsed:
                 summary["pre_parsed_by_acquisition"] = True
-            state.acquisition_status = PhaseStatusDetail.complete(
-                started_at=state.acquisition_status.started_at,
-                summary=summary,
-            )
+            complete_phase(state, 1, summary=summary)
 
             logger.info("Phase 1 completed: run={}", state.processing_run_id)
             return state

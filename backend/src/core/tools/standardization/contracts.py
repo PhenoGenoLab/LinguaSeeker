@@ -154,3 +154,4 @@ class StandardizationResult:
     normalized_entity_ids: tuple[str, ...]
     matches: tuple[EntityMatch, ...] = ()
     acmg_ready: AcmgReadyEvidenceSet | None = None
+    warnings: tuple[str, ...] = ()

@@ -7,7 +7,12 @@ import asyncio
 from loguru import logger
 
 from src.core.tools.extraction.domain.channel_contracts import DocumentChannelClassification, RelevanceScanResult, merge_channel_classifications, parse_channel_classification
-from src.pipeline.skills.extraction.infrastructure.chunking import DEFAULT_INPUT_BUDGET_TOKENS, build_text_prompt_chunks, merge_evidence_maps
+from src.pipeline.skills.extraction.infrastructure.chunking import (
+    DEFAULT_INPUT_BUDGET_TOKENS,
+    build_text_prompt_chunks,
+    merge_evidence_maps,
+    split_chunk_results,
+)
 from src.core.tools.extraction.contracts import RelevanceScanOutput, TrackDocument
 from src.pipeline.skills.extraction.prompts import get_evidence_map_prompt
 from src.pipeline.skills.extraction.providers import EvidenceModelTier, AgentScopeEvidenceProvider
@@ -121,14 +126,7 @@ class RelevanceScanStage:
             *[_extract_chunk(c) for c in chunks],
             return_exceptions=True,
         )
-        outputs: list[RelevanceScanOutput] = []
-        errors: list[BaseException] = []
-        for i, result in enumerate(results):
-            if isinstance(result, BaseException):
-                logger.error("relevance_scan chunk {}/{} failed: {}", i + 1, len(chunks), result)
-                errors.append(result)
-                continue
-            outputs.append(result)
+        outputs, errors = split_chunk_results(results, "relevance_scan")
         if not outputs and errors:
             raise RuntimeError(f"Relevance scan failed for all {len(chunks)} chunks: {errors[0]}")
         merged_map = merge_evidence_maps(outputs)

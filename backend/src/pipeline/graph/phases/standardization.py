@@ -7,7 +7,6 @@ Sets skip_standardization_reason when standardized_count == 0.
 from __future__ import annotations
 
 import json
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 import aiofiles
@@ -16,14 +15,13 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.runs.contracts import (
     StandardizationOutput,
-    PhaseStatus,
-    PhaseStatusDetail,
     PipelineGraphState,
     PermanentPhaseError,
     SkipStandardizationReason,
     build_retryable_errors,
     classify_phase_error,
 )
+from src.pipeline.graph.phases.lifecycle import begin_phase, complete_phase, skip_phase
 from src.core.tools.extraction.contracts import DualEvidenceExtractionResult
 
 if TYPE_CHECKING:
@@ -60,18 +58,10 @@ class StandardizationAdapter:
         # Skip if Phase 3 set a skip reason
         if state.skip_standardization_reason is not None:
             logger.info("Phase 4 skipped: reason={}", state.skip_standardization_reason.value)
-            state.standardization_status = PhaseStatusDetail(
-                status=PhaseStatus.SKIPPED,
-                started_at=datetime.now().isoformat(),
-                completed_at=datetime.now().isoformat(),
-                summary={"reason": state.skip_standardization_reason.value},
-            )
+            skip_phase(state, 4, summary={"reason": state.skip_standardization_reason.value})
             return state
 
-        state.standardization_status = PhaseStatusDetail(
-            status=PhaseStatus.RUNNING,
-            started_at=datetime.now().isoformat(),
-        )
+        begin_phase(state, 4)
 
         try:
             # Load extraction result from Phase 3 output
@@ -127,8 +117,9 @@ class StandardizationAdapter:
             )
             if candidate_count == 0:
                 state.skip_standardization_reason = SkipStandardizationReason.NO_CANDIDATES
-                state.standardization_status = PhaseStatusDetail.complete(
-                    started_at=state.standardization_status.started_at,
+                complete_phase(
+                    state,
+                    4,
                     summary={
                         "match_count": standardization_result.match_count,
                         "standardized_count": standardization_result.standardized_count,
@@ -143,8 +134,9 @@ class StandardizationAdapter:
                 )
                 return state
 
-            state.standardization_status = PhaseStatusDetail.complete(
-                started_at=state.standardization_status.started_at,
+            complete_phase(
+                state,
+                4,
                 summary={
                     "match_count": standardization_result.match_count,
                     "standardized_count": standardization_result.standardized_count,

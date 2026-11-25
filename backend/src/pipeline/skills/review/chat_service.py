@@ -109,17 +109,15 @@ CHAT_AGENT_CAPABILITIES_PROMPT = (
     "— they are deprecated and the frontend will reject them.\n"
     "2. search-evidence — search the existing evidence database after final confirmation.\n"
     "   slots: { gene?, variant?, disease?, pmid?, doi? }. Need at least one.\n"
-    "3. classify-variant — propose ACMG classification after final confirmation (placeholder).\n"
-    "   slots: { variant: str, gene?, disease? }. Need variant.\n"
-    "4. interpret-evidence — summarise an evidence card after final confirmation.\n"
+    "3. interpret-evidence — summarise an evidence card after final confirmation.\n"
     "   slots: { evidence_id?: uuid, gene?, variant? }.\n"
-    "5. review-changes — list pending review items after final confirmation.\n"
+    "4. review-changes — list pending review items after final confirmation.\n"
     "   slots: { filter?: 'all' }. Default filter is 'all'.\n"
-    "6. check-pipeline-status — check pipeline run status or navigate to "
+    "5. check-pipeline-status — check pipeline run status or navigate to "
     "task management after final confirmation.\n"
     "   slots: { run_id?: str }. No slots required (navigates to task list). "
     "If the user provides a run ID, include it.\n\n"
-    "7. graph-qa — answer a knowledge question about genes, diseases, "
+    "6. graph-qa — answer a knowledge question about genes, diseases, "
     "variants, phenotypes, and their relationships using the Neo4j knowledge "
     "graph (terminology baseline + literature evidence). Use this whenever the "
     "user asks WHAT/WHICH/HOW entities relate (e.g. 'What diseases are "
@@ -186,6 +184,20 @@ class ChatService:
     ):
         self._session = session
         self._chat_provider = chat_provider
+
+    def _require_chat_provider(self) -> "ChatLLMProvider":
+        """Return the injected chat provider.
+
+        A missing provider is a wiring defect, not a runtime condition: the
+        service must be built through ``ReviewServiceFactory`` so the httpx
+        client has an owner that closes it.
+        """
+        if self._chat_provider is None:
+            raise RuntimeError(
+                "ChatService requires an injected chat provider; "
+                "construct it via ReviewServiceFactory.create_chat_service()."
+            )
+        return self._chat_provider
 
     async def create_session(
         self,
@@ -583,12 +595,13 @@ class ChatService:
                 "You can also use the Edit button on the evidence detail page."
             )
 
-        patch = EvidencePatchRequest(
-            fields=fields,
-            change_reason=f"Chat correction: {user_message[:200]}",
-        )
+        from sqlalchemy.exc import NoResultFound
 
         try:
+            patch = EvidencePatchRequest(
+                fields=fields,
+                change_reason=f"Chat correction: {user_message[:200]}",
+            )
             service = FeedbackService(self._session)
             result = await service.patch_evidence(
                 canonical_evidence_id=evidence_id,
@@ -597,9 +610,14 @@ class ChatService:
                 owner_user_id=owner_user_id,
             )
             await self._session.commit()
-        except Exception as exc:
-            logger.warning("Chat correction failed: {}", exc)
-            return f"Correction failed: {exc}"
+        except NoResultFound:
+            return "Correction not applied: that evidence card is not available for this account."
+        except ValueError:
+            logger.warning("Chat correction rejected for evidence {}", evidence_id)
+            return "Correction rejected: the requested field or value is not editable."
+        except Exception:
+            logger.exception("Chat correction failed for evidence {}", evidence_id)
+            return "Correction failed due to an internal error. Use the Edit button on the evidence detail page."
 
         delta_parts = [f"**{d.field}**: ~~{d.old_value}~~ → {d.new_value}" for d in result.field_deltas]
         summary = "\n".join(delta_parts) if delta_parts else "Status updated."
@@ -683,18 +701,7 @@ class ChatService:
 
         system_prompt = self._system_prompt(has_evidence_context=bool(context))
 
-        provider = self._chat_provider
-        if provider is None:
-            logger.warning(
-                "ChatService.generate_reply called without injected provider — "
-                "creating fallback (leaked httpx client). "
-                "Fix: inject via ReviewServiceFactory.create_chat_service()"
-            )
-            from src.pipeline.skills.review.providers import (
-                ChatLLMProvider,
-            )
-
-            provider = ChatLLMProvider()
+        provider = self._require_chat_provider()
 
         reply = await provider.generate(
             system_prompt=system_prompt,
@@ -744,18 +751,7 @@ class ChatService:
 
         system_prompt = self._system_prompt(has_evidence_context=bool(context))
 
-        provider = self._chat_provider
-        if provider is None:
-            logger.warning(
-                "ChatService.stream_reply called without injected provider — "
-                "creating fallback (leaked httpx client). "
-                "Fix: inject via ReviewServiceFactory.create_chat_service()"
-            )
-            from src.pipeline.skills.review.providers import (
-                ChatLLMProvider,
-            )
-
-            provider = ChatLLMProvider()
+        provider = self._require_chat_provider()
 
         if not context:
             async for event in self._stream_router_envelope(

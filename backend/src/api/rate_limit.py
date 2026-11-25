@@ -43,13 +43,15 @@ def init_limiter() -> Limiter:
 
     strategy = limiter._strategy or "fixed-window"  # noqa: SLF001
 
+    from src.core.config import get_config
+    import redis as redis_lib
+    from limits.storage import RedisStorage
+
+    cfg = get_config()
+    pwd = cfg.redis.password or None
+    auth = f":{pwd}@" if pwd else ""
+    redis_url = f"redis://{auth}{cfg.redis.host}:{cfg.redis.port}/{cfg.redis.db}"
     try:
-        from src.core.config import get_config
-
-        cfg = get_config()
-        import redis as redis_lib
-
-        pwd = cfg.redis.password or None
         client = redis_lib.Redis(
             host=cfg.redis.host,
             port=cfg.redis.port,
@@ -59,16 +61,13 @@ def init_limiter() -> Limiter:
         )
         client.ping()
         client.close()
-
-        auth = f":{pwd}@" if pwd else ""
-        redis_url = f"redis://{auth}{cfg.redis.host}:{cfg.redis.port}/{cfg.redis.db}"
-        from limits.storage import RedisStorage
-
         storage = RedisStorage(redis_url)
         logger.info("Rate limiter using Redis storage")
-    except Exception:
+    except (redis_lib.RedisError, OSError) as exc:
+        # Only transport failures degrade. A malformed URL or bad config must
+        # fail startup instead of silently downgrading a security control.
         storage = MemoryStorage()
-        logger.warning("Redis unavailable, rate limiter using in-memory storage")
+        logger.warning("Redis unavailable ({}), rate limiter using in-memory storage", exc)
 
     # Update both the storage and the internal RateLimiter that references it
     limiter._storage = storage  # noqa: SLF001

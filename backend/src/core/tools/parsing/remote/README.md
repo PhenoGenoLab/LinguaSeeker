@@ -30,7 +30,7 @@ remote/
     2. 提交解析任务到 MinerU 云 API
     3. 轮询任务状态直到完成或超时
     4. 下载并解析结果（Markdown + 图片 + 元数据）
-  - `parse_local_files(file_paths, **kwargs)` → `MinerULocalBatchParseResult`：
+  - `parse_local_files(file_paths, *, options: MinerULocalBatchOptions)` → `MinerULocalBatchParseResult`：
     1. 上传本地文件到 MinerU 预签名 URL
     2. 提交批量解析任务
     3. 轮询批量状态直到所有文件完成
@@ -99,7 +99,8 @@ MinerULocalBatchParseResult {
 ## 使用
 
 ```python
-from src.core.agents.parsing.remote.parser import MinerURemoteParser
+from src.core.tools.parsing.contracts import MinerULocalBatchOptions
+from src.core.tools.parsing.remote.parser import MinerURemoteParser
 
 parser = MinerURemoteParser(
     api_token="your-mineru-token",
@@ -113,8 +114,11 @@ result = await parser.parse("/data/papers/example.pdf")
 result = await parser.parse("https://example.com/paper.pdf")
 
 # 批量解析
-batch_result = await parser.parse_local_files([
-    "/data/papers/paper1.pdf",
-    "/data/papers/paper2.pdf",
-])
+batch_result = await parser.parse_local_files(
+    [
+        "/data/papers/paper1.pdf",
+        "/data/papers/paper2.pdf",
+    ],
+    options=MinerULocalBatchOptions(model_version="vlm"),
+)
 ```
