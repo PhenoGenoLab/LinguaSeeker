@@ -365,7 +365,7 @@ async def test_login_creates_user_for_new_username(_mock_config_with_api_key):
             new_callable=AsyncMock,
             return_value=MagicMock(failed_services=MagicMock(return_value=[])),
         ),
-        patch("src.api.v1.auth.get_session_factory", return_value=session_factory),
+        patch("src.api.deps.get_session_factory", return_value=session_factory),
     ):
         from app.main import create_app
         from src.api.auth import _decode_session

@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.pipeline.skills.review.factory import ReviewServiceFactory
 from src.api.wiring import get_session_factory
 from src.dao.neo4j.repository import Neo4jRepository
+from src.dao.postgresql.users import PostgresUserStore
+from src.ports.users import UserStore
 
 _review_factory: ReviewServiceFactory | None = None
 _neo4j_repository: Neo4jRepository | None = None
@@ -38,6 +40,15 @@ def get_review_factory() -> ReviewServiceFactory:
     if _review_factory is None:
         raise RuntimeError("ReviewServiceFactory not initialized")
     return _review_factory
+
+
+def get_user_store() -> UserStore:
+    """Return a user store bound to the configured session factory.
+
+    Built per request so tests can patch ``get_session_factory``; without a
+    database the factory raises a 503-mapped ``PersistenceUnavailableError``.
+    """
+    return PostgresUserStore(get_session_factory())
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
