@@ -319,7 +319,6 @@ export function KnowledgeGraphCanvas({
   onNodeClick,
 }: KnowledgeGraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const graphRef = useRef<Graph | null>(null);
   const legendTypes = useMemo(() => usedTypes(graph), [graph]);
   const scale = useMemo(() => computeScale(graph.nodes.length), [graph.nodes.length]);
   const legendEdges = useMemo(() => {
@@ -340,6 +339,7 @@ export function KnowledgeGraphCanvas({
     if (!containerRef.current) return;
 
     let destroyed = false;
+    let rendered = false;
 
     const g6 = new Graph({
       container: containerRef.current,
@@ -400,21 +400,19 @@ export function KnowledgeGraphCanvas({
       });
     }
 
-    graphRef.current = g6;
-    void g6.render().then(() => {
-      // Debug: log actual element size attributes.
-
-      if (destroyed && graphRef.current === g6) {
-        graphRef.current = null;
-        g6.destroy();
-      }
-    });
+    void g6.render().then(
+      () => {
+        rendered = true;
+        if (destroyed) g6.destroy();
+      },
+      () => {
+        rendered = true;
+      },
+    );
 
     return () => {
       destroyed = true;
-      const ref = graphRef.current;
-      graphRef.current = null;
-      ref?.destroy();
+      if (rendered) g6.destroy();
     };
   }, [graph, scale, onNodeClick]);
 
