@@ -2,16 +2,74 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Protocol
 from uuid import UUID
 
 from src.core.tools.review.contracts import (
     BilingualSpan,
+    DeltaEntry,
     EvidenceGroupDetailResponse,
+    EvidencePatchRequest,
     EvidenceSearchResponse,
+    ReviewStatus,
     TrackSpan,
     VariantSearchResponse,
 )
+
+
+@dataclass(frozen=True)
+class PatchResult:
+    """Result of one evidence patch."""
+
+    canonical_evidence_id: UUID
+    old_status: ReviewStatus
+    new_status: ReviewStatus
+    deltas: int
+    field_deltas: list[DeltaEntry]
+
+
+@dataclass(frozen=True)
+class AuditEventRecord:
+    """One audit event without persistence types."""
+
+    review_event_id: UUID
+    canonical_evidence_id: UUID
+    reviewer_id: UUID | None
+    target_type: str
+    old_status: str | None
+    new_status: str | None
+    field_deltas: list[dict[str, Any]]
+    change_reason: str | None
+    created_at: datetime | None
+
+
+class FeedbackStore(Protocol):
+    """Apply one evidence patch as a single transaction."""
+
+    async def patch_evidence(
+        self,
+        *,
+        canonical_evidence_id: UUID,
+        patch: EvidencePatchRequest,
+        reviewer_id: UUID | None = None,
+        owner_user_id: UUID | str | None = None,
+    ) -> PatchResult: ...
+
+
+class AuditStore(Protocol):
+    """Read review audit events."""
+
+    async def list_events(
+        self,
+        *,
+        canonical_evidence_id: UUID | None = None,
+        source_document_id: UUID | None = None,
+        reviewer_id: UUID | None = None,
+        owner_user_id: UUID | str | None = None,
+        limit: int = 100,
+    ) -> list[AuditEventRecord]: ...
 
 
 class SourceLinkStore(Protocol):

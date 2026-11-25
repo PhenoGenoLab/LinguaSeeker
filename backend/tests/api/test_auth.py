@@ -53,7 +53,7 @@ async def test_write_route_defaults_to_public_account_without_api_key(_mock_conf
             new_callable=AsyncMock,
             return_value=MagicMock(failed_services=MagicMock(return_value=[])),
         ),
-        patch("src.api.v1.evidence.get_review_factory") as mock_factory,
+        patch("src.api.deps.PostgresFeedbackStore") as mock_store_cls,
         patch("src.api.deps.get_session_factory") as mock_sf,
     ):
         mock_sf.return_value = MagicMock(
@@ -64,7 +64,7 @@ async def test_write_route_defaults_to_public_account_without_api_key(_mock_conf
         )
 
         from src.core.tools.review.contracts import ReviewStatus
-        from src.core.tools.review.feedback_service import PatchResult
+        from src.dao.postgresql.review.feedback_store import PatchResult
 
         mock_service = MagicMock()
         mock_service.patch_evidence = AsyncMock(
@@ -76,7 +76,7 @@ async def test_write_route_defaults_to_public_account_without_api_key(_mock_conf
                 field_deltas=[],
             )
         )
-        mock_factory.return_value.create_feedback_service.return_value = mock_service
+        mock_store_cls.return_value = mock_service
 
         from app.main import create_app
 
@@ -109,7 +109,7 @@ async def test_write_route_accepted_with_valid_api_key(_mock_config_with_api_key
             new_callable=AsyncMock,
             return_value=MagicMock(failed_services=MagicMock(return_value=[])),
         ),
-        patch("src.api.v1.evidence.get_review_factory") as mock_factory,
+        patch("src.api.deps.PostgresFeedbackStore") as mock_store_cls,
         patch("src.api.deps.get_session_factory") as mock_sf,
     ):
         mock_sf.return_value = MagicMock(
@@ -119,7 +119,7 @@ async def test_write_route_accepted_with_valid_api_key(_mock_config_with_api_key
             )
         )
 
-        from src.core.tools.review.feedback_service import PatchResult
+        from src.dao.postgresql.review.feedback_store import PatchResult
         from src.core.tools.review.contracts import ReviewStatus
 
         mock_service = MagicMock()
@@ -132,7 +132,7 @@ async def test_write_route_accepted_with_valid_api_key(_mock_config_with_api_key
                 field_deltas=[],
             )
         )
-        mock_factory.return_value.create_feedback_service.return_value = mock_service
+        mock_store_cls.return_value = mock_service
 
         from app.main import create_app
 

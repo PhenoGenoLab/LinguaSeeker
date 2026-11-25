@@ -1,44 +1,30 @@
-"""Feedback service for evidence review and correction."""
+"""PostgreSQL adapter for evidence review feedback."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.core.tools.review.contracts import (
-    DeltaEntry,
     EvidenceCardPayload,
     EvidencePatchRequest,
     ReviewStatus,
     TargetType,
     card_field_for_field_id,
 )
-from src.core.tools.review.delta_audit_service import (
-    DeltaAuditService,
-)
+from src.core.tools.review.delta_audit_service import DeltaAuditService
 from src.dao.postgresql.models import CanonicalEvidenceItem
-
-
-@dataclass
-class PatchResult:
-    """Result of an evidence patch operation."""
-
-    canonical_evidence_id: UUID
-    old_status: ReviewStatus
-    new_status: ReviewStatus
-    deltas: int
-    field_deltas: list[DeltaEntry]
+from src.dao.postgresql.review.audit_store import record_audit_event
+from src.ports.review import PatchResult
 
 
 class FeedbackService:
-    """Handle evidence review and correction with audit trail."""
+    """Patch an evidence card inside the caller's transaction."""
 
     def __init__(self, session: AsyncSession):
         self._session = session
-        self._delta_service = DeltaAuditService()
 
     async def patch_evidence(
         self,
@@ -48,19 +34,7 @@ class FeedbackService:
         reviewer_id: UUID | None = None,
         owner_user_id: UUID | str | None = None,
     ) -> PatchResult:
-        """Apply a patch to an evidence card and record audit event.
-
-        Caller must commit the session after this returns. All changes
-        (payload update + audit event) are flushed but not committed.
-
-        Steps:
-        1. SELECT current active_payload (old)
-        2. Merge patch → new payload
-        3. UPDATE active_payload + review_status
-        4. Compute deltas (old vs new)
-        5. If deltas > 0: INSERT review_audit_event
-        6. Return PatchResult
-        """
+        """Apply a patch and record an audit event in the current session."""
         owner_id = UUID(str(owner_user_id)) if owner_user_id else None
         owner_filter = (
             CanonicalEvidenceItem.owner_user_id.is_(None)
@@ -74,14 +48,11 @@ class FeedbackService:
         result = await self._session.execute(stmt)
         evidence = result.scalar_one()
 
-        # Use raw payload dict to preserve field-level keys (group_id, source, track, etc.)
         payload = dict(evidence.active_payload or {})
         field_id = str(payload.get("field_id") or evidence.field_id)
 
-        # Build old card view: prefer field-level projection, fall back to direct card keys
         has_card_keys = any(k in EvidenceCardPayload.DIFF_FIELDS for k in payload)
         if has_card_keys:
-            # Payload contains card-level keys directly (e.g. test data or legacy payloads)
             old_card = EvidenceCardPayload(**{k: v for k, v in payload.items() if k in EvidenceCardPayload.DIFF_FIELDS})
         else:
             old_card = EvidenceCardPayload.from_field_payload(field_id=field_id, payload=payload)
@@ -95,7 +66,6 @@ class FeedbackService:
         old_status = ReviewStatus(evidence.review_status)
         new_status = patch.new_status or (ReviewStatus.CORRECTED if field_deltas else old_status)
 
-        # Merge: update patched card fields into the raw payload
         for field_name, field_value in patch.fields.items():
             payload[field_name] = field_value
         card_field = card_field_for_field_id(field_id)
@@ -107,7 +77,7 @@ class FeedbackService:
         await self._session.flush()
 
         if field_deltas or new_status != old_status:
-            await self._delta_service.record_audit_event(
+            await record_audit_event(
                 self._session,
                 canonical_evidence_id=canonical_evidence_id,
                 reviewer_id=reviewer_id,
@@ -134,23 +104,37 @@ class FeedbackService:
         *,
         owner_user_id: UUID | None,
     ) -> None:
-        """Rebuild the literature profile for the given source document.
-
-        Lazy-imports LiteratureProfileRepository to avoid circular imports.
-        """
-        from src.dao.postgresql.literature_profile_repo import (
-            LiteratureProfileRepository,
-        )
+        from src.dao.postgresql.literature_profile_repo import LiteratureProfileRepository
 
         repo = LiteratureProfileRepository(self._session)
         await repo.refresh_for_document(source_document_id, owner_user_id=owner_user_id)
 
     async def _refresh_search_index(self) -> None:
-        """Rebuild the frontend search index after evidence changes.
-
-        Lazy-imports SearchIndexRepository to avoid circular imports.
-        """
         from src.dao.postgresql.search_index_repo import SearchIndexRepository
 
-        repo = SearchIndexRepository(self._session)
-        await repo.refresh()
+        await SearchIndexRepository(self._session).refresh()
+
+
+class PostgresFeedbackStore:
+    """Own the transaction for one evidence patch."""
+
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+        self._session_factory = session_factory
+
+    async def patch_evidence(
+        self,
+        *,
+        canonical_evidence_id: UUID,
+        patch: EvidencePatchRequest,
+        reviewer_id: UUID | None = None,
+        owner_user_id: UUID | str | None = None,
+    ) -> PatchResult:
+        async with self._session_factory() as session:
+            result = await FeedbackService(session).patch_evidence(
+                canonical_evidence_id=canonical_evidence_id,
+                patch=patch,
+                reviewer_id=reviewer_id,
+                owner_user_id=owner_user_id,
+            )
+            await session.commit()
+            return result

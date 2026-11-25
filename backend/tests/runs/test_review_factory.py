@@ -11,7 +11,7 @@ from src.pipeline.skills.review.chat_service import ChatService
 from src.core.tools.review.delta_audit_service import (
     DeltaAuditService,
 )
-from src.core.tools.review.feedback_service import (
+from src.dao.postgresql.review.feedback_store import (
     FeedbackService,
 )
 from src.dao.postgresql.review.source_link_store import PostgresSourceLinkStore

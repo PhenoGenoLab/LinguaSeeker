@@ -13,7 +13,7 @@ from httpx import AsyncClient
 async def test_patch_evidence_returns_updated_card(async_client: AsyncClient):
     """PATCH /api/v1/evidence/{id} applies patch and returns result."""
     from src.core.tools.review.contracts import ReviewStatus
-    from src.core.tools.review.feedback_service import PatchResult
+    from src.dao.postgresql.review.feedback_store import PatchResult
 
     evidence_id = uuid4()
     mock_result = PatchResult(
@@ -25,10 +25,10 @@ async def test_patch_evidence_returns_updated_card(async_client: AsyncClient):
     )
 
     # Patch in the route module where get_review_factory is bound
-    with patch("src.api.v1.evidence.get_review_factory") as mock_factory:
+    with patch("src.api.deps.PostgresFeedbackStore") as mock_store_cls:
         mock_service = MagicMock()
         mock_service.patch_evidence = AsyncMock(return_value=mock_result)
-        mock_factory.return_value.create_feedback_service.return_value = mock_service
+        mock_store_cls.return_value = mock_service
 
         response = await async_client.patch(
             f"/api/v1/evidence/{evidence_id}",
@@ -46,10 +46,10 @@ async def test_patch_evidence_404_for_unknown(async_client: AsyncClient):
     """PATCH /api/v1/evidence/{id} returns 404 for unknown evidence."""
     from sqlalchemy.exc import NoResultFound
 
-    with patch("src.api.v1.evidence.get_review_factory") as mock_factory:
+    with patch("src.api.deps.PostgresFeedbackStore") as mock_store_cls:
         mock_service = MagicMock()
         mock_service.patch_evidence = AsyncMock(side_effect=NoResultFound())
-        mock_factory.return_value.create_feedback_service.return_value = mock_service
+        mock_store_cls.return_value = mock_service
 
         response = await async_client.patch(
             f"/api/v1/evidence/{uuid4()}",

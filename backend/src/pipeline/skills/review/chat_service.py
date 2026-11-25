@@ -580,7 +580,7 @@ class ChatService:
         owner_user_id: UUID | None = None,
     ) -> str:
         """Parse the user message and apply correction via FeedbackService."""
-        from src.core.tools.review.feedback_service import (
+        from src.dao.postgresql.review.feedback_store import (
             FeedbackService,
         )
         from src.core.tools.review.contracts import (

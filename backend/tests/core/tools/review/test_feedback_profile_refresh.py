@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.core.tools.review.feedback_service import (
+from src.dao.postgresql.review.feedback_store import (
     FeedbackService,
 )
 
@@ -125,7 +125,7 @@ class TestFeedbackProfileRefresh:
     async def test_refresh_delegates_to_literature_profile_repo(self) -> None:
         """_refresh_literature_profile creates a LiteratureProfileRepository and
         calls refresh_for_document."""
-        from src.core.tools.review.feedback_service import (
+        from src.dao.postgresql.review.feedback_store import (
             FeedbackService,
         )
 
@@ -148,7 +148,7 @@ class TestFeedbackProfileRefresh:
 
     async def test_refresh_search_index_delegates_to_search_index_repo(self) -> None:
         """_refresh_search_index creates a SearchIndexRepository and calls refresh."""
-        from src.core.tools.review.feedback_service import (
+        from src.dao.postgresql.review.feedback_store import (
             FeedbackService,
         )
 
@@ -255,15 +255,16 @@ class TestFeedbackProfileRefresh:
         service = FeedbackService(session)
         call_order: list[str] = []
 
-        original_record = service._delta_service.record_audit_event
+        from src.dao.postgresql.review.feedback_store import (
+            record_audit_event as original_record,
+        )
 
         async def tracking_record_audit(*args, **kwargs):
             call_order.append("audit_event")
             return await original_record(*args, **kwargs)
 
-        with patch.object(
-            service._delta_service,
-            "record_audit_event",
+        with patch(
+            "src.dao.postgresql.review.feedback_store.record_audit_event",
             side_effect=tracking_record_audit,
         ):
             with patch.object(service, "_refresh_literature_profile", new_callable=AsyncMock) as mock_refresh:

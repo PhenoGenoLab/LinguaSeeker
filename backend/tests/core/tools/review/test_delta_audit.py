@@ -13,9 +13,8 @@ from src.core.tools.review.contracts import (
     ReviewStatus,
     TargetType,
 )
-from src.core.tools.review.delta_audit_service import (
-    DeltaAuditService,
-)
+from src.core.tools.review.delta_audit_service import DeltaAuditService
+from src.dao.postgresql.review.audit_store import list_audit_events, record_audit_event
 from src.dao.postgresql.models import CanonicalEvidenceItem, SourceDocument
 
 
@@ -82,14 +81,13 @@ async def test_list_audit_events_filters_by_source_document(
     db_session: AsyncSession,
 ) -> None:
     """Source-document filtering returns only events for that literature record."""
-    service = DeltaAuditService()
     first_doc_id, first_evidence_id = await _create_evidence(db_session, "A.gene_symbol")
     second_doc_id, second_evidence_id = await _create_evidence(
         db_session,
         "B.disease_diagnosis",
     )
 
-    await service.record_audit_event(
+    await record_audit_event(
         db_session,
         canonical_evidence_id=first_evidence_id,
         reviewer_id=None,
@@ -98,7 +96,7 @@ async def test_list_audit_events_filters_by_source_document(
         new_status=ReviewStatus.CORRECTED,
         field_deltas=[DeltaEntry(field="gene", old_value="GLA", new_value="PRKN")],
     )
-    await service.record_audit_event(
+    await record_audit_event(
         db_session,
         canonical_evidence_id=second_evidence_id,
         reviewer_id=None,
@@ -108,7 +106,7 @@ async def test_list_audit_events_filters_by_source_document(
         field_deltas=[],
     )
 
-    events = await service.list_audit_events(
+    events = await list_audit_events(
         db_session,
         source_document_id=first_doc_id,
     )

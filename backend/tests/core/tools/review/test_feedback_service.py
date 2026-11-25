@@ -12,7 +12,7 @@ from src.core.tools.review.contracts import (
     EvidencePatchRequest,
     ReviewStatus,
 )
-from src.core.tools.review.feedback_service import (
+from src.dao.postgresql.review.feedback_store import (
     FeedbackService,
 )
 

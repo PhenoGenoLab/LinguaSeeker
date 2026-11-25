@@ -11,7 +11,9 @@ from src.api.wiring import get_session_factory
 from src.dao.neo4j.repository import Neo4jRepository
 from src.dao.postgresql.users import PostgresUserStore
 from src.dao.postgresql.review.evidence_store import PostgresEvidenceStore
-from src.ports.review import EvidenceQueryStore
+from src.dao.postgresql.review.audit_store import PostgresAuditStore
+from src.dao.postgresql.review.feedback_store import PostgresFeedbackStore
+from src.ports.review import AuditStore, EvidenceQueryStore, FeedbackStore
 from src.ports.users import UserStore
 
 _review_factory: ReviewServiceFactory | None = None
@@ -56,6 +58,16 @@ def get_user_store() -> UserStore:
 def get_evidence_store() -> EvidenceQueryStore:
     """Return a read-only evidence query store for the current session factory."""
     return PostgresEvidenceStore(get_session_factory())
+
+
+def get_feedback_store() -> FeedbackStore:
+    """Return a feedback store that owns the patch transaction."""
+    return PostgresFeedbackStore(get_session_factory())
+
+
+def get_audit_store() -> AuditStore:
+    """Return a read-only audit store for the current session factory."""
+    return PostgresAuditStore(get_session_factory())
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:

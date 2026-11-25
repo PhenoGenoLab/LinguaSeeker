@@ -360,7 +360,7 @@ class AgentExecutor:
         from sqlalchemy.exc import NoResultFound
 
         from src.core.tools.review.contracts import EvidencePatchRequest, ReviewStatus
-        from src.core.tools.review.feedback_service import FeedbackService
+        from src.dao.postgresql.review.feedback_store import PostgresFeedbackStore
 
         if request.action == "correct" and not request.field_name:
             raise AgentJobFailure("review feedback 'correct' action requires field_name")
@@ -378,17 +378,15 @@ class AgentExecutor:
             "correct": ReviewStatus.CORRECTED,
         }[request.action]
         patch = EvidencePatchRequest(fields=fields, change_reason=request.note, new_status=new_status)
-        async with self._session_factory() as session:
-            try:
-                result = await FeedbackService(session).patch_evidence(
-                    canonical_evidence_id=evidence_uuid,
-                    patch=patch,
-                    reviewer_id=job.owner_user_id,
-                    owner_user_id=job.owner_user_id,
-                )
-            except NoResultFound as exc:
-                raise AgentJobFailure(f"evidence {request.evidence_id} not found for this account") from exc
-            await session.commit()
+        try:
+            result = await PostgresFeedbackStore(self._session_factory).patch_evidence(
+                canonical_evidence_id=evidence_uuid,
+                patch=patch,
+                reviewer_id=job.owner_user_id,
+                owner_user_id=job.owner_user_id,
+            )
+        except NoResultFound as exc:
+            raise AgentJobFailure(f"evidence {request.evidence_id} not found for this account") from exc
         return ReviewFeedbackResult(
             evidence_id=request.evidence_id,
             status=result.new_status.value,

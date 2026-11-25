@@ -11,10 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from src.api.auth import get_current_account
-from src.api.deps import get_db_session, get_evidence_store, get_review_factory
+from src.api.deps import get_db_session, get_evidence_store, get_feedback_store
 from src.api.rate_limit import limiter
 from src.core.foundation.auth.contracts import AuthContext
-from src.ports.review import EvidenceQueryStore
+from src.ports.review import EvidenceQueryStore, FeedbackStore
 from src.core.tools.review.contracts import (
     EvidenceGroupDetailResponse,
     EvidenceGroupSummary,
@@ -67,14 +67,12 @@ async def patch_evidence(
     request: Request,
     canonical_evidence_id: UUID,
     body: EvidencePatchRequest,
-    session: AsyncSession = Depends(get_db_session),
+    feedback: FeedbackStore = Depends(get_feedback_store),
     account: AuthContext = Depends(get_current_account),
 ) -> PatchResultResponse:
     """Apply a patch to an evidence card and record audit event."""
-    factory = get_review_factory()
-    service = factory.create_feedback_service(session)
     try:
-        result = await service.patch_evidence(
+        result = await feedback.patch_evidence(
             canonical_evidence_id=canonical_evidence_id,
             patch=body,
             reviewer_id=account.owner_user_id,
