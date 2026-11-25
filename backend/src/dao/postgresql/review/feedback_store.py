@@ -5,6 +5,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.core.tools.review.contracts import (
@@ -18,6 +19,7 @@ from src.core.tools.review.delta_audit_service import DeltaAuditService
 from src.dao.postgresql.models import CanonicalEvidenceItem
 from src.dao.postgresql.review.audit_store import record_audit_event
 from src.ports.review import PatchResult
+from src.utils.exceptions import RecordNotFoundError
 
 
 class FeedbackService:
@@ -130,11 +132,14 @@ class PostgresFeedbackStore:
         owner_user_id: UUID | str | None = None,
     ) -> PatchResult:
         async with self._session_factory() as session:
-            result = await FeedbackService(session).patch_evidence(
-                canonical_evidence_id=canonical_evidence_id,
-                patch=patch,
-                reviewer_id=reviewer_id,
-                owner_user_id=owner_user_id,
-            )
+            try:
+                result = await FeedbackService(session).patch_evidence(
+                    canonical_evidence_id=canonical_evidence_id,
+                    patch=patch,
+                    reviewer_id=reviewer_id,
+                    owner_user_id=owner_user_id,
+                )
+            except NoResultFound as exc:
+                raise RecordNotFoundError(f"Evidence {canonical_evidence_id} not found") from exc
             await session.commit()
             return result

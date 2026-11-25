@@ -55,6 +55,17 @@ class PersistenceUnavailableError(ACMGException):
         )
 
 
+class RecordNotFoundError(ACMGException):
+    """A persistence operation found no row for the requested identity.
+
+    Adapters translate driver-specific "no row" errors into this type so the
+    API layer does not depend on a database library.
+    """
+
+    def __init__(self, message: str = "Record not found") -> None:
+        super().__init__(message, code="NOT_FOUND")
+
+
 class LLMException(ACMGException):
     """LLM service call failed."""
 

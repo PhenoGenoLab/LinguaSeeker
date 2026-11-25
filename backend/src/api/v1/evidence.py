@@ -5,7 +5,6 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.exc import NoResultFound
 from starlette.requests import Request
 
 from src.api.auth import get_current_account
@@ -13,6 +12,7 @@ from src.api.deps import get_evidence_store, get_feedback_store, get_literature_
 from src.api.rate_limit import limiter
 from src.core.foundation.auth.contracts import AuthContext
 from src.ports.review import EvidenceQueryStore, FeedbackStore, LiteratureStore
+from src.utils.exceptions import RecordNotFoundError
 from src.core.tools.review.contracts import (
     EvidenceGroupDetailResponse,
     EvidencePatchRequest,
@@ -51,7 +51,7 @@ async def get_evidence_group_detail(
             source_document_id=str(source_document_id) if source_document_id else None,
             owner_user_id=account.owner_user_id,
         )
-    except NoResultFound:
+    except RecordNotFoundError:
         raise HTTPException(status_code=404, detail="Evidence group not found")
 
 
@@ -79,7 +79,7 @@ async def patch_evidence(
             deltas=result.deltas,
             field_deltas=result.field_deltas,
         )
-    except NoResultFound:
+    except RecordNotFoundError:
         raise HTTPException(status_code=404, detail="Evidence not found")
 
 

@@ -357,7 +357,7 @@ class AgentExecutor:
         request = ReviewFeedbackRequest.model_validate(job.request_data)
         if self._session_factory is None:
             raise AgentJobFailure("review feedback requires a database session", kind="transient")
-        from sqlalchemy.exc import NoResultFound
+        from src.utils.exceptions import RecordNotFoundError
 
         from src.core.tools.review.contracts import EvidencePatchRequest, ReviewStatus
         from src.dao.postgresql.review.feedback_store import PostgresFeedbackStore
@@ -385,7 +385,7 @@ class AgentExecutor:
                 reviewer_id=job.owner_user_id,
                 owner_user_id=job.owner_user_id,
             )
-        except NoResultFound as exc:
+        except RecordNotFoundError as exc:
             raise AgentJobFailure(f"evidence {request.evidence_id} not found for this account") from exc
         return ReviewFeedbackResult(
             evidence_id=request.evidence_id,

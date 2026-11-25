@@ -44,11 +44,11 @@ async def test_patch_evidence_returns_updated_card(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_patch_evidence_404_for_unknown(async_client: AsyncClient):
     """PATCH /api/v1/evidence/{id} returns 404 for unknown evidence."""
-    from sqlalchemy.exc import NoResultFound
+    from src.utils.exceptions import RecordNotFoundError
 
     with patch("src.api.deps.PostgresFeedbackStore") as mock_store_cls:
         mock_service = MagicMock()
-        mock_service.patch_evidence = AsyncMock(side_effect=NoResultFound())
+        mock_service.patch_evidence = AsyncMock(side_effect=RecordNotFoundError("missing"))
         mock_store_cls.return_value = mock_service
 
         response = await async_client.patch(
@@ -100,11 +100,11 @@ async def test_get_evidence_group_detail(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_evidence_group_detail_returns_404(async_client: AsyncClient):
     """GET /api/v1/evidence/groups/{group_id} returns 404 when group is missing."""
-    from sqlalchemy.exc import NoResultFound
+    from src.utils.exceptions import RecordNotFoundError
 
     with patch("src.api.deps.PostgresEvidenceStore") as mock_store_cls:
         mock_store = MagicMock()
-        mock_store.group_detail = AsyncMock(side_effect=NoResultFound())
+        mock_store.group_detail = AsyncMock(side_effect=RecordNotFoundError("missing"))
         mock_store_cls.return_value = mock_store
 
         response = await async_client.get("/api/v1/evidence/groups/detail", params={"group_id": "missing-group"})

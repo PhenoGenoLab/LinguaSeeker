@@ -12,6 +12,8 @@ from src.core.tools.review.contracts import (
     VariantSearchResponse,
 )
 from src.dao.postgresql.review.search_service import SearchService
+from src.utils.exceptions import RecordNotFoundError
+from sqlalchemy.exc import NoResultFound
 
 
 class PostgresEvidenceStore:
@@ -28,11 +30,14 @@ class PostgresEvidenceStore:
         owner_user_id: UUID | str | None,
     ) -> EvidenceGroupDetailResponse:
         async with self._session_factory() as session:
-            return await SearchService(session).get_group_detail(
-                group_id=group_id,
-                source_document_id=source_document_id,
-                owner_user_id=owner_user_id,
-            )
+            try:
+                return await SearchService(session).get_group_detail(
+                    group_id=group_id,
+                    source_document_id=source_document_id,
+                    owner_user_id=owner_user_id,
+                )
+            except NoResultFound as exc:
+                raise RecordNotFoundError("Evidence group not found") from exc
 
     async def search_evidence(
         self,
