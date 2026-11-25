@@ -337,7 +337,7 @@ def _try_parse_action(raw: str) -> ChatAction | None:
     if not raw:
         return None
     try:
-        payload = json.loads(raw)
+        payload, _ = json.JSONDecoder().raw_decode(raw)
     except json.JSONDecodeError:
         logger.warning("Chat action JSON parse failed: {}", raw[:200])
         return None

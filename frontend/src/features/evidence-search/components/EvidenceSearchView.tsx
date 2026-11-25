@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, Typography } from "antd";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { EvidenceSearchForm } from "./EvidenceSearchForm";
@@ -8,6 +9,16 @@ import { useI18n } from "@/lib/i18n";
 
 export function EvidenceSearchView() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialFilters = useMemo(
+    () => ({
+      gene: searchParams.get("gene") ?? undefined,
+      variant: searchParams.get("variant") ?? undefined,
+      disease: searchParams.get("disease") ?? undefined,
+      pmid: searchParams.get("pmid") ?? undefined,
+    }),
+    [searchParams],
+  );
   const {
     results,
     total,
@@ -21,7 +32,7 @@ export function EvidenceSearchView() {
     applyFilters,
     clearFilters,
     setPage,
-  } = useEvidenceSearch();
+  } = useEvidenceSearch(initialFilters);
   const { t } = useI18n();
 
   return (

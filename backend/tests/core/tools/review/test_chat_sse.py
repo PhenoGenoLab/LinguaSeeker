@@ -65,6 +65,13 @@ class TestTryParseAction:
     def test_invalid_action_fields_returns_none(self) -> None:
         assert _try_parse_action('{"foo": "bar"}') is None
 
+    def test_action_json_with_trailing_delimiter(self) -> None:
+        raw = '{"intent": "search-evidence", "slots": {"gene": "GLA"}}<<<ACTION>>>'
+        action = _try_parse_action(raw)
+        assert action is not None
+        assert action.intent == "search-evidence"
+        assert action.slots["gene"] == "GLA"
+
 
 class TestChatAgentPrompt:
     def test_prompt_routes_after_slot_gathering_and_final_confirmation(self) -> None:
