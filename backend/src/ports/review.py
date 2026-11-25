@@ -20,6 +20,7 @@ from src.core.tools.review.contracts import (
     TrackSpan,
     VariantSearchResponse,
 )
+from src.ports.chat import ChatStore
 
 
 @dataclass(frozen=True)
