@@ -53,23 +53,41 @@ class StandardizationSkill:
         agent = self._build_agent(standardize_entities)
         from agentscope.message import UserMsg
 
-        await agent.reply(UserMsg(name="user", content="standardize the entities"))
-        if "result" not in holder:
-            raise RuntimeError(f"{self.name}: agent did not call standardize_entities")
-        return holder["result"]
+        for _ in range(2):
+            await agent.reply(UserMsg(name="user", content="standardize the entities"))
+            if "result" in holder:
+                return holder["result"]
+            await agent.reply(
+                UserMsg(
+                    name="user",
+                    content="You must call the `standardize_entities` tool now; do not answer in text.",
+                )
+            )
+        raise RuntimeError(f"{self.name}: agent did not call standardize_entities")
 
     def _build_agent(self, tool: Callable[[str], Awaitable[str]]) -> Any:
         if self._agent is not None:
             return self._agent
         from agentscope.agent import Agent
+        from agentscope.permission import PermissionBehavior, PermissionDecision
         from agentscope.tool import FunctionTool, Toolkit
         from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
 
         return Agent(
             name=self.name,
             system_prompt=self.system_prompt,
-            model=build_chat_model(self._cfg, tier="reasoning"),
-            toolkit=Toolkit(tools=[FunctionTool(tool)]),
+            model=build_chat_model(self._cfg, tier="fast"),
+            toolkit=Toolkit(
+                tools=[
+                    FunctionTool(
+                        tool,
+                        permission=PermissionDecision(
+                            behavior=PermissionBehavior.ALLOW,
+                            message="standardization tool is always allowed in this pipeline",
+                        ),
+                    )
+                ]
+            ),
         )
 
 

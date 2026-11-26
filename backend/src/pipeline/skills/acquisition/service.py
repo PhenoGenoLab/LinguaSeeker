@@ -49,15 +49,23 @@ class AcquisitionSkill:
         agent = self._build_agent(acquire_document)
         from agentscope.message import UserMsg
 
-        await agent.reply(UserMsg(name="user", content="acquire the document"))
-        if "result" not in holder:
-            raise RuntimeError(f"{self.name}: agent did not call acquire_document")
-        return holder["result"]
+        for _ in range(2):
+            await agent.reply(UserMsg(name="user", content="acquire the document"))
+            if "result" in holder:
+                return holder["result"]
+            await agent.reply(
+                UserMsg(
+                    name="user",
+                    content="You must call the `acquire_document` tool now; do not answer in text.",
+                )
+            )
+        raise RuntimeError(f"{self.name}: agent did not call acquire_document")
 
     def _build_agent(self, tool: Callable[[str], Awaitable[str]]) -> Any:
         if self._agent is not None:
             return self._agent
         from agentscope.agent import Agent
+        from agentscope.permission import PermissionBehavior, PermissionDecision
         from agentscope.tool import FunctionTool, Toolkit
         from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
 
@@ -65,7 +73,17 @@ class AcquisitionSkill:
             name=self.name,
             system_prompt=self.system_prompt,
             model=build_chat_model(self._cfg, tier="fast"),
-            toolkit=Toolkit(tools=[FunctionTool(tool)]),
+            toolkit=Toolkit(
+                tools=[
+                    FunctionTool(
+                        tool,
+                        permission=PermissionDecision(
+                            behavior=PermissionBehavior.ALLOW,
+                            message="acquisition tool is always allowed in this pipeline",
+                        ),
+                    )
+                ]
+            ),
         )
 
 
