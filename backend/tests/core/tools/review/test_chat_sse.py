@@ -401,3 +401,42 @@ class TestChatRouterEnvelope:
             {"role": "user", "content": "Hello"},
             {"role": "assistant", "content": "Hi, how can I help?"},
         ]
+
+
+@pytest.mark.asyncio
+async def test_route_intent_stream_does_not_repeat_streamed_text() -> None:
+    """The final stream yield must contain only the unstreamed tail."""
+    from src.pipeline.skills.review.providers import ChatLLMProvider
+
+    payload_text = "abcdefghijklmnopqrstuvwxyz"
+
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        async def aiter_lines(self):
+            yield f'data: {{"choices": [{{"delta": {{"content": "{payload_text}"}}}}]}}'
+
+    class FakeContext:
+        async def __aenter__(self):
+            return FakeResponse()
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    provider = object.__new__(ChatLLMProvider)
+    provider._ensure_configured = lambda name: None  # type: ignore[method-assign]
+    provider._build_payload = lambda **kwargs: {}  # type: ignore[method-assign]
+    provider._stream_chat = lambda payload: FakeContext()  # type: ignore[method-assign]
+
+    parts: list[str] = []
+    async for item in provider.route_intent_stream(
+        system_prompt="test",
+        user_message="test",
+    ):
+        if isinstance(item, str):
+            parts.append(item)
+        elif isinstance(item, tuple):
+            parts.append(item[0])
+
+    assert "".join(parts) == payload_text

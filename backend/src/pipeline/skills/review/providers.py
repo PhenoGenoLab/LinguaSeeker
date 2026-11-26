@@ -292,7 +292,7 @@ class ChatLLMProvider(_BaseLLMProvider):
             action = _try_parse_action(action_str)
             yield ("", action)
         else:
-            yield _parse_delimited(all_text)
+            yield (all_text[yielded:], None)
 
     @staticmethod
     def _parse_envelope(raw: str) -> tuple[str, ChatAction | None]:
