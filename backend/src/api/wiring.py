@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING, Any, cast
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
@@ -53,6 +54,7 @@ _neo4j_driver: AsyncDriver | None = None
 _neo4j_repository: Neo4jRepository | None = None
 _agent_job_store: "AgentJobStore | None" = None
 _startup_lock_raw_conn: Any = None
+_neo4j_init_task: asyncio.Task[None] | None = None
 
 
 def set_agent_job_store(store: "AgentJobStore") -> None:
@@ -261,6 +263,16 @@ async def initialize_neo4j() -> None:
         logger.info("Neo4j indexes and lowercase fields ready")
     except Exception as exc:
         logger.warning("Neo4j index initialization failed: {}", exc)
+
+
+def start_neo4j_initialization() -> None:
+    """Run graph index/backfill work in the background without blocking startup."""
+    global _neo4j_init_task
+    if _neo4j_repository is None:
+        return
+    if _neo4j_init_task is not None and not _neo4j_init_task.done():
+        return
+    _neo4j_init_task = asyncio.create_task(initialize_neo4j())
 
 
 async def acquire_startup_lock() -> bool:
