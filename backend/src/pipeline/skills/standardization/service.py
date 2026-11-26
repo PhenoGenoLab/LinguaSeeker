@@ -10,6 +10,8 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from loguru import logger
+
 
 class StandardizationSkill:
     """Bounded agent for Phase 4: one tool that standardizes a dual result."""
@@ -17,7 +19,8 @@ class StandardizationSkill:
     name = "standardization"
     system_prompt = (
         "You standardize extracted clinical entities against terminology databases.\n"
-        "Call the `standardize_entities` tool exactly once, then reply with a one-line summary."
+        "The extraction result is already bound to the `standardize_entities` tool. "
+        "Call `standardize_entities` exactly once with payload='standardize', then reply with a one-line summary."
     )
 
     def __init__(self, cfg: Any = None, runner: Any = None, agent: Any = None) -> None:
@@ -40,7 +43,7 @@ class StandardizationSkill:
         holder: dict[str, Any] = {}
 
         async def standardize_entities(payload: str) -> str:
-            """Run standardization and return a status string."""
+            """Standardize the bound result; call with payload='standardize'."""
             holder["result"] = await self._runner.run_dual_result(
                 dual_result,
                 source_document_id=source_document_id,
@@ -54,7 +57,12 @@ class StandardizationSkill:
         from agentscope.message import UserMsg
 
         for _ in range(2):
-            await agent.reply(UserMsg(name="user", content="standardize the entities"))
+            await agent.reply(
+                UserMsg(
+                    name="user",
+                    content="Call standardize_entities(payload='standardize') now; the result is already bound.",
+                )
+            )
             if "result" in holder:
                 return holder["result"]
             await agent.reply(
@@ -63,12 +71,14 @@ class StandardizationSkill:
                     content="You must call the `standardize_entities` tool now; do not answer in text.",
                 )
             )
-        raise RuntimeError(f"{self.name}: agent did not call standardize_entities")
+        logger.warning("standardization: agent did not call standardize_entities; invoking bound tool directly")
+        await standardize_entities("standardize")
+        return holder["result"]
 
     def _build_agent(self, tool: Callable[[str], Awaitable[str]]) -> Any:
         if self._agent is not None:
             return self._agent
-        from agentscope.agent import Agent
+        from agentscope.agent import Agent, ModelConfig
         from agentscope.permission import PermissionBehavior, PermissionDecision
         from agentscope.tool import FunctionTool, Toolkit
         from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
@@ -77,6 +87,7 @@ class StandardizationSkill:
             name=self.name,
             system_prompt=self.system_prompt,
             model=build_chat_model(self._cfg, tier="fast"),
+            model_config=ModelConfig(max_retries=3),
             toolkit=Toolkit(
                 tools=[
                     FunctionTool(

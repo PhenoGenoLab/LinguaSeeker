@@ -11,6 +11,8 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from loguru import logger
+
 
 
 class AcquisitionSkill:
@@ -59,12 +61,14 @@ class AcquisitionSkill:
                     content="You must call the `acquire_document` tool now; do not answer in text.",
                 )
             )
-        raise RuntimeError(f"{self.name}: agent did not call acquire_document")
+        logger.warning("acquisition: agent did not call acquire_document; invoking bound tool directly")
+        await acquire_document("acquire")
+        return holder["result"]
 
     def _build_agent(self, tool: Callable[[str], Awaitable[str]]) -> Any:
         if self._agent is not None:
             return self._agent
-        from agentscope.agent import Agent
+        from agentscope.agent import Agent, ModelConfig
         from agentscope.permission import PermissionBehavior, PermissionDecision
         from agentscope.tool import FunctionTool, Toolkit
         from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
@@ -73,6 +77,7 @@ class AcquisitionSkill:
             name=self.name,
             system_prompt=self.system_prompt,
             model=build_chat_model(self._cfg, tier="fast"),
+            model_config=ModelConfig(max_retries=3),
             toolkit=Toolkit(
                 tools=[
                     FunctionTool(

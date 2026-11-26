@@ -9,6 +9,8 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from loguru import logger
+
 
 
 class ParsingSkill:
@@ -17,7 +19,8 @@ class ParsingSkill:
     name = "parsing"
     system_prompt = (
         "You parse one document for a clinical-genetics pipeline.\n"
-        "Call the `parse_document` tool exactly once, then reply with a one-line summary."
+        "The files are already bound to the `parse_document` tool. "
+        "Call `parse_document` exactly once with payload='parse', then reply with a one-line summary."
     )
 
     def __init__(self, cfg: Any = None, service: Any = None, agent: Any = None) -> None:
@@ -39,7 +42,7 @@ class ParsingSkill:
         holder: dict[str, Any] = {}
 
         async def parse_document(payload: str) -> str:
-            """Parse the bound files and return a short status string."""
+            """Parse the bound files; call with payload='parse'."""
             holder["result"] = await self.service.parse_local_files_and_save(
                 file_paths=file_paths, output_dir=output_dir
             )
@@ -50,7 +53,12 @@ class ParsingSkill:
         from agentscope.message import UserMsg
 
         for _ in range(2):
-            await agent.reply(UserMsg(name="user", content="parse the document"))
+            await agent.reply(
+                UserMsg(
+                    name="user",
+                    content="Call parse_document(payload='parse') now; the files are already bound.",
+                )
+            )
             if "result" in holder:
                 return holder["result"]
             await agent.reply(
@@ -59,12 +67,14 @@ class ParsingSkill:
                     content="You must call the `parse_document` tool now; do not answer in text.",
                 )
             )
-        raise RuntimeError(f"{self.name}: agent did not call parse_document")
+        logger.warning("parsing: agent did not call parse_document; invoking bound tool directly")
+        await parse_document("parse")
+        return holder["result"]
 
     def _build_agent(self, tool: Callable[[str], Awaitable[str]]) -> Any:
         if self._agent is not None:
             return self._agent
-        from agentscope.agent import Agent
+        from agentscope.agent import Agent, ModelConfig
         from agentscope.permission import PermissionBehavior, PermissionDecision
         from agentscope.tool import FunctionTool, Toolkit
         from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
@@ -73,6 +83,7 @@ class ParsingSkill:
             name=self.name,
             system_prompt=self.system_prompt,
             model=build_chat_model(self._cfg, tier="fast"),
+            model_config=ModelConfig(max_retries=3),
             toolkit=Toolkit(
                 tools=[
                     FunctionTool(

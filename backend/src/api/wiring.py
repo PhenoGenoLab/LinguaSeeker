@@ -359,6 +359,13 @@ def _configure_lit_acquisition(cfg: Settings) -> None:
         no_proxy=cfg.network.no_proxy,
     )
 
+    # The SDK's Rust downloader returns on publisher 4xx responses without
+    # trying its httpx fallback. MDPI (and similar) serve PDFs only to the
+    # httpx client's browser-style headers, so force that path here.
+    from lit_acquisition.net import download as lit_download
+
+    lit_download.net_io = None
+
 
 def wire_dependencies() -> None:
     """Assemble and inject all application dependencies.
