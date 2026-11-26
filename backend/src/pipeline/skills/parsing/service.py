@@ -38,7 +38,7 @@ class ParsingSkill:
         """Parse the given files through the agent's single tool."""
         holder: dict[str, Any] = {}
 
-        async def parse_document(_payload: str) -> str:
+        async def parse_document(payload: str) -> str:
             """Parse the bound files and return a short status string."""
             holder["result"] = await self.service.parse_local_files_and_save(
                 file_paths=file_paths, output_dir=output_dir

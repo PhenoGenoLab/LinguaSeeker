@@ -39,7 +39,7 @@ class StandardizationSkill:
             raise RuntimeError(f"{self.name}: standardization runner is not configured")
         holder: dict[str, Any] = {}
 
-        async def standardize_entities(_payload: str) -> str:
+        async def standardize_entities(payload: str) -> str:
             """Run standardization and return a status string."""
             holder["result"] = await self._runner.run_dual_result(
                 dual_result,

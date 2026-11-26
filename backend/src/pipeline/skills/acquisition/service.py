@@ -40,7 +40,7 @@ class AcquisitionSkill:
         """Acquire one document through the agent's single tool."""
         holder: dict[str, Any] = {}
 
-        async def acquire_document(_payload: str) -> str:
+        async def acquire_document(payload: str) -> str:
             """Acquire the bound request and return a short status string."""
             holder["result"] = await self.service.acquire(request)
             return "acquired"
