@@ -8,17 +8,27 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.pipeline.skills.review.chat_service import (
-    ChatService,
-)
+from src.pipeline.skills.review.chat_service import ChatService
+from src.pipeline.skills.review.supervisor import Supervisor
 from src.dao.postgresql.review.chat_store import SessionChatStore
 from src.dao.postgresql.review.feedback_store import FeedbackService
 from src.utils.exceptions import NotFoundException
 
 
+def _make_supervisor(db_session: AsyncSession | None = None, provider=None) -> Supervisor:
+    """Build a Supervisor over the in-memory or mocked conversation store."""
+    effective_provider = provider or MagicMock()
+    chat = ChatService(
+        SessionChatStore(db_session) if db_session is not None else MagicMock(),
+        chat_provider=effective_provider,
+        feedback_store=FeedbackService(db_session) if db_session is not None else None,
+    )
+    return Supervisor(chat=chat, chat_provider=effective_provider)
+
+
 def test_detect_intent_uses_module_level_compiled_patterns():
     """Regex patterns should be compiled at module level, not per call."""
-    import src.pipeline.skills.review.chat_service as mod
+    import src.pipeline.skills.review.supervisor as mod
 
     assert hasattr(mod, "_QUESTION_PATTERNS")
     assert hasattr(mod, "_CORRECTION_PATTERNS")
@@ -27,13 +37,13 @@ def test_detect_intent_uses_module_level_compiled_patterns():
 
 def test_graph_qa_capability_is_read_only_in_prompt():
     """The router prompt must expose graph-qa and mark it as no-confirmation."""
-    from src.pipeline.skills.review.chat_service import (
-        CHAT_AGENT_CAPABILITIES_PROMPT,
+    from src.pipeline.skills.review.supervisor import (
+        SUPERVISOR_CAPABILITIES_PROMPT,
     )
 
-    assert "graph-qa — answer a knowledge question" in CHAT_AGENT_CAPABILITIES_PROMPT
-    assert "EXCEPTION (graph-qa)" in CHAT_AGENT_CAPABILITIES_PROMPT
-    assert "READ-ONLY" in CHAT_AGENT_CAPABILITIES_PROMPT
+    assert "graph-qa — answer a knowledge question" in SUPERVISOR_CAPABILITIES_PROMPT
+    assert "EXCEPTION (graph-qa)" in SUPERVISOR_CAPABILITIES_PROMPT
+    assert "READ-ONLY" in SUPERVISOR_CAPABILITIES_PROMPT
 
 
 def test_chat_action_accepts_graph_qa_intent():
@@ -262,7 +272,7 @@ class TestChatService:
         """Standalone chat uses a general assistant prompt without evidence context."""
         provider = MagicMock()
         provider.generate = AsyncMock(return_value="I can help start a pipeline.")
-        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
+        service = _make_supervisor(db_session, provider)
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         reply = await service.generate_reply(
@@ -277,7 +287,7 @@ class TestChatService:
         assert "pipeline" in kwargs["system_prompt"].lower()
 
     async def test_build_evidence_context_uses_current_best_run_id(self, db_session: AsyncSession) -> None:
-        """_build_evidence_context resolves canonical -> current_best_run_evidence_id -> entity + source."""
+        """build_evidence_context resolves canonical -> current_best_run_evidence_id -> entity + source."""
         from src.dao.postgresql.models import (
             CanonicalEvidenceItem,
             NormalizedEntity,
@@ -364,7 +374,7 @@ class TestChatService:
 
         # Act
         service = ChatService(SessionChatStore(db_session), feedback_store=FeedbackService(db_session))
-        context = await service._build_evidence_context(
+        context = await service.build_evidence_context(
             canonical_evidence_id=canonical.canonical_evidence_id,
         )
 
@@ -396,34 +406,34 @@ class TestChatService:
 
 def test_detect_intent_question_with_change_keyword():
     """Questions containing 'change' are classified as questions, not corrections."""
-    service = ChatService(MagicMock())
+    service = _make_supervisor()
     assert service._detect_intent("What should I change?") == "question"
     assert service._detect_intent("How do I change this?") == "question"
 
 
 def test_detect_intent_plain_question():
     """Simple questions are detected correctly."""
-    service = ChatService(MagicMock())
+    service = _make_supervisor()
     assert service._detect_intent("What is the evidence?") == "question"
     assert service._detect_intent("Why was this classified?") == "question"
 
 
 def test_detect_intent_correction():
     """Clear corrections without question marks are detected."""
-    service = ChatService(MagicMock())
+    service = _make_supervisor()
     assert service._detect_intent("change the classification to benign") == "correction"
     assert service._detect_intent("update the gene to BRCA1") == "correction"
 
 
 def test_detect_intent_note():
     """Ambiguous messages default to 'question' (per docstring contract)."""
-    service = ChatService(MagicMock())
+    service = _make_supervisor()
     assert service._detect_intent("I reviewed this evidence") == "question"
 
 
 def test_detect_intent_identity_questions_default_to_question():
     """Identity questions (who are you / 你是谁) reach the LLM, not 'note'."""
-    service = ChatService(MagicMock())
+    service = _make_supervisor()
     assert service._detect_intent("who are you") == "question"
     assert service._detect_intent("Who are you?") == "question"
     assert service._detect_intent("你是谁") == "question"

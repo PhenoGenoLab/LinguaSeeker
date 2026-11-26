@@ -24,7 +24,8 @@ review/
 ├── search_presentation.py # 汇总透视、trace 配对、高亮与 DTO 映射
 ├── feedback_service.py   # FeedbackService：证据纠错与审查状态管理
 ├── delta_audit_service.py # DeltaAuditService：字段级差异计算与审计事件持久化
-├── chat_service.py       # ChatService：LLM 对话会话管理与动作解析
+├── chat_service.py       # ChatService：会话/消息持久化与标题生成
+├── supervisor.py         # Supervisor：意图路由、动作权限与 LLM 回复
 ├── source_linker.py      # SourceLinker：证据到源文本的溯源链接
 └── providers.py          # LLM 提供者：ChatLLMProvider、ReasoningLLMProvider
 ```
@@ -55,12 +56,20 @@ review/
 
 ### ChatService（`chat_service.py`）
 
-LLM 对话管理：
+会话应用服务：
 - **会话管理** — 创建/列表/删除聊天会话，可绑定处理运行
-- **流式消息** — SSE 流式输出 LLM 回复，含 keepalive 心跳
-- **动作解析** — 从 LLM 输出中提取结构化 `ChatAction`（查询证据、修改字段、更新状态等）
-- **意图识别** — 正则模式匹配区分问题型和纠正型用户输入
-- **证据上下文注入** — 将关联证据数据注入 LLM 提示词
+- **消息持久化** — 追加与读取消息
+- **标题生成** — 首次用户消息后生成会话标题
+- **证据上下文/纠错** — 提供上下文构建与 feedback 纠错能力
+
+### Supervisor（`supervisor.py`）
+
+面向网站用户的智能体：
+- **意图识别** — 正则模式匹配区分问题、纠正和普通输入
+- **LLM 回复与流式输出** — 生成回复并通过 SSE 输出
+- **动作解析** — 从 LLM 输出中提取结构化 `ChatAction`
+- **权限校验** — 只允许已注册 intent；校验 search/graph/pipeline 的必备 slots
+- **持久化委托** — 会话和消息写入交给 `ChatService`
 
 ### SourceLinker（`source_linker.py`）
 
@@ -85,12 +94,9 @@ Phase 3 CanonicalEvidenceItem
         └─→ 文档内容加载 → 正文过滤 → 高亮构建
         │
         ▼
-   ChatService.send_message()
-        ├─→ LLM 推理 → ChatAction 解析
-        └─→ PostgresFeedbackStore.patch_evidence()
-                ├─→ DeltaAuditService.compute_deltas()
-                ├─→ 审计事件持久化
-                └─→ 文献档案/搜索索引刷新
+   Supervisor.stream_reply()
+        ├─→ 意图识别 → LLM 推理 → ChatAction 权限校验
+        └─→ ChatService.append_message() → 会话持久化
         │
         ▼
    SourceLinker.get_bilingual_span()
@@ -127,12 +133,17 @@ patch_result = await PostgresFeedbackStore(session_factory).patch_evidence(
     reviewer_id=user_id,
 )
 
-# LLM 对话（store 由组合根注入）
+# Supervisor（store/provider 由组合根注入）
+from src.pipeline.skills.review.chat_service import ChatService
+from src.pipeline.skills.review.supervisor import Supervisor
+from src.pipeline.skills.review.providers import ChatLLMProvider
+
 chat_service = ChatService(
     store=PostgresChatStore(session_factory),
     chat_provider=ChatLLMProvider(),
     feedback_store=PostgresFeedbackStore(session_factory),
 )
-async for chunk in chat_service.send_message_stream(session_id, "这个基因的变异分类是什么？"):
-    yield chunk  # SSE 流式输出
+supervisor = Supervisor(chat=chat_service, chat_provider=ChatLLMProvider())
+async for event in supervisor.stream_reply(session_id=session_id, user_message="这个基因的变异分类是什么？"):
+    yield event  # SSE 流式输出
 ```

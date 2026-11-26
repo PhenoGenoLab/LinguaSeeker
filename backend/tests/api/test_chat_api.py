@@ -232,6 +232,7 @@ async def test_append_message_can_generate_reply_when_requested(
         mock_service.append_message = AsyncMock(side_effect=[user_response, assistant_response])
         mock_service.generate_reply = AsyncMock(return_value="BRCA1 answer")
         mock_factory.return_value.create_chat_service.return_value = mock_service
+        mock_factory.return_value.create_supervisor.return_value = mock_service
 
         response = await async_client.post(
             f"/api/v1/chat/sessions/{session_id}/messages",

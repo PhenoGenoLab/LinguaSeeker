@@ -8,9 +8,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.pipeline.skills.review.chat_service import (
-    CHAT_AGENT_CAPABILITIES_PROMPT,
-    ChatService,
+from src.pipeline.skills.review.chat_service import ChatService
+from src.pipeline.skills.review.supervisor import (
+    SUPERVISOR_CAPABILITIES_PROMPT,
+    Supervisor,
 )
 from src.core.tools.review.contracts import ChatAction
 from src.dao.postgresql.review.chat_store import SessionChatStore
@@ -19,6 +20,16 @@ from src.pipeline.skills.review.providers import (
     _parse_delimited,
     _try_parse_action,
 )
+
+
+def _make_supervisor(db_session: AsyncSession, provider) -> Supervisor:
+    """Build a Supervisor over the in-memory conversation store."""
+    chat = ChatService(
+        SessionChatStore(db_session),
+        chat_provider=provider,
+        feedback_store=FeedbackService(db_session),
+    )
+    return Supervisor(chat=chat, chat_provider=provider)
 
 
 class TestParseDelimited:
@@ -75,18 +86,18 @@ class TestTryParseAction:
 
 class TestChatAgentPrompt:
     def test_prompt_names_supervisor(self) -> None:
-        assert "You are Supervisor" in CHAT_AGENT_CAPABILITIES_PROMPT
+        assert "You are Supervisor" in SUPERVISOR_CAPABILITIES_PROMPT
 
     def test_prompt_routes_after_slot_gathering_and_final_confirmation(self) -> None:
-        assert "ask for final confirmation" in CHAT_AGENT_CAPABILITIES_PROMPT
-        assert "Only after the user's next message explicitly confirms" in CHAT_AGENT_CAPABILITIES_PROMPT
-        assert "Never emit a structured action in the same turn" in CHAT_AGENT_CAPABILITIES_PROMPT
+        assert "ask for final confirmation" in SUPERVISOR_CAPABILITIES_PROMPT
+        assert "Only after the user's next message explicitly confirms" in SUPERVISOR_CAPABILITIES_PROMPT
+        assert "Never emit a structured action in the same turn" in SUPERVISOR_CAPABILITIES_PROMPT
 
     def test_prompt_does_not_instruct_manual_navigation_for_pdf_upload(self) -> None:
-        assert "Task Management page" not in CHAT_AGENT_CAPABILITIES_PROMPT
-        assert 'click "New Task"' not in CHAT_AGENT_CAPABILITIES_PROMPT
-        assert "manually open" in CHAT_AGENT_CAPABILITIES_PROMPT
-        assert "in-chat PDF upload control" in CHAT_AGENT_CAPABILITIES_PROMPT
+        assert "Task Management page" not in SUPERVISOR_CAPABILITIES_PROMPT
+        assert 'click "New Task"' not in SUPERVISOR_CAPABILITIES_PROMPT
+        assert "manually open" in SUPERVISOR_CAPABILITIES_PROMPT
+        assert "in-chat PDF upload control" in SUPERVISOR_CAPABILITIES_PROMPT
 
 
 @pytest.mark.asyncio
@@ -101,7 +112,7 @@ class TestChatSSEEvidenceContext:
 
         provider = MagicMock()
         provider.stream = mock_stream
-        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
+        service = _make_supervisor(db_session, provider)
         session = await service.create_session(processing_run_id=run_id, user_id=None)
 
         events = []
@@ -129,7 +140,7 @@ class TestChatSSEEvidenceContext:
 
         provider = MagicMock()
         provider.stream = mock_stream_error
-        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
+        service = _make_supervisor(db_session, provider)
         session = await service.create_session(processing_run_id=run_id, user_id=None)
 
         events = []
@@ -152,7 +163,7 @@ class TestChatSSEEvidenceContext:
 
         provider = MagicMock()
         provider.stream = mock_stream
-        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
+        service = _make_supervisor(db_session, provider)
         session = await service.create_session(processing_run_id=run_id, user_id=None)
 
         async for _ in service.stream_reply(
@@ -212,7 +223,7 @@ class TestChatRouterEnvelope:
 
         provider = MagicMock()
         provider.route_intent_stream = mock_stream
-        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
+        service = _make_supervisor(db_session, provider)
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         events = []
@@ -239,7 +250,7 @@ class TestChatRouterEnvelope:
 
         provider = MagicMock()
         provider.route_intent_stream = mock_stream
-        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
+        service = _make_supervisor(db_session, provider)
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         events = []
@@ -266,7 +277,7 @@ class TestChatRouterEnvelope:
 
         provider = MagicMock()
         provider.route_intent_stream = mock_stream
-        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
+        service = _make_supervisor(db_session, provider)
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         async for _ in service.stream_reply(
@@ -300,7 +311,7 @@ class TestChatRouterEnvelope:
 
         provider = MagicMock()
         provider.route_intent_stream = mock_stream
-        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
+        service = _make_supervisor(db_session, provider)
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         events = []
@@ -331,7 +342,7 @@ class TestChatRouterEnvelope:
 
         provider = MagicMock()
         provider.route_intent_stream = mock_stream
-        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
+        service = _make_supervisor(db_session, provider)
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         async for _ in service.stream_reply(
@@ -359,7 +370,7 @@ class TestChatRouterEnvelope:
         provider = MagicMock()
         provider.generate = AsyncMock(return_value="Upload request")
         provider.route_intent_stream = mock_stream
-        service = ChatService(SessionChatStore(db_session), chat_provider=provider, feedback_store=FeedbackService(db_session))
+        service = _make_supervisor(db_session, provider)
         session = await service.create_session(processing_run_id=None, user_id=None)
 
         await service.append_message(

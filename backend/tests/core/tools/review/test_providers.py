@@ -58,10 +58,11 @@ async def test_reasoning_llm_provider_reuses_httpx_client():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_uses_injected_provider():
-    """ChatService should use an injected provider, not create a new one per call."""
+async def test_supervisor_uses_injected_provider():
+    """Supervisor should use an injected provider, not create a new one per call."""
     from unittest.mock import AsyncMock, MagicMock, patch
     from src.pipeline.skills.review.chat_service import ChatService
+    from src.pipeline.skills.review.supervisor import Supervisor
 
     mock_session = AsyncMock()
     mock_provider = MagicMock()
@@ -70,13 +71,14 @@ async def test_chat_service_uses_injected_provider():
     from src.dao.postgresql.review.chat_store import SessionChatStore
     from src.dao.postgresql.review.feedback_store import FeedbackService
 
-    service = ChatService(
+    chat = ChatService(
         SessionChatStore(mock_session),
         chat_provider=mock_provider,
         feedback_store=FeedbackService(mock_session),
     )
+    service = Supervisor(chat=chat, chat_provider=mock_provider)
 
-    with patch.object(service, "_build_evidence_context", new_callable=AsyncMock, return_value="ctx"):
+    with patch.object(chat, "build_evidence_context", new_callable=AsyncMock, return_value="ctx"):
         await service.generate_reply(
             session_id=MagicMock(),
             user_message="What is BRCA1?",

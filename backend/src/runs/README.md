@@ -131,7 +131,7 @@ PostgreSQL 状态持久化适配器（实现 `RunStateStore` 端口）：
 
 - 长生命周期依赖（config、providers）在构造时注入
 - 短生命周期依赖（AsyncSession）每次方法调用传入
-- 创建：`FeedbackService`、`ChatService`、`SourceLinker`
+- 创建：`ChatService`、`Supervisor`、`SourceLinker`
 
 ## Usage / Patterns
 

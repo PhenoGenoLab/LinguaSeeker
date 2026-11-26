@@ -8,6 +8,7 @@ import pytest
 
 from src.pipeline.skills.review.factory import ReviewServiceFactory
 from src.pipeline.skills.review.chat_service import ChatService
+from src.pipeline.skills.review.supervisor import Supervisor
 from src.core.tools.review.delta_audit_service import (
     DeltaAuditService,
 )
@@ -24,6 +25,12 @@ def test_create_chat_service(factory: ReviewServiceFactory):
     """create_chat_service returns a ChatService instance."""
     service = factory.create_chat_service()
     assert isinstance(service, ChatService)
+
+
+def test_create_supervisor(factory: ReviewServiceFactory):
+    """create_supervisor returns a Supervisor instance."""
+    supervisor = factory.create_supervisor()
+    assert isinstance(supervisor, Supervisor)
 
 
 def test_create_source_linker(factory: ReviewServiceFactory):

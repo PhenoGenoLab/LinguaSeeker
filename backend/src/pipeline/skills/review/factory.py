@@ -16,6 +16,7 @@ from loguru import logger
 from src.core.tools.review.delta_audit_service import DeltaAuditService
 from src.pipeline.skills.review.chat_service import ChatService
 from src.pipeline.skills.review.providers import ChatLLMProvider
+from src.pipeline.skills.review.supervisor import Supervisor
 
 if TYPE_CHECKING:
     from src.ports.review import ReviewStores, SourceLinkStore
@@ -44,6 +45,13 @@ class ReviewServiceFactory:
             store=self._stores.chat_store(),
             chat_provider=self._chat_provider,
             feedback_store=self._stores.feedback_store(),
+        )
+
+    def create_supervisor(self) -> Supervisor:
+        """Create the user-facing supervisor with routing and permissions."""
+        return Supervisor(
+            chat=self.create_chat_service(),
+            chat_provider=self._chat_provider,
         )
 
     def schedule_session_title_generation(

@@ -112,7 +112,8 @@ async def append_message(
     )
 
     if body.role == "user" and body.auto_reply:
-        reply = await service.generate_reply(
+        supervisor = factory.create_supervisor()
+        reply = await supervisor.generate_reply(
             session_id=session_id,
             user_message=body.content,
             evidence_id=body.evidence_id,
@@ -154,10 +155,10 @@ async def stream_reply(
     reply is lost. This is a known FastAPI StreamingResponse limitation.
     """
     factory = get_review_factory()
-    service = factory.create_chat_service()
+    supervisor = factory.create_supervisor()
 
     async def event_generator():
-        async for event in service.stream_reply(
+        async for event in supervisor.stream_reply(
             session_id=session_id,
             user_message=user_message,
             evidence_id=evidence_id,

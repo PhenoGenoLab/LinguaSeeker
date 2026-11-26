@@ -401,6 +401,7 @@ class AgentExecutor:
             raise AgentJobFailure(f"invalid session_id: {request.session_id}") from exc
 
         service = self._review_factory.create_chat_service()
+        supervisor = self._review_factory.create_supervisor()
         if session_id is None:
             created = await service.create_session(
                 processing_run_id=None,
@@ -413,7 +414,7 @@ class AgentExecutor:
             content=request.message,
             owner_user_id=job.owner_user_id,
         )
-        reply = await service.generate_reply(
+        reply = await supervisor.generate_reply(
             session_id=session_id,
             user_message=request.message,
             owner_user_id=job.owner_user_id,
