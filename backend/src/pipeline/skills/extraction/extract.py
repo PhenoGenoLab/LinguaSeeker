@@ -136,7 +136,14 @@ class ExtractSkill:
             message = run_reply_sync(agent, request.payload, ExtractReply)
             structured = getattr(message, "structured_output", None)
             if not isinstance(structured, dict):
-                raise SkillError("extract: agent returned no structured output")
+                text = message.get_text_content() if hasattr(message, "get_text_content") else str(message.content)
+                start = text.find("{")
+                if start < 0:
+                    raise SkillError("extract: agent returned no structured output")
+                try:
+                    structured, _ = json.JSONDecoder().raw_decode(text[start:])
+                except json.JSONDecodeError as exc:
+                    raise SkillError(f"extract: structured output is not JSON: {exc}") from exc
             reply = ExtractReply.model_validate(structured)
             data = reply.model_dump()
             validate_reply_schema(data, "extract")

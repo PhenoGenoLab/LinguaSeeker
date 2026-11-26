@@ -14,10 +14,12 @@ cors_origins: "http://localhost:3000"
 fast_llm:
   base_url: "https://linxi.chat/v1"
   model: "gpt-5-mini"
+  model: "gpt-5.1"
 
 reasoning_llm:
   base_url: "https://linxi.chat/v1"
   model: "gpt-5"
+  model: "gpt-5.1"
 
 chat_llm:
   base_url: "https://api.siliconflow.cn"
