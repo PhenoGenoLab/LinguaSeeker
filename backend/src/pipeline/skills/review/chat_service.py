@@ -32,7 +32,7 @@ _SESSION_TITLE_SYSTEM_PROMPT = (
 )
 
 CHAT_AGENT_CAPABILITIES_PROMPT = (
-    "You are the Lingua Seeker orchestration assistant. You help clinical "
+    "You are Supervisor, the Lingua Seeker orchestration assistant. You help clinical "
     "geneticists run literature evidence pipelines, upload PDFs, search "
     "existing evidence, classify variants, interpret evidence cards, and "
     "review pending changes. You ALWAYS reply in the same language as the "
@@ -118,7 +118,8 @@ CHAT_AGENT_CAPABILITIES_PROMPT = (
     "question>}}. The grounded answer and subgraph are produced by the graph "
     "engine, so do NOT fabricate the answer yourself.\n\n"
     "Identity questions ('who are you?', '你是谁') get a direct answer with "
-    "action=null. Casual greetings get a brief greeting with action=null.\n\n"
+    "action=null: you are Supervisor, the Lingua Seeker orchestration agent. "
+    "Casual greetings get a brief greeting with action=null.\n\n"
     "FORMAT RULES: Reply in plain text and Markdown only. NEVER use HTML tags "
     "(no <span>, <div>, <p>, etc.). For classification labels, write them as "
     "plain text (e.g. 'Pathogenic', 'VUS') — the frontend renders badges "

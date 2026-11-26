@@ -4,7 +4,7 @@ type EnKeys = keyof EnDict;
 
 const zh: Record<EnKeys, string> = {
   // ── 导航 ──
-  "nav.chat": "AI 对话",
+  "nav.chat": "Supervisor",
   "nav.tasks": "任务",
   "nav.evidenceDb": "证据数据库",
   "nav.audit": "审计",
@@ -89,8 +89,8 @@ const zh: Record<EnKeys, string> = {
   "pipeline.history.noMatch": "无匹配的运行记录",
   "pipeline.history.noRuns": "暂无运行记录",
   "pipeline.history.filterEmpty": '无状态为"{status}"的运行记录',
-  "pipeline.history.chatLink": "AI 对话",
-  "pipeline.history.guidance": "从 AI 对话启动流水线或上传 PDF 开始处理文献。",
+  "pipeline.history.chatLink": "Supervisor",
+  "pipeline.history.guidance": "从 Supervisor 启动流水线或上传 PDF 开始处理文献。",
   "pipeline.history.loadError": "加载运行记录失败",
   "pipeline.history.loadErrorHint":
     "无法连接到流水线服务，请检查后端是否正在运行。",
@@ -539,12 +539,12 @@ const zh: Record<EnKeys, string> = {
   "audit.review.status.rejected": "已驳回",
 
   // ── 对话 ──
-  "chat.title": "对话",
+  "chat.title": "Supervisor",
   "chat.sessionLabel": "会话",
   "chat.inputPlaceholder": "输入消息…",
   "chat.send": "发送",
   "chat.newSession": "新建对话",
-  "chat.agentPlaceholder": "向 Lingua Seeker Agent 提问…",
+  "chat.agentPlaceholder": "向 Supervisor 提问…",
 
   // ── 对话 — WelcomeBlock ──
   "chat.welcome.heading": "在 Lingua Seeker 中启动可追溯的证据工作流",
@@ -658,9 +658,9 @@ const zh: Record<EnKeys, string> = {
   "guide.welcome": "欢迎使用 Lingua Seeker",
   "guide.welcomeDesc":
     "面向医学遗传学文献的多智能体自动化平台，支持结构化证据提取。",
-  "guide.chat": "AI 对话",
+  "guide.chat": "Supervisor",
   "guide.chatDesc":
-    "以自然语言与 AI 助手交互，检索文献、提取证据、解答遗传变异相关问题。",
+    "以自然语言与 Supervisor 交互，检索文献、提取证据、解答遗传变异相关问题。",
   "guide.tasks": "任务流水线",
   "guide.tasksDesc": "创建和管理文献处理任务——从文献采集到证据提取。",
   "guide.evidenceDb": "证据数据库",

@@ -1,6 +1,6 @@
 const en = {
   // ── Navigation ──
-  "nav.chat": "AI Chat",
+  "nav.chat": "Supervisor",
   "nav.tasks": "Tasks",
   "nav.evidenceDb": "Evidence Database",
   "nav.audit": "Audit",
@@ -89,9 +89,9 @@ const en = {
   "pipeline.history.noMatch": "No matching runs",
   "pipeline.history.noRuns": "No runs yet",
   "pipeline.history.filterEmpty": 'No runs with status "{status}"',
-  "pipeline.history.chatLink": "AI Chat",
+  "pipeline.history.chatLink": "Supervisor",
   "pipeline.history.guidance":
-    "Start a pipeline from the AI Chat or upload a PDF to begin processing literature.",
+    "Start a pipeline from Supervisor or upload a PDF to begin processing literature.",
   "pipeline.history.loadError": "Failed to load runs",
   "pipeline.history.loadErrorHint":
     "We could not reach the pipeline service. Check that the backend is running.",
@@ -559,12 +559,12 @@ const en = {
   "audit.review.status.rejected": "Rejected",
 
   // ── Chat ──
-  "chat.title": "Chat",
+  "chat.title": "Supervisor",
   "chat.sessionLabel": "Session",
   "chat.inputPlaceholder": "Type a message…",
   "chat.send": "Send",
   "chat.newSession": "New Chat",
-  "chat.agentPlaceholder": "Ask the Lingua Seeker Agent…",
+  "chat.agentPlaceholder": "Ask Supervisor…",
 
   // ── Chat — WelcomeBlock ──
   "chat.welcome.heading":
@@ -687,9 +687,9 @@ const en = {
   "guide.welcome": "Welcome to Lingua Seeker",
   "guide.welcomeDesc":
     "A multi-agent platform for medical genetics literature automation and structured evidence extraction.",
-  "guide.chat": "AI Chat",
+  "guide.chat": "Supervisor",
   "guide.chatDesc":
-    "Interact with an AI assistant in natural language to search literature, extract evidence, and get answers about genetic variants.",
+    "Talk to Supervisor in natural language to search literature, extract evidence, and get answers about genetic variants.",
   "guide.tasks": "Task Pipeline",
   "guide.tasksDesc":
     "Create and manage literature processing tasks — from acquisition to evidence extraction.",

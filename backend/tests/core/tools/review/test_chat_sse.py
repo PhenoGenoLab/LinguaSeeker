@@ -74,6 +74,9 @@ class TestTryParseAction:
 
 
 class TestChatAgentPrompt:
+    def test_prompt_names_supervisor(self) -> None:
+        assert "You are Supervisor" in CHAT_AGENT_CAPABILITIES_PROMPT
+
     def test_prompt_routes_after_slot_gathering_and_final_confirmation(self) -> None:
         assert "ask for final confirmation" in CHAT_AGENT_CAPABILITIES_PROMPT
         assert "Only after the user's next message explicitly confirms" in CHAT_AGENT_CAPABILITIES_PROMPT
