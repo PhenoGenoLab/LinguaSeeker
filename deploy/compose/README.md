@@ -10,11 +10,11 @@
 
 ```
 deploy/compose/
-├── dev-infra/               # 本地开发：仅 Postgres + Redis（后端在主机运行）
+├── dev-infra/               # 本地外部数据库容器：Postgres + Redis + Neo4j
 │   └── docker-compose.yml
-├── staging/                 # 预发布：backend + Postgres + Redis
+├── staging/                 # 预发布：仅 backend，数据库为外部容器
 │   └── docker-compose.yml
-├── backend-host/            # 跨主机：backend + Postgres + Redis（后端服务器）
+├── backend-host/            # 跨主机：仅 backend，数据库为外部容器
 │   ├── docker-compose.yml
 │   ├── .env.example
 │   └── config/              # 挂载的 production.yaml + vault/
@@ -28,9 +28,9 @@ deploy/compose/
 
 | 变体 | 服务 | 用途 |
 |------|------|------|
-| `dev-infra/` | Postgres + Redis | 本地开发，后端通过 `uv run uvicorn` 在主机启动 |
-| `staging/` | Backend + Postgres + Redis | 预发布验证，推理服务外部 |
-| `backend-host/` | Backend + Postgres + Redis | 跨主机部署的后端部分 |
+| `dev-infra/` | Postgres + Redis + Neo4j | 本地开发的外部数据库容器，后端通过 `uv run uvicorn` 在主机启动 |
+| `staging/` | Backend | 预发布验证；数据库与推理服务均为外部容器 |
+| `backend-host/` | Backend | 跨主机部署的后端部分；数据库为外部容器 |
 | `frontend-host/` | Nginx + SPA | 跨主机部署的前端部分 |
 
 ## 跨主机部署（backend-host + frontend-host）

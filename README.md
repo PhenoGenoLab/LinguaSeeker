@@ -55,8 +55,8 @@
 │   └── config/                     # 数据库配置
 ├── deploy/                         # 部署配置
 │   ├── compose/                    # Docker Compose 部署
-│   │   ├── dev-infra/              # 本地开发：仅 Postgres + Redis
-│   │   ├── backend-host/           # 后端 + Postgres + Redis
+│   │   ├── dev-infra/              # 本地外部数据库容器：Postgres + Redis + Neo4j
+│   │   ├── backend-host/           # 后端（数据库为外部容器）
 │   │   ├── frontend-host/          # Nginx + 预构建 SPA
 │   │   └── staging/                # 预发布环境
 │   ├── archive/                    # 已归档部署变体（single-server、debug-prod）
@@ -140,7 +140,7 @@ bun run dev
 
 ### 分离前后端（当前生产架构）
 
-前端（nginx + SPA）和后端（FastAPI + Postgres + Redis）部署在独立主机。详见 [deploy/compose/README.md](deploy/compose/README.md)。
+前端（nginx + SPA）和后端（FastAPI）部署在独立主机；Postgres、Redis、Neo4j 为外部容器服务。详见 [deploy/compose/README.md](deploy/compose/README.md)。
 
 ```bash
 # 后端主机

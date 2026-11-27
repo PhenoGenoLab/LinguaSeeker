@@ -17,9 +17,9 @@ deploy/
 │   ├── playbooks/              # site.yml、healthcheck.yml
 │   └── roles/                  # common、postgres、redis、backend、frontend、nginx
 ├── compose/                    # Docker Compose 部署变体
-│   ├── dev-infra/              # 本地开发：仅 Postgres + Redis
-│   ├── staging/                # 预发布：backend + Postgres + Redis
-│   ├── backend-host/           # 跨主机：backend + Postgres + Redis（后端服务器）
+│   ├── dev-infra/              # 本地外部数据库容器：Postgres + Redis + Neo4j
+│   ├── staging/                # 预发布：仅 backend，数据库为外部容器
+│   ├── backend-host/           # 跨主机：仅 backend，数据库为外部容器
 │   └── frontend-host/          # 跨主机：nginx + SPA（前端服务器）
 ├── archive/                    # 已归档变体：single-server、debug-prod
 ├── nginx/                      # Nginx 配置
@@ -34,7 +34,7 @@ deploy/
 | Ansible 裸机 | `ansible/` | 生产和预发布服务器，systemd 服务管理 |
 | 跨主机 Compose | `compose/backend-host/` + `compose/frontend-host/` | 前后端分离的 Docker 部署 |
 | 预发布 Compose | `compose/staging/` | Docker 预发布验证 |
-| 开发基础设施 | `compose/dev-infra/` | 本地开发（仅 Postgres + Redis，后端在主机运行） |
+| 开发基础设施 | `compose/dev-infra/` | 本地外部数据库容器（Postgres + Redis + Neo4j，后端在主机运行） |
 
 > 已归档变体见 `archive/`：`single-server/`（一体化 GPU 单机，被跨主机架构取代）、`debug-prod/`（生产配置本地调试）。
 

@@ -1,6 +1,6 @@
-# ── Dev Infrastructure — Postgres + Redis ────────────────────────────────────
-# Lightweight compose for local development. Only the infrastructure services
-# needed by the backend are included; the backend itself runs on the host via
+# ── Dev Infrastructure — external Postgres + Redis + Neo4j ────────────────────
+# Lightweight compose for local development. These database containers are the
+# external services used by the backend; the backend itself runs on the host via
 # `uv run uvicorn` (started by scripts/start_backend_dev.sh).
 #
 # Usage:

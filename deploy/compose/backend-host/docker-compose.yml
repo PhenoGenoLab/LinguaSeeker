@@ -1,5 +1,6 @@
 # ============================================================================
-# Backend host — runs FastAPI + Postgres + Redis behind the host firewall.
+# Backend host — runs FastAPI only. Postgres, Redis, and Neo4j are external
+# container services reached over the Docker bridge / private network.
 # Uses a pre-built backend image from Docker Hub. From the repo root:
 #
 #   docker compose -f deploy/compose/backend-host/docker-compose.yml \
@@ -9,7 +10,7 @@
 #                  --env-file deploy/compose/backend-host/.env \
 #                  up -d
 #
-# Only the backend port is published; database + redis stay private.
+# Only the backend port is published; database services are not started here.
 #
 # ── Volume ownership (required) ─────────────────────────────────────
 # The image runs as non-root uid 1000 (deploy). Bind-mounted host dirs
@@ -26,19 +27,6 @@ services:
     # when needed. X-API-Key auth is enforced inside FastAPI.
     ports:
       - "${BACKEND_BIND:-127.0.0.1}:${BACKEND_PORT:-8000}:8000"
-    depends_on:
-      # Bundled datastores are optional: external/shared mode sets
-      # POSTGRES_HOST/REDIS_HOST/NEO4J_URI elsewhere and starts only
-      # selected services (e.g. `up backend`), so never block here.
-      postgres:
-        condition: service_started
-        required: false
-      redis:
-        condition: service_started
-        required: false
-      neo4j:
-        condition: service_started
-        required: false
     environment:
       ENVIRONMENT: production
       # Lets the backend trust X-Forwarded-* from the frontend nginx.
@@ -46,31 +34,24 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS}              # e.g. https://app.example.com
       API_KEY: ${API_KEY}                        # shared with frontend nginx
       # ── Datastores ─────────────────────────────────────────────────
-      # POSTGRES_HOST=postgres → bundled service below (default).
-      # POSTGRES_HOST=<shared-ip/hostname> → external shared cluster
-      # (DB/role/schema provisioned out-of-band; stop bundled postgres).
-      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      # All database services are external containers. Point these at the
+      # shared Postgres/Redis/Neo4j hosts; no database service is started
+      # by this compose file.
+      POSTGRES_HOST: ${POSTGRES_HOST:?POSTGRES_HOST must point to the external database container}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       POSTGRES_DB: ${POSTGRES_DB:-lingua_seeker}
       POSTGRES_USER: ${POSTGRES_USER:-lingua_seeker}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_SCHEMA: ${POSTGRES_SCHEMA:-lingua_seeker}
-      # Shared/external Redis: override REDIS_HOST/REDIS_PORT/REDIS_DB and
-      # start only `backend` — the bundled `redis` below stays stopped.
-      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_HOST: ${REDIS_HOST:?REDIS_HOST must point to the external Redis container}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_DB: ${REDIS_DB:-0}
       # ── Neo4j graph ──────────────────────────────────────────────
-      # The backend reads NEO4J_* from env (env vars win over the layered
-      # YAML config the loader looks up under /app/backend/config, which is
-      # NOT where the deployed /app/config mounts live). Same NEO4J_PASSWORD
-      # var drives both the neo4j container auth and this connection.
-      # Shared/external Neo4j: override NEO4J_URI/NEO4J_DATABASE and start
-      # only `backend` — the bundled `neo4j` below stays stopped.
-      NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
+      # Point NEO4J_URI at the external Neo4j container.
+      NEO4J_URI: ${NEO4J_URI:?NEO4J_URI must point to the external Neo4j container}
       NEO4J_USER: ${NEO4J_USER:-neo4j}
-      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?NEO4J_PASSWORD is required}
       NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
       # ── Inference / LLM endpoints (point at GPU host) ───────────
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://host.docker.internal:32949}
@@ -105,69 +86,7 @@ services:
       retries: 5
       start_period: 30s
 
-  # Bundled Postgres (pgvector). Default mode: backend uses POSTGRES_HOST=postgres.
-  # Shared/external mode: point POSTGRES_HOST at the shared cluster and start
-  # only `backend redis neo4j` — this service stays stopped.
-  postgres:
-    profiles: ["bundled-db"]
-    image: pgvector/pgvector:pg18
-    # Loopback-only — never published to the frontend host.
-    ports:
-      - "127.0.0.1:5432:5432"
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-lingua_seeker}
-      POSTGRES_USER: ${POSTGRES_USER:-lingua_seeker}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lingua_seeker} -d ${POSTGRES_DB:-lingua_seeker}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  redis:
-    image: redis:8.0-alpine
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:6380:6379"
-    command: >
-      redis-server --appendonly yes
-      ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
-  neo4j:
-    image: neo4j:5.26-community
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:7474:7474"
-      - "127.0.0.1:7687:7687"
-    environment:
-      # NEO4J_AUTH sets the default user/password at first start.
-      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-}
-      NEO4J_PLUGINS: '["apoc"]'
-    volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-    healthcheck:
-      # neo4j 5.x has built-in `neo4j status` — most reliable probe.
-      test: ["CMD-SHELL", "neo4j status | grep -q 'is running' || exit 1"]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 60s
-
 volumes:
-  postgres_data:
-  redis_data:
-  neo4j_data:
-  neo4j_logs:
   backend_logs:
   backend_data:
   backend_downloads:

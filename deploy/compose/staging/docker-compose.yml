@@ -1,5 +1,5 @@
 # ============================================================================
-# Staging — FastAPI + Postgres + Redis
+# Staging — FastAPI only. Postgres, Redis, and Neo4j are external containers.
 # ============================================================================
 # Mirrors production structure for pre-release validation.
 #
@@ -12,8 +12,8 @@
 #                  up -d
 #
 # Required env vars (set in .env or export):
-#   POSTGRES_PASSWORD, REDIS_PASSWORD, API_KEY, CORS_ORIGINS,
-#   EMBEDDING_BASE_URL, RERANK_BASE_URL,
+#   POSTGRES_HOST, POSTGRES_PASSWORD, REDIS_HOST, NEO4J_URI, NEO4J_PASSWORD,
+#   API_KEY, CORS_ORIGINS, EMBEDDING_BASE_URL, RERANK_BASE_URL,
 #   FAST_LLM_BASE_URL, REASONING_LLM_BASE_URL
 #
 # ── Volume ownership ────────────────────────────────────────────────
@@ -32,41 +32,26 @@ services:
     restart: unless-stopped
     ports:
       - "${BACKEND_BIND:-0.0.0.0}:${BACKEND_PORT:-8000}:8000"
-    depends_on:
-      # Bundled datastores are optional: shared/external mode sets
-      # POSTGRES_HOST/REDIS_HOST/NEO4J_URI elsewhere and starts only
-      # selected services, so never block on the bundled ones here.
-      postgres:
-        condition: service_started
-        required: false
-      redis:
-        condition: service_started
-        required: false
-      neo4j:
-        condition: service_started
-        required: false
     environment:
       ENVIRONMENT: staging
       CORS_ORIGINS: ${CORS_ORIGINS}
       API_KEY: ${API_KEY}
       # -- Database (staging) --
-      # Bundled postgres below is the default. Shared/external cluster:
-      # override POSTGRES_HOST/POSTGRES_PORT/POSTGRES_DB/POSTGRES_USER/
-      # POSTGRES_PASSWORD via .env and start only `backend redis neo4j`.
-      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      # All database services are external containers.
+      POSTGRES_HOST: ${POSTGRES_HOST:?POSTGRES_HOST must point to the external database container}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       POSTGRES_DB: staging_lingua_seeker
       POSTGRES_USER: lingua_seeker
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_SCHEMA: lingua_seeker
-      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_HOST: ${REDIS_HOST:?REDIS_HOST must point to the external Redis container}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_DB: ${REDIS_DB:-0}
-      # -- Neo4j --
-      NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
+      # -- Neo4j (external container) --
+      NEO4J_URI: ${NEO4J_URI:?NEO4J_URI must point to the external Neo4j container}
       NEO4J_USER: ${NEO4J_USER:-neo4j}
-      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?NEO4J_PASSWORD is required}
       NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
       # -- Inference / LLM endpoints (point at GPU host) --
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL}
@@ -89,64 +74,7 @@ services:
       retries: 5
       start_period: 30s
 
-  postgres:
-    image: pgvector/pgvector:pg18
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:5432:5432"
-    environment:
-      POSTGRES_DB: staging_lingua_seeker
-      POSTGRES_USER: lingua_seeker
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lingua_seeker -d staging_lingua_seeker"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  redis:
-    image: redis:8.0-alpine
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:6379:6379"
-    command: >
-      redis-server --appendonly yes
-      ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
-  neo4j:
-    image: neo4j:5.26-community
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:7474:7474"
-      - "127.0.0.1:7687:7687"
-    environment:
-      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/staging_lingua_seeker}
-      NEO4J_PLUGINS: '["apoc"]'
-    volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-    healthcheck:
-      # neo4j 5.x has built-in `neo4j status` — most reliable probe.
-      test: ["CMD-SHELL", "neo4j status | grep -q 'is running' || exit 1"]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 60s
-
 volumes:
-  postgres_data:
-  redis_data:
-  neo4j_data:
-  neo4j_logs:
   backend_logs:
   backend_data:
   backend_downloads:
