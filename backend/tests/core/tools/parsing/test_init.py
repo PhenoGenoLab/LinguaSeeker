@@ -16,10 +16,6 @@ def test_create_parse_service():
         mock_cfg.return_value.parse_document.mineru_remote_api_token = "test-token"
         mock_cfg.return_value.parse_document.mineru_remote_poll_interval = 2.0
         mock_cfg.return_value.parse_document.mineru_remote_max_poll_attempts = 150
-        mock_cfg.return_value.parse_document.mineru_local_parse_url = "http://localhost:8001"
-        mock_cfg.return_value.parse_document.mineru_local_model_id = "test-model"
-        mock_cfg.return_value.parse_document.mineru_local_timeout = 120.0
-        mock_cfg.return_value.parse_document.mineru_local_dpi = 200
 
         service = create_parse_service()
         assert isinstance(service, ParseDocumentService)
@@ -51,7 +47,6 @@ def test_exports():
     assert "MinerUAPIError" in __all__
     assert "MinerUTimeoutError" in __all__
     assert "ParseDocumentError" in __all__
-    assert "ParserExhaustedError" in __all__
 
 
 def test_batch_contracts_exported():
@@ -66,3 +61,21 @@ def test_batch_contracts_exported():
     assert MinerULocalBatchOptions is not None
     assert MinerULocalBatchParseResult is not None
     assert MinerULocalBatchSaveResult is not None
+
+
+def test_create_parse_service_does_not_construct_local_parser():
+    """The pipeline factory must not wire the local VLM fallback."""
+    from unittest.mock import patch
+
+    from src.core.config import ParseDocumentConfig
+
+    config = ParseDocumentConfig(
+        mineru_remote_api_token="token",
+        mineru_local_parse_url="http://localhost:8002",
+    )
+
+    with patch("src.core.tools.parsing.MinerULocalParser") as mock_local:
+        service = create_parse_service(config=config)
+
+    assert isinstance(service, ParseDocumentService)
+    mock_local.assert_not_called()

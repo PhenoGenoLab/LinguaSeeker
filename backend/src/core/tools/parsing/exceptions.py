@@ -27,15 +27,3 @@ class MinerUTimeoutError(ParseDocumentError):
 
     def __repr__(self) -> str:
         return f"MinerUTimeoutError(total_timeout={self.total_timeout!r})"
-
-
-class ParserExhaustedError(ParseDocumentError):
-    """All parsers failed."""
-
-    def __init__(self, errors: dict[str, Exception]):
-        self.errors = errors
-        parts = [f"{name}: {err}" for name, err in errors.items()]
-        super().__init__(f"All parsers exhausted. {'; '.join(parts)}")
-
-    def __repr__(self) -> str:
-        return f"ParserExhaustedError(errors={self.errors!r})"

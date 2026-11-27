@@ -193,7 +193,12 @@ class MinerUConfig(BaseModel):
 
 
 class ParseDocumentConfig(BaseModel):
-    """Parse document module configuration."""
+    """Parse document module configuration.
+
+    The pipeline uses the remote MinerU API. The ``mineru_local_*`` fields
+    configure the explicit standalone parser (for example chat attachments),
+    never a pipeline fallback.
+    """
 
     mineru_remote_poll_interval: float = 2.0
     mineru_remote_max_poll_attempts: int = 150

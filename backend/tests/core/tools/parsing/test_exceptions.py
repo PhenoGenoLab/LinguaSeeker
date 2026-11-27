@@ -6,7 +6,6 @@ from src.core.tools.parsing.exceptions import (
     MinerUAPIError,
     MinerUTimeoutError,
     ParseDocumentError,
-    ParserExhaustedError,
 )
 
 
@@ -33,19 +32,3 @@ class TestMinerUTimeoutError:
         err = MinerUTimeoutError(total_timeout=300)
         assert err.total_timeout == 300
         assert "300" in str(err)
-
-
-class TestParserExhaustedError:
-    def test_both_failed(self):
-        err = ParserExhaustedError(
-            errors={
-                "mineru-remote": MinerUAPIError("500"),
-                "mineru_retry": MinerUTimeoutError(total_timeout=300),
-            },
-        )
-        assert "mineru-remote" in str(err)
-        assert "mineru_retry" in str(err)
-
-    def test_repr(self):
-        err = ParserExhaustedError(errors={"mineru-remote": MinerUAPIError("500")})
-        assert "ParserExhaustedError" in repr(err)

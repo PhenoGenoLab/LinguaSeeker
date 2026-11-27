@@ -86,8 +86,9 @@ rerank:
 
 # ── MinerU Document Parsing ──────────────────────────────────────────────
 # All fields flatten to MINERU_* env vars
-# local_parse_url: VLM container endpoint.
-# Docker setup: set to "http://localhost:44321"
+# Pipeline parsing uses the remote MinerU API only.
+# local_parse_url: explicit local VLM endpoint for standalone/chat parsing,
+# not a pipeline fallback. Docker setup: "http://localhost:44321"
 mineru:
   max_file_size_mb: 100
   remote_poll_interval: 2.0

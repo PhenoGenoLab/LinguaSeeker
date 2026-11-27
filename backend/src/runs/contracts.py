@@ -86,7 +86,7 @@ class RetryablePhaseError(PhaseError):
 class PermanentPhaseError(PhaseError):
     """Permanent error that should NOT be retried.
 
-    Examples: ParserExhaustedError, configuration errors, invalid input.
+    Examples: parse configuration errors, invalid input.
     """
 
     pass

@@ -1,4 +1,4 @@
-"""Document parsing module — MinerU VLM engine."""
+"""Document parsing module — MinerU remote API plus explicit local parser."""
 
 from .contracts import (
     DedupResult,
@@ -21,7 +21,6 @@ from .exceptions import (
     MinerUAPIError,
     MinerUTimeoutError,
     ParseDocumentError,
-    ParserExhaustedError,
 )
 from .local.parser import MinerULocalParser
 from .remote.parser import MinerURemoteParser
@@ -51,15 +50,7 @@ def create_parse_service(config=None) -> ParseDocumentService:
         max_poll_attempts=config.mineru_remote_max_poll_attempts,
     )
 
-    local = MinerULocalParser(
-        parse_url=config.mineru_local_parse_url,
-        model_id=config.mineru_local_model_id,
-        timeout=config.mineru_local_timeout,
-        dpi=config.mineru_local_dpi,
-        api_key=get_config().inference_api_key,
-    )
-
-    orchestrator = DocumentParseOrchestrator(remote=remote, local=local)
+    orchestrator = DocumentParseOrchestrator(remote=remote)
     return ParseDocumentService(orchestrator=orchestrator)
 
 
@@ -83,7 +74,6 @@ __all__ = [
     "ParseDocumentError",
     "ParseDocumentService",
     "ParseResult",
-    "ParserExhaustedError",
     "SavedFiles",
     "TableStructure",
     "create_parse_service",

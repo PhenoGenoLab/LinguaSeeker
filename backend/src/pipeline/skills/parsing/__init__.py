@@ -1,4 +1,4 @@
-"""Phase 2 skill: document parsing (MinerU remote -> local fallback).
+"""Phase 2 skill: document parsing through the remote MinerU API.
 
 ``ParsingSkill`` owns the phase's agent and delegates the deterministic work to
 ``src.core.tools.parsing``.

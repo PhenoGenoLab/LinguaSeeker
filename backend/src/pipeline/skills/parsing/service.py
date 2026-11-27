@@ -1,4 +1,4 @@
-"""Phase 2 skill: document parsing (MinerU remote → local fallback).
+"""Phase 2 skill: document parsing through the remote MinerU API.
 
 Same contract as acquisition: the agent must call the `parse_document` tool and
 the tool's real ``ParseResult`` is returned unchanged.

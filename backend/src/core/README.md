@@ -55,7 +55,7 @@ core/
 | `shared/contracts/` | 跨层 DTO，如 `contracts/skill_io.py` 的 `SkillRequest`/`SkillResult` |
 | `adapters/mcp/` | 外部服务 MCP 客户端（文献获取、MinerU 解析）与 ReMe HTTP 客户端 |
 | `agents/acquisition/` | 采集 agent：本地上传、在线获取、SDK 适配 |
-| `agents/parsing/` | 解析 agent：MinerU remote/local、产物落盘 |
+| `agents/parsing/` | 解析 agent：MinerU remote、产物落盘 |
 | `agents/translation/` | 翻译 agent：术语映射、句级对齐、语言校验 |
 | `agents/extraction/` | 抽取 agent：ACMG 字段目录、双轨证据、分组规则 |
 | `agents/standardization/` | 标准化 agent：精确/语义匹配、术语持久化、ACMG 投影 |

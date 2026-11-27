@@ -1,10 +1,10 @@
 # Parse Document 文档解析
 
-> MinerU VLM 引擎驱动的 PDF 解析模块，支持远程云 API 和本地 FastAPI 双模式。
+> MinerU 驱动的 PDF 解析模块；pipeline 使用远程 API，本地解析器仅作为显式独立入口（例如聊天附件解析）。
 
 ## 概述
 
-`parse_document` 模块负责将 PDF 文档解析为结构化的 Markdown、表格和图片数据。采用策略模式，提供 `MinerURemoteParser`（云端 API）和 `MinerULocalParser`（本地 FastAPI 服务）两种解析器实现，由 `DocumentParseOrchestrator` 编排为远程优先、本地回退的容错策略。
+`parse_document` 模块负责将 PDF 文档解析为结构化的 Markdown、表格和图片数据。采用策略模式，提供 `MinerURemoteParser`（云端 API）和 `MinerULocalParser`（本地 FastAPI 服务）两种解析器实现。`DocumentParseOrchestrator` 在 pipeline 中只编排远程解析，不再自动回退到本地 VLM 服务。
 
 ## 结构
 
@@ -14,7 +14,7 @@ parse_document/
 ├── contracts.py         # 数据类型：ParseResult、PageContent、TableStructure 等
 ├── base.py              # 抽象基类 ParserStrategy
 ├── service.py           # 高级门面 ParseDocumentService
-├── orchestrator.py      # 远程优先→本地回退编排器 DocumentParseOrchestrator
+├── orchestrator.py      # 远程-only 编排器 DocumentParseOrchestrator
 ├── exceptions.py        # 自定义异常层级
 ├── common/              # 通用解析工具
 │   ├── converters.py    # HTML→Markdown 转换、block→Markdown 转换
@@ -48,9 +48,8 @@ parse_document/
 ### orchestrator.py — 编排器
 
 - **`DocumentParseOrchestrator`**（实现 `ParserStrategy`）：
-  - 远程优先策略：先尝试 `MinerURemoteParser`，失败则回退 `MinerULocalParser`
-  - URL 输入自动下载到临时文件供本地解析器使用
-  - 两者均失败时抛出 `ParserExhaustedError`
+  - 只调用 `MinerURemoteParser`，远程失败直接向上抛出
+  - 不再下载 URL 到临时文件，也不再回退 `MinerULocalParser`
   - `parse_local_files()`：批量本地文件解析（委托远程解析器）
 
 ### service.py — 高级门面
@@ -67,11 +66,10 @@ parse_document/
 - **`ParseDocumentError`**：基类
 - **`MinerUAPIError`**：MinerU API 错误（含 status_code）
 - **`MinerUTimeoutError`**：MinerU 轮询超时（含 total_timeout）
-- **`ParserExhaustedError`**：所有解析器均失败（含 errors 字典）
 
 ### 工厂函数
 
-- **`create_parse_service(config)`**：从配置创建 `ParseDocumentService` 实例，自动组装远程/本地解析器和编排器
+- **`create_parse_service(config)`**：从配置创建 `ParseDocumentService` 实例，组装远程解析器和远程-only 编排器
 
 ## 数据流
 
@@ -81,11 +79,8 @@ PDF 文件路径（本地路径或 URL）
 ParseDocumentService.parse()
         ↓
 DocumentParseOrchestrator.parse()
-        ├── MinerURemoteParser (远程优先)
-        │   → MinerU 云 API → 轮询结果 → ParseResult
-        │
-        └── MinerULocalParser (本地回退)
-            → POST /file_parse → 解析响应 → ParseResult
+        └── MinerURemoteParser
+            → MinerU 云 API → 轮询结果 → ParseResult
         ↓
 ParseResult {
     metadata: { title, authors, journal, abstract },

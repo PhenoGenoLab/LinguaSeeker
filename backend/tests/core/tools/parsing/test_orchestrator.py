@@ -1,10 +1,9 @@
-"""Tests for orchestrator module."""
+"""Tests for the remote-only parse orchestrator."""
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
-import httpx
 import pytest
 
 from src.core.tools.parsing.base import ParserStrategy
@@ -14,13 +13,8 @@ from src.core.tools.parsing.contracts import (
     PageContent,
     ParseResult,
 )
-from src.core.tools.parsing.exceptions import (
-    MinerUAPIError,
-    ParserExhaustedError,
-)
-from src.core.tools.parsing.orchestrator import (
-    DocumentParseOrchestrator,
-)
+from src.core.tools.parsing.exceptions import MinerUAPIError
+from src.core.tools.parsing.orchestrator import DocumentParseOrchestrator
 from src.utils.security.ssrf import validate_url_safe as _validate_url_safe
 
 
@@ -29,14 +23,6 @@ def mock_remote():
     """Create mock remote parser."""
     parser = AsyncMock(spec=ParserStrategy)
     parser.name = "mineru-remote"
-    return parser
-
-
-@pytest.fixture
-def mock_local():
-    """Create mock local parser."""
-    parser = AsyncMock(spec=ParserStrategy)
-    parser.name = "mineru-local"
     return parser
 
 
@@ -51,61 +37,37 @@ def sample_result():
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_uses_remote_first(mock_remote, mock_local, sample_result):
-    """Test that orchestrator tries remote first."""
+async def test_orchestrator_delegates_to_remote(mock_remote, sample_result):
+    """The orchestrator delegates directly to the remote MinerU parser."""
     mock_remote.parse.return_value = sample_result
 
-    orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
+    orchestrator = DocumentParseOrchestrator(remote=mock_remote)
     result = await orchestrator.parse("test.pdf")
 
     mock_remote.parse.assert_called_once_with("test.pdf")
-    mock_local.parse.assert_not_called()
     assert result.parser_used == "mineru-remote"
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_fallback_to_local(mock_remote, mock_local):
-    """Test that orchestrator falls back to local on remote failure."""
-    local_result = ParseResult(
-        metadata=DocumentMetadata(total_pages=1),
-        pages=[PageContent(page_number=1, markdown="test")],
-        parser_used="mineru-local",
-    )
+async def test_orchestrator_propagates_remote_failure(mock_remote):
+    """Remote failures surface; there is no local VLM fallback."""
     mock_remote.parse.side_effect = MinerUAPIError("Remote failed")
-    mock_local.parse.return_value = local_result
 
-    orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
-    result = await orchestrator.parse("test.pdf")
+    orchestrator = DocumentParseOrchestrator(remote=mock_remote)
 
-    mock_remote.parse.assert_called_once_with("test.pdf")
-    mock_local.parse.assert_called_once_with("test.pdf")
-    assert result.parser_used == "mineru-local"
-
-
-@pytest.mark.asyncio
-async def test_orchestrator_raises_on_both_failure(mock_remote, mock_local):
-    """Test that orchestrator raises ParserExhaustedError when both fail."""
-    mock_remote.parse.side_effect = MinerUAPIError("Remote failed")
-    mock_local.parse.side_effect = MinerUAPIError("Local failed")
-
-    orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
-
-    with pytest.raises(ParserExhaustedError) as exc_info:
+    with pytest.raises(MinerUAPIError, match="Remote failed"):
         await orchestrator.parse("test.pdf")
 
-    assert "mineru-remote" in exc_info.value.errors
-    assert "mineru-local" in exc_info.value.errors
-
 
 @pytest.mark.asyncio
-async def test_orchestrator_name(mock_remote, mock_local):
+async def test_orchestrator_name(mock_remote):
     """Test orchestrator name property."""
-    orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
+    orchestrator = DocumentParseOrchestrator(remote=mock_remote)
     assert orchestrator.name == "orchestrator"
 
 
 @pytest.mark.asyncio
-async def test_parse_local_files_delegates_to_remote(mock_remote, mock_local):
+async def test_parse_local_files_delegates_to_remote(mock_remote):
     """Regression: factory-created orchestrator.parse_local_files() works."""
     from src.core.tools.parsing.contracts import (
         MinerUBatchStatus,
@@ -119,7 +81,7 @@ async def test_parse_local_files_delegates_to_remote(mock_remote, mock_local):
     )
     mock_remote.parse_local_files = AsyncMock(return_value=expected)
 
-    orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
+    orchestrator = DocumentParseOrchestrator(remote=mock_remote)
     result = await orchestrator.parse_local_files(["/tmp/a.pdf"], options=MinerULocalBatchOptions(data_ids=["a"]))
 
     assert result is expected
@@ -130,160 +92,15 @@ async def test_parse_local_files_delegates_to_remote(mock_remote, mock_local):
 
 
 @pytest.mark.asyncio
-async def test_parse_local_files_raises_if_remote_lacks_method(mock_remote, mock_local):
+async def test_parse_local_files_raises_if_remote_lacks_method(mock_remote):
     """Regression: clear error when remote parser doesn't support batch."""
     if hasattr(mock_remote, "parse_local_files"):
         del mock_remote.parse_local_files
 
-    orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
+    orchestrator = DocumentParseOrchestrator(remote=mock_remote)
 
     with pytest.raises(AttributeError, match="does not support parse_local_files"):
         await orchestrator.parse_local_files(["/tmp/a.pdf"], options=MinerULocalBatchOptions())
-
-
-class _FakeStreamCM:
-    """Fake async context manager for httpx client.stream()."""
-
-    def __init__(self, response):
-        self._response = response
-
-    async def __aenter__(self):
-        return self._response
-
-    async def __aexit__(self, *args):
-        return False
-
-
-def _make_pdf_response(pdf_bytes: bytes = b"%PDF-1.4 fake", url: str = "https://example.com/paper.pdf"):
-    """Build a mock httpx response for a successful PDF stream.
-
-    ``raise_for_status`` and ``headers`` are synchronous in httpx, so the
-    mock must be a ``MagicMock`` (not ``AsyncMock``).  Only ``aiter_bytes``
-    needs to be an async generator.
-    """
-    mock_response = MagicMock()
-    mock_response.headers = {"content-type": "application/pdf"}
-    mock_response.url = url
-    mock_response.raise_for_status = MagicMock()
-
-    async def _aiter_bytes():
-        yield pdf_bytes
-
-    mock_response.aiter_bytes = _aiter_bytes
-    return mock_response
-
-
-@pytest.mark.asyncio
-async def test_url_fallback_downloads_to_temp_and_cleans_up(mock_remote, mock_local):
-    """Regression: URL input downloads to temp file, passes path to local, cleans up."""
-    local_result = ParseResult(
-        metadata=DocumentMetadata(total_pages=1),
-        pages=[PageContent(page_number=1, markdown="parsed")],
-        parser_used="mineru-local",
-    )
-    mock_remote.parse.side_effect = MinerUAPIError("Remote failed")
-    mock_local.parse.return_value = local_result
-
-    mock_response = _make_pdf_response()
-    mock_client = MagicMock()
-    mock_client.stream.return_value = _FakeStreamCM(mock_response)
-
-    orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
-
-    with (
-        patch("src.core.tools.parsing.orchestrator.httpx.AsyncClient") as mock_cls,
-        patch("src.utils.security.ssrf.validate_url_safe"),
-    ):
-        mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
-        result = await orchestrator.parse("https://example.com/paper.pdf")
-
-    assert result.parser_used == "mineru-local"
-    called_path = mock_local.parse.call_args[0][0]
-    assert called_path != "https://example.com/paper.pdf"
-    assert not __import__("pathlib").Path(called_path).exists(), "temp file should be cleaned up"
-
-
-@pytest.mark.asyncio
-async def test_url_fallback_rejects_non_pdf_content_type(mock_remote, mock_local):
-    """Regression: non-PDF content-type is rejected before writing to disk."""
-    mock_remote.parse.side_effect = MinerUAPIError("Remote failed")
-
-    mock_response = _make_pdf_response()
-    mock_response.headers = {"content-type": "text/html"}
-    mock_client = MagicMock()
-    mock_client.stream.return_value = _FakeStreamCM(mock_response)
-
-    orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
-
-    with (
-        patch("src.core.tools.parsing.orchestrator.httpx.AsyncClient") as mock_cls,
-        patch("src.utils.security.ssrf.validate_url_safe"),
-    ):
-        mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
-        with pytest.raises(ParserExhaustedError) as exc_info:
-            await orchestrator.parse("https://example.com/fake.pdf")
-
-    assert "url-download" in exc_info.value.errors
-
-
-@pytest.mark.asyncio
-async def test_url_fallback_rejects_non_pdf_signature(mock_remote, mock_local):
-    """Regression: downloaded file without %PDF magic is rejected."""
-    mock_remote.parse.side_effect = MinerUAPIError("Remote failed")
-
-    mock_response = _make_pdf_response(pdf_bytes=b"<html>not a pdf</html>")
-    mock_client = MagicMock()
-    mock_client.stream.return_value = _FakeStreamCM(mock_response)
-
-    orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
-
-    with (
-        patch("src.core.tools.parsing.orchestrator.httpx.AsyncClient") as mock_cls,
-        patch("src.utils.security.ssrf.validate_url_safe"),
-    ):
-        mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
-        with pytest.raises(ParserExhaustedError) as exc_info:
-            await orchestrator.parse("https://example.com/fake.pdf")
-
-    assert "url-download" in exc_info.value.errors
-
-
-@pytest.mark.asyncio
-async def test_url_fallback_rejects_http_error(mock_remote, mock_local):
-    """Regression: HTTP 4xx/5xx raises via raise_for_status and triggers fallback error."""
-    mock_remote.parse.side_effect = MinerUAPIError("Remote failed")
-
-    mock_response = MagicMock()
-    mock_response.headers = {"content-type": "application/pdf"}
-    mock_response.url = "https://example.com/paper.pdf"
-    mock_response.raise_for_status = MagicMock(
-        side_effect=httpx.HTTPStatusError(
-            "403 Forbidden",
-            request=httpx.Request("GET", "https://example.com/paper.pdf"),
-            response=httpx.Response(403),
-        )
-    )
-    mock_client = MagicMock()
-    mock_client.stream.return_value = _FakeStreamCM(mock_response)
-
-    orchestrator = DocumentParseOrchestrator(remote=mock_remote, local=mock_local)
-
-    with (
-        patch("src.core.tools.parsing.orchestrator.httpx.AsyncClient") as mock_cls,
-        patch("src.utils.security.ssrf.validate_url_safe"),
-    ):
-        mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
-        with pytest.raises(ParserExhaustedError) as exc_info:
-            await orchestrator.parse("https://example.com/paper.pdf")
-
-    assert "url-download" in exc_info.value.errors
-
-
-# --- SSRF protection tests ---
 
 
 def test_validate_url_safe_rejects_loopback():

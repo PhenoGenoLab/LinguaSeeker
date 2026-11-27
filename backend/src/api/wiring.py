@@ -480,7 +480,7 @@ def wire_dependencies() -> None:
         dpi=pd_cfg.mineru_local_dpi,
         api_key=cfg.inference_api_key,
     )
-    parse_orchestrator = DocumentParseOrchestrator(remote=remote_parser, local=_local_parser)
+    parse_orchestrator = DocumentParseOrchestrator(remote=remote_parser)
     parse_service = ParseDocumentService(parse_orchestrator)
     parsing_skill = ParsingSkill(cfg=cfg, service=parse_service)
     graph_rag_service = (
