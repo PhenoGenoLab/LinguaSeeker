@@ -1,16 +1,9 @@
-"""End-to-end tests for MinerU API and Local parsers.
+"""End-to-end tests for the MinerU cloud API parser.
 
-Tests both parsing modes against real PDFs in backend/downloads/:
+Upload local PDFs via the MinerU cloud API, poll batch results, and parse them.
+Requires ``MINERU_API_TOKEN`` and the ``rust_io.net`` extension.
 
-- **Local mode**: MinerULocalParser → external MinerU FastAPI service (port 44321)
-- **API mode**: upload local PDF via MinerU cloud API → poll batch result → parse
-
-Requires:
-- MinerU service running on localhost:44321 (for local mode)
-- MINERU_API_TOKEN env var set (for API mode)
-- rust_io.net PyO3 extension built
-
-Output saved to /tmp/e2e_output/{lang}/{pdf_stem}/{mode}/
+Output saved to /tmp/e2e_output/{lang}/{pdf_stem}/api/
 """
 
 from __future__ import annotations
@@ -31,9 +24,6 @@ from src.core.tools.parsing.contracts import (
     ParseResult,
 )
 from src.core.tools.parsing.exceptions import MinerUAPIError
-from src.core.tools.parsing.local.parser import (
-    MinerULocalParser,
-)
 from src.core.tools.parsing.remote.parser import (
     MinerURemoteParser,
 )
@@ -88,7 +78,7 @@ def _assert_parse_result(result: ParseResult, pdf_path: str) -> None:
     assert result.metadata.total_pages >= 1
     assert len(result.pages) >= 1
     assert result.full_markdown, f"Empty markdown for {pdf_path}"
-    assert result.parser_used in ("mineru-remote", "mineru-local")
+    assert result.parser_used == "mineru-remote"
 
     for page in result.pages:
         assert page.page_number >= 1
@@ -335,77 +325,7 @@ def mineru_token():
     return token
 
 
-@pytest.fixture
-def local_parser():
-    from src.core.config import get_config
-
-    cfg = get_config()
-    parse_url = cfg.parse_document.mineru_local_parse_url
-    parser = MinerULocalParser(parse_url=parse_url)
-
-    # Quick connectivity check
-    import httpx
-
-    try:
-        resp = httpx.get(f"{parse_url}/health", timeout=5.0)
-        resp.raise_for_status()
-    except Exception:
-        pytest.skip(f"MinerU service not available at {parse_url}")
-
-    return parser
-
-
 # ── E2E Tests ───────────────────────────────────────────────────────────
-
-
-@pytest.mark.integration
-class TestMinerULocalE2E:
-    """E2E tests for MinerU local mode (external MinerU FastAPI service)."""
-
-    @pytest.mark.asyncio
-    async def test_single_pdf(self, pdf_inventory, local_parser):
-        """Smoke test: parse first PDF to verify setup works."""
-        pdf_path, lang = pdf_inventory[0]
-        logger.info(f"E2E local: parsing {Path(pdf_path).name} ({lang})")
-
-        result = await local_parser.parse(pdf_path)
-        _assert_parse_result(result, pdf_path)
-
-        out_dir = _save_output(lang, pdf_path, "local", result)
-        assert (out_dir / "output.md").exists()
-        assert (out_dir / "metadata.json").exists()
-        assert (out_dir / "pages").is_dir()
-
-        logger.info(
-            f"E2E local: {Path(pdf_path).name} -> "
-            f"{result.metadata.total_pages} pages, "
-            f"{len(result.full_markdown)} chars markdown"
-        )
-
-    @pytest.mark.asyncio
-    async def test_all_pdfs(self, pdf_inventory, local_parser):
-        """Parse all PDFs with local MinerU VLM and save output."""
-        results = []
-
-        for pdf_path, lang in pdf_inventory:
-            pdf_name = Path(pdf_path).name
-            logger.info(f"E2E local: parsing {pdf_name} ({lang})")
-
-            result = await local_parser.parse(pdf_path)
-            _assert_parse_result(result, pdf_path)
-
-            out_dir = _save_output(lang, pdf_path, "local", result)
-            assert (out_dir / "output.md").exists()
-
-            results.append((pdf_name, lang, result))
-            logger.info(
-                f"E2E local: {pdf_name} -> {result.metadata.total_pages} pages, {len(result.full_markdown)} chars"
-            )
-
-        # Summary
-        logger.info(f"E2E local: completed {len(results)} PDFs")
-        for pdf_name, lang, r in results:
-            logger.info(f"  [{lang}] {pdf_name}: {r.metadata.total_pages} pages")
 
 
 @pytest.mark.integration
@@ -455,29 +375,3 @@ class TestMinerUApiE2E:
         for pdf_name, lang, r in results:
             logger.info(f"  [{lang}] {pdf_name}: {r.metadata.total_pages} pages")
 
-
-@pytest.mark.integration
-class TestMinerUApiVsLocalComparison:
-    """Compare API vs Local parser output for consistency."""
-
-    @pytest.mark.asyncio
-    async def test_page_count_matches(self, pdf_inventory, local_parser, mineru_token):
-        """Verify API and local parsers agree on page count for each PDF."""
-        for pdf_path, lang in pdf_inventory:
-            pdf_name = Path(pdf_path).name
-            logger.info(f"Comparing {pdf_name} ({lang})")
-
-            local_result = await local_parser.parse(pdf_path)
-            api_result = await _upload_and_parse_api(pdf_path, mineru_token)
-
-            assert local_result.metadata.total_pages == api_result.metadata.total_pages, (
-                f"Page count mismatch for {pdf_name}: "
-                f"local={local_result.metadata.total_pages}, "
-                f"api={api_result.metadata.total_pages}"
-            )
-
-            logger.info(
-                f"  {pdf_name}: {local_result.metadata.total_pages} pages, "
-                f"local={len(local_result.full_markdown)} chars, "
-                f"api={len(api_result.full_markdown)} chars"
-            )

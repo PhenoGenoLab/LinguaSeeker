@@ -30,9 +30,7 @@ from src.dao.redis.connection import build_redis_client
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
     from src.runs import AgentJobStore, RunJobQueue, SingleJobDispatcher
-    from src.core.tools.parsing.local.parser import (
-        MinerULocalParser,
-    )
+    from src.core.tools.parsing.remote.parser import MinerURemoteParser
 
 
 class _UnavailableSessionFactory:
@@ -48,7 +46,7 @@ class _UnavailableSessionFactory:
 _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 _redis_client: AsyncRedis | None = None
-_local_parser: MinerULocalParser | None = None
+_remote_parser: MinerURemoteParser | None = None
 _dispatcher: SingleJobDispatcher | None = None
 _neo4j_driver: AsyncDriver | None = None
 _neo4j_repository: Neo4jRepository | None = None
@@ -321,9 +319,9 @@ async def release_startup_lock() -> None:
         _startup_lock_raw_conn = None
 
 
-def get_local_parser() -> MinerULocalParser | None:
-    """Return the singleton MinerU local parser (or None if not yet initialized)."""
-    return _local_parser
+def get_remote_parser() -> MinerURemoteParser | None:
+    """Return the singleton MinerU remote parser (or None if not initialized)."""
+    return _remote_parser
 
 
 def get_dispatcher() -> SingleJobDispatcher | None:
@@ -385,9 +383,6 @@ def wire_dependencies() -> None:
     from src.api.deps import set_review_factory
     from src.api.v1.pipeline import set_pipeline_runner
     from src.pipeline.skills.graph_retrieval.api import GraphRagService
-    from src.core.tools.parsing.local.parser import (
-        MinerULocalParser,
-    )
     from src.core.tools.parsing.orchestrator import (
         DocumentParseOrchestrator,
     )
@@ -408,7 +403,7 @@ def wire_dependencies() -> None:
     from src.pipeline.skills.parsing.service import ParsingSkill
     from src.pipeline.skills.standardization.service import StandardizationSkill
 
-    global _engine, _session_factory, _redis_client, _local_parser, _dispatcher, _neo4j_driver, _neo4j_repository
+    global _engine, _session_factory, _redis_client, _remote_parser, _dispatcher, _neo4j_driver, _neo4j_repository
 
     cfg = get_config()
 
@@ -468,19 +463,12 @@ def wire_dependencies() -> None:
 
     acquisition_skill = AcquisitionSkill(cfg=cfg)
     pd_cfg = cfg.parse_document
-    remote_parser = MinerURemoteParser(
+    _remote_parser = MinerURemoteParser(
         api_token=cfg.mineru_api_token,
         poll_interval=pd_cfg.mineru_remote_poll_interval,
         max_poll_attempts=pd_cfg.mineru_remote_max_poll_attempts,
     )
-    _local_parser = MinerULocalParser(
-        parse_url=pd_cfg.mineru_local_parse_url,
-        model_id=pd_cfg.mineru_local_model_id,
-        timeout=pd_cfg.mineru_local_timeout,
-        dpi=pd_cfg.mineru_local_dpi,
-        api_key=cfg.inference_api_key,
-    )
-    parse_orchestrator = DocumentParseOrchestrator(remote=remote_parser)
+    parse_orchestrator = DocumentParseOrchestrator(remote=_remote_parser)
     parse_service = ParseDocumentService(parse_orchestrator)
     parsing_skill = ParsingSkill(cfg=cfg, service=parse_service)
     graph_rag_service = (

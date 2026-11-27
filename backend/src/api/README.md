@@ -48,7 +48,7 @@ cfg → engine → session_factory
   → JobQueueRepository
 ```
 
-提供单例访问器：`get_engine()`、`get_session_factory()`、`get_redis_client()`、`get_local_parser()`、`get_dispatcher()`。
+提供单例访问器：`get_engine()`、`get_session_factory()`、`get_redis_client()`、`get_remote_parser()`、`get_dispatcher()`。
 
 ### `auth.py` — 认证
 

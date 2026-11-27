@@ -1,10 +1,10 @@
 # Parse Document 文档解析
 
-> MinerU 驱动的 PDF 解析模块；pipeline 使用远程 API，本地解析器仅作为显式独立入口（例如聊天附件解析）。
+> MinerU 远程云 API 驱动的 PDF 解析模块；pipeline 和聊天附件解析均使用远程服务。
 
 ## 概述
 
-`parse_document` 模块负责将 PDF 文档解析为结构化的 Markdown、表格和图片数据。采用策略模式，提供 `MinerURemoteParser`（云端 API）和 `MinerULocalParser`（本地 FastAPI 服务）两种解析器实现。`DocumentParseOrchestrator` 在 pipeline 中只编排远程解析，不再自动回退到本地 VLM 服务。
+`parse_document` 模块负责将 PDF 文档解析为结构化的 Markdown、表格和图片数据。模块只提供 `MinerURemoteParser`（云端 API）；`DocumentParseOrchestrator` 直接委托远程解析，不存在本地 VLM 解析器或 fallback。
 
 ## 结构
 
@@ -19,8 +19,6 @@ parse_document/
 ├── common/              # 通用解析工具
 │   ├── converters.py    # HTML→Markdown 转换、block→Markdown 转换
 │   └── parsers.py       # HTML TableParser
-├── local/               # 本地 MinerU 解析器
-│   └── parser.py        # MinerULocalParser（调用本地 FastAPI /file_parse）
 └── remote/              # 远程 MinerU 解析器
     └── parser.py        # MinerURemoteParser（调用 MinerU 云 API）
 ```
@@ -49,8 +47,8 @@ parse_document/
 
 - **`DocumentParseOrchestrator`**（实现 `ParserStrategy`）：
   - 只调用 `MinerURemoteParser`，远程失败直接向上抛出
-  - 不再下载 URL 到临时文件，也不再回退 `MinerULocalParser`
-  - `parse_local_files()`：批量本地文件解析（委托远程解析器）
+  - 没有本地 VLM 解析器或回退路径
+  - `parse_local_files()`：批量本地文件上传（委托远程解析器）
 
 ### service.py — 高级门面
 
@@ -87,14 +85,14 @@ ParseResult {
     pages: [ { page_number, markdown, figures, tables } ],
     full_markdown: str,
     images: { name: bytes },
-    parser_name: "mineru-remote" | "mineru-local"
+    parser_name: "mineru-remote"
 }
 ```
 
 ## 使用
 
 ```python
-from src.core.agents.parsing import create_parse_service
+from src.core.tools.parsing import create_parse_service
 
 # 创建服务（从全局配置）
 svc = create_parse_service()

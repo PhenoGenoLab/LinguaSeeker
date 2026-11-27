@@ -193,19 +193,10 @@ class MinerUConfig(BaseModel):
 
 
 class ParseDocumentConfig(BaseModel):
-    """Parse document module configuration.
-
-    The pipeline uses the remote MinerU API. The ``mineru_local_*`` fields
-    configure the explicit standalone parser (for example chat attachments),
-    never a pipeline fallback.
-    """
+    """Parse document module configuration (remote MinerU only)."""
 
     mineru_remote_poll_interval: float = 2.0
     mineru_remote_max_poll_attempts: int = 150
-    mineru_local_parse_url: str = "http://localhost:44321"
-    mineru_local_model_id: str = "opendatalab/MinerU2.5-Pro-2604-1.2B"
-    mineru_local_timeout: float = 120.0
-    mineru_local_dpi: int = 200
 
 
 class RedisConfig(BaseModel):
@@ -464,14 +455,10 @@ class Settings(BaseSettings):
     mineru_api_token: str = ""
     mineru_max_file_size_mb: int = 100
 
-    # ── Parse Document flat fields (MINERU_REMOTE_* / MINERU_LOCAL_*) ───
+    # ── Parse Document flat fields (MINERU_REMOTE_*) ──────────────────
 
     mineru_remote_poll_interval: float = 2.0
     mineru_remote_max_poll_attempts: int = 150
-    mineru_local_parse_url: str = "http://localhost:44321"
-    mineru_local_model_id: str = "opendatalab/MinerU2.5-Pro-2604-1.2B"
-    mineru_local_timeout: float = 120.0
-    mineru_local_dpi: int = 200
 
     # ── Inference Service flat fields (INFERENCE_*) ──────────────────
 
@@ -686,10 +673,6 @@ class Settings(BaseSettings):
         self.parse_document = ParseDocumentConfig(
             mineru_remote_poll_interval=self.mineru_remote_poll_interval,
             mineru_remote_max_poll_attempts=self.mineru_remote_max_poll_attempts,
-            mineru_local_parse_url=self.mineru_local_parse_url,
-            mineru_local_model_id=self.mineru_local_model_id,
-            mineru_local_timeout=self.mineru_local_timeout,
-            mineru_local_dpi=self.mineru_local_dpi,
         )
         self.redis = RedisConfig(
             host=self.redis_host,

@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-ParserName = Literal["mineru-remote", "mineru-local", "unknown"]
+ParserName = Literal["mineru-remote", "unknown"]
 
 
 class DocumentMetadata(BaseModel):

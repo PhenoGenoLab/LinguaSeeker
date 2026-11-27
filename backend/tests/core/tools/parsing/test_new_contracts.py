@@ -7,11 +7,11 @@ from pathlib import Path
 
 
 def test_parser_name_literal():
-    """Test ParserName includes remote and local variants."""
+    """ParserName only exposes the remote MinerU parser."""
     from src.core.tools.parsing.contracts import ParserName
 
     assert "mineru-remote" in ParserName.__args__
-    assert "mineru-local" in ParserName.__args__
+    assert "mineru-local" not in ParserName.__args__
     assert "unknown" in ParserName.__args__
 
 

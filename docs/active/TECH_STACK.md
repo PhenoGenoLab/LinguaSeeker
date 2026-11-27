@@ -474,7 +474,6 @@ EMBEDDING_*            # Embedding model (API key, base URL, model, dimension)
 RERANK_*               # Rerank model (API key, base URL, model)
 MINERU_*               # MinerU OCR/parsing API (base URL, API key, timeout)
 MINERU_REMOTE_*        # MinerU remote parsing specifics
-MINERU_LOCAL_*         # MinerU local parsing specifics
 POSTGRES_*             # PostgreSQL (host, port, db, user, password, pool size)
 REDIS_*                # Redis (host, port, db, password)
 WEB_SEARCH_*           # Web search API (API key, base URL, timeout, max results)

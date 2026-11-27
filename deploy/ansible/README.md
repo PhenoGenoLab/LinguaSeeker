@@ -104,7 +104,7 @@ ansible-playbook playbooks/healthcheck.yml
 | 分组 | 主机 | 服务 | 端口 |
 |------|------|------|------|
 | `web` | web-01 | Nginx (:80/:443)、Frontend (:3000) | 80、443、3000 |
-| `app` | app-01 | Backend (FastAPI :8000)、推理服务 (:8002-8003,:44321) | 8000、8002-8003、44321 |
+| `app` | app-01 | Backend (FastAPI :8000)、推理服务 (:8002-8003) | 8000、8002-8003 |
 | `db` | db-01 | PostgreSQL 16 (:5432)、Redis 8.0 (:6379) | 5432、6379 |
 
 ## 角色说明
@@ -117,7 +117,7 @@ ansible-playbook playbooks/healthcheck.yml
 | **backend** | 安装 uv、rsync 同步代码、部署 systemd 服务（`acmg-backend`） |
 | **frontend** | 安装 bun、构建 SPA、部署 systemd 服务（`acmg-frontend`） |
 | **nginx** | Nginx + Certbot，Let's Encrypt TLS，安全头（HSTS、CSP 等） |
-| **推理服务** | 独立 Docker 容器：embedding(:8002)、rerank(:8003)、doc-parse(:44321) |
+| **推理服务** | 独立 Docker 容器：embedding(:8002)、rerank(:8003) |
 
 ## 关键特性
 

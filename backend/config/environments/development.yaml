@@ -87,4 +87,3 @@ mcp_hpocr:
   timeout: 60.0
 
 # ── Inference Service Settings ────────────────────────────────────────────
-doc_parse_model_id: "opendatalab/MinerU2.5-Pro-2604-1.2B"

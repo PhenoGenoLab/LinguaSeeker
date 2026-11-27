@@ -317,7 +317,6 @@
 - 所有环境中的模型名称必须保持一致：
   - Embedding：`Qwen/Qwen3-Embedding-0.6B`
   - Rerank：`BAAI/bge-reranker-v2-m3`
-  - Doc Parse：`opendatalab/MinerU2.5-Pro-2604-1.2B`
 - 添加或更改模型时，必须同时更新 `backend/config/defaults/main.yaml` 和 `deploy/ansible/inventories/*/group_vars/all.yml`。模型容器本身由独立项目管理。
 
 #### 28.4 环境配置文件完整性
@@ -410,12 +409,11 @@ fallbacks when the wheel is missing. Online literature acquisition is delegated 
 
 #### External Inference Services (not in this repo)
 
-Three independent Docker containers provide model inference, built and published by a separate project:
+Two independent Docker containers provide model inference, built and published by a separate project:
 - **Embedding** (:8002): Sentence-Transformers + FastAPI, `/v1/embeddings` (OpenAI-compatible)
 - **Rerank** (:8003): Sentence-Transformers/CrossEncoder + FastAPI, `/v1/rerank`
-- **Doc Parse** (:44321): MinerU + FastAPI, `/file_parse`
 
-The backend consumes these via HTTP clients (`EmbeddingHttpProvider`, `RerankHttpProvider`, `MinerULocalParser`). URL and auth configured via `backend/config/` (`inference_api_key`, `embedding.base_url`, `rerank.base_url`, `mineru.local_parse_url`).
+PDF parsing uses the remote MinerU cloud API; there is no local VLM parser. URLs and auth are configured via `backend/config/` (`inference_api_key`, `embedding.base_url`, `rerank.base_url`).
 
 #### Frontend (`frontend/`)
 
@@ -497,8 +495,9 @@ develop` here; upgrade the pin in `backend/pyproject.toml` to pick up a release.
 Model inference is provided by external Docker containers (not built by this repo). See the separate inference-services project for building and running:
 
 ```bash
-# Configure URLs in backend/config/ (embedding.base_url, rerank.base_url, mineru.local_parse_url)
-# Default ports: embedding :8002, rerank :8003, doc-parse :44321
+# Configure URLs in backend/config/ (embedding.base_url, rerank.base_url)
+# Default ports: embedding :8002, rerank :8003
+# MinerU parsing uses the remote cloud API (mineru_api_token).
 ```
 
 #### Full Stack

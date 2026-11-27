@@ -1,4 +1,4 @@
-"""Document parsing module — MinerU remote API plus explicit local parser."""
+"""Document parsing module — MinerU remote API only."""
 
 from .contracts import (
     DedupResult,
@@ -22,7 +22,6 @@ from .exceptions import (
     MinerUTimeoutError,
     ParseDocumentError,
 )
-from .local.parser import MinerULocalParser
 from .remote.parser import MinerURemoteParser
 from .service import ParseDocumentService
 
@@ -66,7 +65,6 @@ __all__ = [
     "MinerULocalBatchParseResult",
     "MinerULocalBatchSaveResult",
     "MinerULocalBatchUploadResult",
-    "MinerULocalParser",
     "MinerURemoteParser",
     "MinerUTimeoutError",
     "PageContent",

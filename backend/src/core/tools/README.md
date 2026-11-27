@@ -20,7 +20,7 @@ AgentScope 的框架约束由 skills 侧承担：agent 构造、`Toolkit`/`Funct
 ```
 tools/
 ├── acquisition/       # 文献采集：DocumentAcquisitionService、契约、local_upload
-├── parsing/           # MinerU remote 编排、显式 local parser、契约
+├── parsing/           # MinerU remote 编排、契约
 ├── extraction/        # 证据抽取确定性部分：契约、core、domain、reconcile、verify、projection
 ├── standardization/   # 匹配、导入、投影、hgvs、similarity_match 等
 ├── translation/       # 契约、artifact 持久化、语言检测

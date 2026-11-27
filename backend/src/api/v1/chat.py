@@ -17,9 +17,10 @@ from starlette.requests import Request
 from src.api.auth import get_current_account
 from src.api.deps import get_review_factory
 from src.api.rate_limit import limiter
-from src.api.wiring import get_local_parser
+from src.api.wiring import get_remote_parser
 from src.core.foundation.auth.contracts import AuthContext
-from src.core.config import get_config
+from src.core.tools.parsing.contracts import MinerULocalBatchOptions
+from src.core.tools.parsing.exceptions import MinerUAPIError
 from src.core.tools.review.contracts import (
     ChatMessageResponse,
     ChatSessionResponse,
@@ -196,9 +197,9 @@ async def parse_chat_file(
 ) -> ChatFileParseResponse:
     """Parse an uploaded PDF for chat context.
 
-    Accepts a PDF file, validates it, and parses it using the MinerU local
-    parser. Returns the parsed markdown content ready for insertion into a
-    chat message.
+    Accepts a PDF file, validates it, and parses it through the remote
+    MinerU batch API. Returns the parsed markdown content ready for insertion
+    into a chat message.
     """
     # ── Validate file type ──
     if not file.filename or not file.filename.lower().endswith(".pdf"):
@@ -215,29 +216,28 @@ async def parse_chat_file(
     if not content.startswith(_PDF_MAGIC):
         raise HTTPException(status_code=400, detail="File is not a valid PDF")
 
-    # ── Use wired parser singleton, fall back to fresh instance ──
-    parser = get_local_parser()
+    # ── Use the wired remote MinerU parser ──
+    parser = get_remote_parser()
     if parser is None:
-        from src.core.tools.parsing.local.parser import (
-            MinerULocalParser,
+        return ChatFileParseResponse(
+            ok=False,
+            filename=file.filename,
+            error="MinerU parser is not initialized",
         )
 
-        cfg = get_config()
-        parser = MinerULocalParser(
-            parse_url=cfg.parse_document.mineru_local_parse_url,
-            model_id=cfg.parse_document.mineru_local_model_id,
-            timeout=cfg.parse_document.mineru_local_timeout,
-            dpi=cfg.parse_document.mineru_local_dpi,
-            api_key=cfg.inference_api_key,
-        )
-
-    # ── Save to temp file for MinerU parsing ──
+    # ── Save to temp file for MinerU batch upload ──
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
         tmp.write(content)
         tmp_path = Path(tmp.name)
 
     try:
-        result = await parser.parse(str(tmp_path))
+        batch = await parser.parse_local_files(
+            [str(tmp_path)],
+            options=MinerULocalBatchOptions(),
+        )
+        result = next(iter(batch.results.values()), None)
+        if result is None:
+            raise MinerUAPIError("MinerU returned no parsed result")
 
         return ChatFileParseResponse(
             ok=True,

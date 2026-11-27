@@ -15,7 +15,7 @@
 | 前端 | Vite、React 18、TypeScript（strict）、Ant Design、Zustand、React Query、Axios、React Router |
 | 后端 | Python 3.12、FastAPI、SQLAlchemy 2.0（async）、Alembic、LangGraph |
 | 原生 I/O | Rust 扩展 `rust-io`（PyPI wheel，含 `rust_io.net` / `rust_io.files`） |
-| 推理 | 外部 Docker 容器：Embedding(:8002)、Rerank(:8003)、Doc-Parse(:44321) |
+| 推理 | 外部 Docker 容器：Embedding(:8002)、Rerank(:8003)；文档解析使用远程 MinerU API |
 | 数据库 | PostgreSQL 16（pgvector）、Redis 8.0 |
 | 基础设施 | Docker Compose、Ansible |
 
