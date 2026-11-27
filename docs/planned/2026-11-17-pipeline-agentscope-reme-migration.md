@@ -170,7 +170,7 @@ flowchart TD
 |---|---|
 | Adapter | `Phase2Adapter.run`（`phase_2_adapter.py`） |
 | 领域服务 | `ParseDocumentService.parse_local_files_and_save` |
-| 真实执行 | MinerU 远端优先、本地容器兜底（`MinerULocalParser`，`:44321`），产出 `metadata.json`（pages/content_blocks）、`md`、图片 |
+| 真实执行 | MinerU 远程 API（批量上传）；无本地容器兜底，产出 `metadata.json`（pages/content_blocks）、`md`、图片 |
 | 输出 | `ParseOutput(md_path, metadata_path, output_dir, images_dir)` |
 | AgentScope 化收益 | **很低**：纯外部解析服务调用，无推理 |
 
@@ -261,7 +261,7 @@ PhaseStatus:    PENDING→RUNNING/SKIPPED/FAILED; RUNNING→COMPLETED/FAILED/SKI
 |---|---|
 | 模型配置 | 环境名实际为 `FAST_LLM_MODEL` / `REASONING_LLM_MODEL` / `TRANSLATION_LLM_MODEL`（仓库中不存在 `LLM_MODEL`/`MULTIMODAL_LLM_MODEL`）；AGENTS §23 要求按场景取用；provider 用 `create_llm_client`（OpenAI 兼容 base_url + 多 key 轮换） |
 | Embedding/Rerank | 外部容器 `:8002`/`:8003`，模型 `BAAI/bge-m3` / `BAAI/bge-reranker-v2-m3`（`config/defaults/main.yaml:63-84`） |
-| 文档解析 | MinerU 外部容器 `:44321` + 本地兜底 |
+| 文档解析 | MinerU 远程 API（无本地 VLM 兜底） |
 | 工具调用 | 无通用 tool-calling 框架；各 provider 直接构造 prompt，模型返回 JSON 后由领域代码解析/校验 |
 | 结构化输出 | Pydantic `model_validate` + 自定义 schema 校验（`source_fact_chain/core.py`） |
 | 重试 | 阶段级分类重试；provider 内部对超时/限流有局部重试 |

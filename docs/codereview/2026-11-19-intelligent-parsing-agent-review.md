@@ -61,7 +61,7 @@ POST /pipeline
 |---|---|---|
 | `core/agents/extraction`（旧 LLM 证据抽取，约 12.2k 行） | 不在产品图里；仅 `scripts/e2e_extract_evidence.py` 调用。contracts/catalog/grouping 仍被 Phase 3/4 复用 | `scripts/e2e_extract_evidence.py:28,216-220`；`phase_4.py:27` |
 | `core/agents/translation`（旧整篇翻译，约 5.3k 行） | Phase 3 只用 `detect_language`；`translated.json` 为空是切流设计 | `phase_3.py:36,180-194` |
-| `DocumentParseOrchestrator.parse` + `MinerULocalParser` | 产品 Phase 2 不走；local parser 仅 chat 上传和 fallback 用 | `phase_2.py:84`；`api/v1/chat.py:249` |
+| `DocumentParseOrchestrator` | 产品 Phase 2 与 chat 附件均使用远程 MinerU；本地 VLM parser 已删除 | `phase_2.py:84`；`api/v1/chat.py:249` |
 | `core/adapters/mcp`（ReMe 适配层） | `dev` 上只有 `__init__.py` 占位；完整 HTTP client / 契约在未合并的 `origin/impl-stage-4a-reme-memory`（默认关闭、`NullMemoryClient`、0.8s 超时、失败降级为空） | `backend/src/core/adapters/mcp/__init__.py`；`git show origin/impl-stage-4a-reme-memory:backend/src/pipeline/mcp/reme/client.py` |
 | `docs/` 中的 `src/pipeline/tools/fact_chain`、`core/source_fact_chain` 路径 | 已被 `core/shared/tools/fact_chain` 取代，文档未同步 | `docs/active/2026-11-18-pipeline-stage-2-agentscope-runtime.md` §2 |
 

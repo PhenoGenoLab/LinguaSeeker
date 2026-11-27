@@ -84,7 +84,7 @@ docker compose -f deploy/compose/dev-infra/docker-compose.yml up -d
 | Frontend | `frontend/Dockerfile` | `frontend/`（多阶段：bun build -> nginx） |
 | Backend | `backend/Dockerfile` | 仓库根目录（需要 `backend/` 和 `libs/config-loader/`） |
 
-> **注意**：Embedding、Rerank 和 Doc-Parse 推理服务由独立项目构建和发布。
+> **注意**：Embedding 和 Rerank 推理服务由独立项目构建和发布。
 
 ## 与 Ansible 的关系
 

@@ -245,4 +245,4 @@ setfacl -m u:1000:r config/production.yaml config/vault/production.yaml
 - **Image**: Single-stage, ~6 GB. Pre-built venv from CI artifacts (`docker-artifacts/`), no pip install at build time.
 - **Container user**: `deploy` (UID 1000). Never runs as root.
 - **Config priority**: defaults → environment YAML → vault YAML → env vars (highest).
-- **Inference services**: External Docker containers (Embedding/Rerank/Doc-Parse), not managed by this compose file.
+- **Inference services**: External Docker containers (Embedding/Rerank), not managed by this compose file.

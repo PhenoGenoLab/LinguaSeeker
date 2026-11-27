@@ -114,7 +114,7 @@ bun run dev
 
 **推理服务（外部）：**
 
-模型推理（Embedding、Rerank、Doc-Parse）由外部 Docker 容器提供，在 `backend/config/` 中配置服务 URL。
+模型推理（Embedding、Rerank）由外部 Docker 容器提供，在 `backend/config/` 中配置服务 URL。
 
 ## 开发命令
 

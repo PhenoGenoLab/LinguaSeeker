@@ -308,7 +308,7 @@
 |---|---|
 | 后端应用配置 | `backend/config/defaults/main.yaml` + `environments/<env>.yaml` + `vault/<env>.yaml` |
 | 前端环境变量 | `frontend/.env`（基础）+ `.env.<mode>`（环境覆盖）+ `.env.<mode>.local`（密钥，git-ignored） |
-| 模型服务配置 | 模型推理服务为外部独立 Docker 容器（Embedding/Rerank/Doc-Parse），通过 `backend/config/` 配置 URL 和认证 |
+| 模型服务配置 | 模型推理服务为外部独立 Docker 容器（Embedding/Rerank），通过 `backend/config/` 配置 URL 和认证 |
 | 部署编排 | Docker Compose（dev/staging）：`deploy/compose/`；Ansible（production）：`deploy/ansible/` |
 | 数据库凭证 | `backend/config/vault/<env>.yaml`（单一凭证来源） |
 
@@ -347,7 +347,7 @@
 
 #### 29.3 推理服务安全边界
 
-- 模型推理服务（Embedding/Rerank/Doc-Parse）为**外部独立 Docker 容器**，由独立项目构建和发布，不属于本仓库生命周期管理。
+- 模型推理服务（Embedding/Rerank）为**外部独立 Docker 容器**，由独立项目构建和发布，不属于本仓库生命周期管理。
 - 安全边界依赖**网络隔离**：绑定到内网 IP 或通过防火墙/安全组限制访问来源。
 - **禁止**将推理服务端口暴露到公网（`0.0.0.0` 绑定或无防火墙规则）。
 - Docker Compose 部署时，推理服务端口应绑定到 `127.0.0.1` 或内网 IP。
