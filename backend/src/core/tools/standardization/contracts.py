@@ -143,6 +143,26 @@ class AcmgReadyEvidenceSet:
 
 
 @dataclass(frozen=True)
+class StandardizedEntitySummary:
+    """One distinct normalized entity bound to evidence in a run."""
+
+    entity_id: str
+    entity_type: str
+    external_id: str | None
+    display_name: str
+    standardization_status: str
+    raw_texts: tuple[str, ...]
+    occurrence_count: int
+
+
+@dataclass(frozen=True)
+class StandardizedEntityList:
+    """Distinct normalized entities observed by one processing run."""
+
+    items: tuple[StandardizedEntitySummary, ...]
+
+
+@dataclass(frozen=True)
 class StandardizationResult:
     """Summary result for one standardization run."""
 

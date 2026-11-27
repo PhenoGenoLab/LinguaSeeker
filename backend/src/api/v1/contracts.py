@@ -131,6 +131,25 @@ class PipelinePhasesResponse(BaseModel):
     standardization: PhaseStatusResponse
 
 
+class StandardizedEntityResponse(BaseModel):
+    """One distinct normalized entity bound to a run's evidence."""
+
+    entity_id: str
+    entity_type: str
+    external_id: str | None = None
+    display_name: str
+    standardization_status: str
+    raw_texts: list[str] = Field(default_factory=list)
+    occurrence_count: int
+
+
+class StandardizedEntityListResponse(BaseModel):
+    """Standardized entity detail list for one pipeline run."""
+
+    items: list[StandardizedEntityResponse] = Field(default_factory=list)
+    total: int = 0
+
+
 class PipelineRunResponse(BaseModel):
     """Response from starting a pipeline run."""
 

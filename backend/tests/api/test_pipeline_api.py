@@ -576,3 +576,58 @@ async def test_post_pipeline_run_duplicate_source_key_race_returns_409(async_cli
         )
 
     assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_get_standardized_entities(async_client: AsyncClient):
+    """GET /api/v1/pipeline/runs/{id}/standardized-entities returns Phase 4 details."""
+    from src.core.tools.standardization.contracts import (
+        StandardizedEntityList,
+        StandardizedEntitySummary,
+    )
+
+    mock_state = PipelineGraphState(
+        processing_run_id="run-123",
+        source_document_id="doc-456",
+        mode=PipelineMode.FULL,
+        source_type=SourceType.LOCAL,
+        pipeline_status=PipelineStatus.COMPLETED,
+    )
+    mock_entities = StandardizedEntityList(
+        items=(
+            StandardizedEntitySummary(
+                entity_id="entity-1",
+                entity_type="gene",
+                external_id="HGNC:4296",
+                display_name="GLA",
+                standardization_status="standardized",
+                raw_texts=("GLA",),
+                occurrence_count=155,
+            ),
+        )
+    )
+
+    with (
+        patch("src.api.v1.pipeline.get_pipeline_runner") as mock_get_runner,
+        patch("src.api.wiring.PostgresEvidenceStore") as mock_store_cls,
+    ):
+        mock_runner = MagicMock()
+        mock_runner.get_last_state = AsyncMock(return_value=mock_state)
+        mock_get_runner.return_value = mock_runner
+        mock_store = MagicMock()
+        mock_store.list_standardized_entities = AsyncMock(return_value=mock_entities)
+        mock_store_cls.return_value = mock_store
+
+        response = await async_client.get(
+            "/api/v1/pipeline/runs/run-123/standardized-entities"
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 1
+    assert data["items"][0]["display_name"] == "GLA"
+    assert data["items"][0]["external_id"] == "HGNC:4296"
+    assert data["items"][0]["occurrence_count"] == 155
+    mock_store.list_standardized_entities.assert_awaited_once_with(
+        processing_run_id="run-123"
+    )

@@ -20,6 +20,7 @@ from src.core.tools.review.contracts import (
     TrackSpan,
     VariantSearchResponse,
 )
+from src.core.tools.standardization.contracts import StandardizedEntityList
 from src.ports.chat import ChatStore
 
 
@@ -223,6 +224,12 @@ class EvidenceQueryStore(Protocol):
         page_size: int = 24,
         owner_user_id: UUID | None = None,
     ) -> VariantSearchResponse: ...
+
+    async def list_standardized_entities(
+        self,
+        *,
+        processing_run_id: str,
+    ) -> StandardizedEntityList: ...
 
 
 class ReviewStores(Protocol):

@@ -87,6 +87,23 @@ export interface PipelineStatusResponse {
   title?: string | null;
 }
 
+/** One distinct normalized entity bound to a run's evidence. */
+export interface StandardizedEntity {
+  entity_id: string;
+  entity_type: "gene" | "variant" | "disease" | "phenotype" | string;
+  external_id?: string | null;
+  display_name: string;
+  standardization_status: "standardized" | "ambiguous" | "unmapped" | string;
+  raw_texts: string[];
+  occurrence_count: number;
+}
+
+/** GET /pipeline/runs/{id}/standardized-entities response body. */
+export interface StandardizedEntityListResponse {
+  items: StandardizedEntity[];
+  total: number;
+}
+
 /** Compact summary used in the run-history list. */
 export interface PipelineRunSummary {
   processing_run_id: string;

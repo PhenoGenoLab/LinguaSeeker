@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from starlette.requests import Request
 
 from src.api.auth import get_current_account
+from src.api.deps import get_evidence_store
 from src.api.rate_limit import limiter
 from src.api.v1.contracts import (
     AcquireDownloadEntryResponse,
@@ -30,6 +31,8 @@ from src.api.v1.contracts import (
     PipelineRunResponse,
     PipelineRunSummaryResponse,
     PipelineStatusResponse,
+    StandardizedEntityListResponse,
+    StandardizedEntityResponse,
 )
 from src.core.config import get_config
 from src.core.foundation.auth.contracts import AuthContext
@@ -50,6 +53,7 @@ from src.runs.contracts import (
 )
 from src.runs import normalize_identifier
 from src.runs import RunJobQueue
+from src.ports.review import EvidenceQueryStore
 
 router = APIRouter()
 
@@ -706,4 +710,42 @@ async def get_pipeline_status(
         completed_at=state.completed_at,
         elapsed_seconds=elapsed,
         title=title,
+    )
+
+
+@router.get("/runs/{processing_run_id}/standardized-entities", response_model=StandardizedEntityListResponse)
+async def get_standardized_entities(
+    processing_run_id: str,
+    account: AuthContext = Depends(get_current_account),
+    store: EvidenceQueryStore = Depends(get_evidence_store),
+):
+    """Return distinct normalized entities bound to one run's evidence.
+
+    Standardized entities are ordered first, followed by ambiguous and
+    unmapped mentions, so the UI can render a complete Phase 4 detail list.
+    """
+    runner = get_pipeline_runner()
+    state = await runner.get_last_state(processing_run_id)
+    owner_user_id = str(account.owner_user_id) if account.owner_user_id else None
+    if state is None or state.owner_user_id != owner_user_id:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Pipeline run {processing_run_id} not found",
+        )
+
+    result = await store.list_standardized_entities(processing_run_id=processing_run_id)
+    return StandardizedEntityListResponse(
+        items=[
+            StandardizedEntityResponse(
+                entity_id=item.entity_id,
+                entity_type=item.entity_type,
+                external_id=item.external_id,
+                display_name=item.display_name,
+                standardization_status=item.standardization_status,
+                raw_texts=list(item.raw_texts),
+                occurrence_count=item.occurrence_count,
+            )
+            for item in result.items
+        ],
+        total=len(result.items),
     )
