@@ -17,6 +17,11 @@ __pycache__/
 venv/
 .venv
 
+# ── Rust ──────────────────────────────────────────────────────────────────
+target/
+Cargo.lock
+mutants.out*/
+
 # ── Frontend build output ─────────────────────────────────────────────────
 dist/
 .vite/
