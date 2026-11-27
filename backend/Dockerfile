@@ -120,6 +120,16 @@ RUN --mount=type=bind,source=docker-artifacts/site-packages.tar.gz,target=/tmp/s
         --exclude='./sympy*' --exclude='./numpy*' \
         --exclude='./matplotlib*' --exclude='./networkx*' \
         --exclude='./fontTools*' --exclude='./openai*'
+# Overlay packages resolved from the current lockfile (agentscope, rust-io 0.3,
+# lit-acquisition, etc.) on top of the older shared site-packages tarball.
+COPY docker-artifacts/runtime-overlay.tar.gz /tmp/runtime-overlay.tar.gz
+RUN rm -rf /opt/venv/lib/python3.12/site-packages/rust_io \
+           /opt/venv/lib/python3.12/site-packages/rust_io-*.dist-info \
+           /opt/venv/lib/python3.12/site-packages/agentscope \
+           /opt/venv/lib/python3.12/site-packages/agentscope-*.dist-info \
+ && tar xzf /tmp/runtime-overlay.tar.gz -C /opt/venv/lib/python3.12/site-packages \
+        --owner=deploy --group=deploy \
+ && rm -f /tmp/runtime-overlay.tar.gz
 # venv-bin is optional — may be empty when no console scripts exist.
 COPY docker-artifacts/venv-bin.tar.gz /tmp/bin.tar.gz
 RUN (tar xzf /tmp/bin.tar.gz -C /opt/venv/bin --owner=deploy --group=deploy 2>/dev/null && chmod +x /opt/venv/bin/* 2>/dev/null) || true \
@@ -139,13 +149,12 @@ RUN find /opt/venv/bin -maxdepth 1 -type f -exec \
     sed -i '1s|^#!.*bin/python[0-9.]*$|#!/opt/venv/bin/python3|' {} +
 
 # Editable installs from the host point at non-existent paths inside the
-# container — drop the .pth stubs and install the in-tree dep from source.
-# lit-acquisition ships inside the site-packages tarball via the pinned PyPI
-# dependency (lit-acquisition==0.4.1 in backend/pyproject.toml).
-COPY --chown=deploy:deploy libs/config-loader /opt/extras/config-loader
-RUN rm -f /opt/venv/lib/python3.12/site-packages/_editable_impl_*.pth \
- && /opt/venv/bin/python -m pip install --no-cache-dir --no-deps \
-        /opt/extras/config-loader
+# container — drop the .pth stubs. The config loader is pure Python, so copy
+# its package into the venv directly; installing it through pip would require
+# hatchling/pathspec downloads at image-build time.
+COPY --chown=deploy:deploy libs/config-loader/src/acmg_config_loader \
+    /opt/venv/lib/python3.12/site-packages/acmg_config_loader
+RUN rm -f /opt/venv/lib/python3.12/site-packages/_editable_impl_*.pth
 
 # Repoint any lingering RECORD references from the build host venv to
 # /opt/venv. The host path varies by machine — we replace everything up

@@ -34,6 +34,7 @@ Options:
 Required build artifacts:
   docker-artifacts/site-packages.tar.gz
   docker-artifacts/venv-bin.tar.gz
+  docker-artifacts/runtime-overlay.tar.gz (auto-created from backend/.venv if absent)
 
 Notes:
   Build and push from a local machine. There is no cloud image-build workflow.
@@ -126,6 +127,17 @@ require_command docker
 require_file backend/Dockerfile
 require_file docker-artifacts/site-packages.tar.gz
 require_file docker-artifacts/venv-bin.tar.gz
+
+if [[ ! -f docker-artifacts/runtime-overlay.tar.gz ]]; then
+    echo "Creating docker-artifacts/runtime-overlay.tar.gz from backend/.venv..."
+    if [[ ! -d backend/.venv/lib/python3.12/site-packages ]]; then
+        echo "ERROR: backend/.venv is missing; run 'uv sync' in backend/ first." >&2
+        exit 1
+    fi
+    tar czf docker-artifacts/runtime-overlay.tar.gz \
+        --exclude='__pycache__' --exclude='*.pyc' \
+        -C backend/.venv/lib/python3.12/site-packages .
+fi
 
 if ! docker info >/dev/null 2>&1; then
     echo "ERROR: Docker daemon is not reachable." >&2
