@@ -2,24 +2,20 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.auth import get_current_account
-from src.api.deps import get_db_session, get_phase5_factory
+from src.api.deps import get_audit_store
 from src.core.foundation.auth.contracts import AuthContext
-from src.core.agents.review.contracts import (
+from src.core.tools.review.contracts import (
     DeltaEntry,
     ReviewAuditEventResponse,
     ReviewStatus,
     TargetType,
 )
-
-if TYPE_CHECKING:
-    from src.dao.postgresql.models import ReviewAuditEvent
+from src.ports.review import AuditEventRecord, AuditStore
 
 router = APIRouter()
 
@@ -31,13 +27,11 @@ async def list_audit_events(
     source_document_id: UUID | None = None,
     reviewer_id: UUID | None = None,
     limit: int = Query(100, ge=1, le=1000),
-    session: AsyncSession = Depends(get_db_session),
+    audit: AuditStore = Depends(get_audit_store),
     account: AuthContext = Depends(get_current_account),
 ) -> list[ReviewAuditEventResponse]:
     """List review audit events with optional filters."""
-    service = get_phase5_factory().delta_audit
-    events = await service.list_audit_events(
-        session,
+    events = await audit.list_events(
         canonical_evidence_id=canonical_evidence_id,
         source_document_id=source_document_id,
         reviewer_id=reviewer_id,
@@ -47,7 +41,7 @@ async def list_audit_events(
     return [_to_response(e) for e in events]
 
 
-def _to_response(event: ReviewAuditEvent) -> ReviewAuditEventResponse:
+def _to_response(event: AuditEventRecord) -> ReviewAuditEventResponse:
     """Convert ORM model to API response."""
     return ReviewAuditEventResponse(
         review_event_id=event.review_event_id,

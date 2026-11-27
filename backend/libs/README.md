@@ -1,103 +1,41 @@
-# Native Extensions
+# libs — 本地共享库
 
-> Rust/PyO3 原生扩展，为 Lingua Seeker 提供文献采集、MinerU 文档解析、通用异步 I/O（本地/HTTP/S3）、归档处理和 SHA-256 去重能力。五个 crate，一个 Python 模块：`rust_io`。
+> 只剩一个本地包。Rust 原生扩展已发布为独立 wheel，不再在本仓库维护源码。
 
-## 概览
-
-```
-rust-io  (cdylib + rlib)  ← 唯一构建为 Python 扩展的 crate
- ├─ net-io    (rlib)      ← HTTP/Web I/O：15 个文献数据源 + MinerU API
- ├─ files-io  (rlib)      ← 文件 I/O：本地 + S3、归档、SHA-256 去重
- ├─ io-py     (rlib)      ← PyO3 绑定：rust_io.io
- └─ io-core   (rlib)      ← 通用异步 I/O 引擎：路由、重试、多路复用、流式传输
-```
-
-| Crate | Python 模块 | 构建类型 |
-|-------|------------|----------|
-| `rust-io` | `rust_io` | `cdylib`（`.so`/`.pyd`）— 通过 `import rust_io` 加载 |
-| `net-io` | `rust_io.net` | `rlib` — 静态链接到 `rust-io` |
-| `files-io` | `rust_io.files` | `rlib` — 静态链接到 `rust-io` |
-| `io-py` | `rust_io.io` | `rlib` — `io-core` 的 Python 绑定 |
-| `io-core` | —（纯 Rust） | `rlib` — 通用异步 I/O 引擎 |
-
-`net-io`、`files-io` 和 `io-py` **不是**独立的 Python 模块。它们各自通过 `#[pymodule(submodule)]` 声明子模块并导出 `#[pyfunction]` / `#[pyclass]`，由 `rust-io` 门面通过 `wrap_pymodule!` 挂载为 `rust_io.net`、`rust_io.files` 和 `rust_io.io`。
-
-## 目录结构
+## 目录
 
 ```
-backend/libs/
-├── config-loader/    # 纯 Python：分层 YAML 配置加载器
-├── rust-io/          # PyO3 门面 crate（cdylib）
-├── net-io/           # HTTP/Web I/O crate（rlib）
-├── files-io/         # 文件 I/O crate（rlib）
-├── io-py/            # 通用 I/O 的 PyO3 绑定（rlib）
-└── io-core/          # 通用异步 I/O 引擎（rlib）
+libs/
+└── config-loader/    # acmg-config-loader:分层 YAML 配置加载器(pure Python)
 ```
 
-## 快速开始
+## Rust 原生扩展
 
-```python
-# 文献搜索（单数据源）
-import rust_io.net as net_io
-result = await net_io.fetch_one("crossref", "search", {"query": "CRISPR"})
+`rust_io`(含 `rust_io.net`、`rust_io.files`)通过 PyPI 安装:
 
-# 并行多数据源搜索
-results = await net_io.fetch_multi(
-    ["crossref", "openalex", "europepmc"],
-    "search",
-    {"query": "BRCA1 variant", "limit": 5},
-)
-
-# 文件 I/O —— 本地和 S3 路径使用相同 API
-import rust_io.files as files_io
-f = files_io.File("/tmp/output/report.txt")
-f.write("variant analysis results")
-print(f.read(as_text=True))
-
-# S3 显式凭证
-s3f = files_io.File("s3://bucket/data.csv", access_key="AKIA...", secret_key="...")
+```toml
+# backend/pyproject.toml
+"rust-io>=0.3.0,<1.0.0",
 ```
-
-## 构建与安装
 
 ```bash
-# 构建 Python 扩展（从 backend/ 目录）
-cd backend
-uv run maturin develop --release -m libs/rust-io/Cargo.toml
-
-# 运行各子 crate 的 Rust 单元测试
-cargo test -p net-io
-cargo test -p files-io
-
-# 运行 Python 集成测试
-uv run pytest backend/tests/ -v
-
-# Rust 代码检查
-cargo clippy --all-targets -- -D warnings
-
-# Python 代码检查
-uv run ruff check
+uv sync                                # 安装
+uv run python -c "import rust_io.net, rust_io.files"
 ```
 
-每个 crate 有独立的 `Cargo.lock`（非 workspace）。添加/更新依赖后，在 crate 目录下运行 `cargo check`。
+- 包主页:`https://pypi.org/project/rust-io/`
+- 平台覆盖:CPython 3.12–3.15;Linux x86_64/aarch64(manylinux_2_17、musllinux_1_2)、macOS x86_64/arm64、Windows x64
+- 源码与发布流程在发布仓库(`github.com/lanshi17/LinguaSeeker`),不在本仓库
+- 可用性探测与降级封装:`backend/src/utils/rust_io.py`
 
-## 环境变量
+升级方式:改 `backend/pyproject.toml` 的版本约束 → `uv lock` → 跑
+`uv run python -c "import rust_io.net, rust_io.files"` 冒烟。
 
-| 变量 | 使用者 | 说明 |
-|------|--------|------|
-| `UNPAYWALL_EMAIL` | `net-io`（Unpaywall） | Unpaywall API 必需 |
-| `PUBMED_API_KEY` | `net-io`（PMC）+ Python `pubmed_service` | 可选；NCBI E-utilities 速率限制从 3 提升至 10 req/s |
-| `BASE_API_KEY` | `net-io`（BASE） | 可选；BASE 学术搜索 API 密钥 |
-| `CORE_API_KEY` | `net-io`（CORE） | 可选；CORE 搜索 API 密钥 |
-| `AWS_ACCESS_KEY_ID` | `files-io`（S3） | AWS 凭证链（显式传参时可选） |
-| `AWS_SECRET_ACCESS_KEY` | `files-io`（S3） | AWS 凭证链 |
-| `AWS_REGION` | `files-io`（S3） | 默认 `us-east-1` |
+## config-loader
 
-S3 凭证通过 `aws-sdk-s3` 默认链解析（环境变量、`~/.aws/credentials`、IMDS）。显式 kwargs 覆盖默认链。MinerU token 通过调用参数传入，不从环境变量读取。
+```bash
+cd backend/libs/config-loader
+uv run pytest
+```
 
-## 子 Crate 参考
-
-- **[rust-io](./rust-io/README.md)** — 门面 crate：子模块注册、完整 Python API 参考
-- **[net-io](./net-io/README.md)** — HTTP I/O：15 个文献数据源、MinerU API v4、Web 爬虫
-- **[files-io](./files-io/README.md)** — 文件 I/O：`File` 类、`FileOps` trait、后端、归档、去重
-- **[config-loader](./config-loader/README.md)** — 纯 Python 分层 YAML 配置加载器
+`backend/src/core/config.py` 直接 `from acmg_config_loader import ...`。

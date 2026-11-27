@@ -5,12 +5,11 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.auth import get_current_account
-from src.api.deps import get_db_session, get_phase5_factory
+from src.api.deps import get_review_factory
 from src.core.foundation.auth.contracts import AuthContext
-from src.core.agents.review.contracts import (
+from src.core.tools.review.contracts import (
     BilingualSpan,
     TrackSpan,
 )
@@ -21,12 +20,11 @@ router = APIRouter()
 @router.get("/{canonical_evidence_id}/bilingual", response_model=BilingualSpan)
 async def get_bilingual_span(
     canonical_evidence_id: UUID,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> BilingualSpan:
     """Retrieve bilingual traceability span for an evidence card."""
-    factory = get_phase5_factory()
-    linker = factory.create_source_linker(session)
+    factory = get_review_factory()
+    linker = factory.create_source_linker()
     return await linker.get_bilingual_span(
         canonical_evidence_id=canonical_evidence_id,
         owner_user_id=account.owner_user_id,
@@ -37,15 +35,14 @@ async def get_bilingual_span(
 async def get_track_span(
     canonical_evidence_id: UUID,
     track: str,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> TrackSpan | None:
     """Retrieve source span for one track (original or translated).
 
     Returns 404-style null if no span exists for the specified track.
     """
-    factory = get_phase5_factory()
-    linker = factory.create_source_linker(session)
+    factory = get_review_factory()
+    linker = factory.create_source_linker()
     return await linker.get_track_span(
         canonical_evidence_id=canonical_evidence_id,
         track=track,

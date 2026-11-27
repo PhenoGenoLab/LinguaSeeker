@@ -12,16 +12,16 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from loguru import logger
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from src.api.auth import get_current_account
-from src.api.deps import get_db_session, get_phase5_factory
+from src.api.deps import get_review_factory
 from src.api.rate_limit import limiter
-from src.api.wiring import get_local_parser
+from src.api.wiring import get_remote_parser
 from src.core.foundation.auth.contracts import AuthContext
-from src.core.config import get_config
-from src.core.agents.review.contracts import (
+from src.core.tools.parsing.contracts import MinerULocalBatchOptions
+from src.core.tools.parsing.exceptions import MinerUAPIError
+from src.core.tools.review.contracts import (
     ChatMessageResponse,
     ChatSessionResponse,
 )
@@ -47,41 +47,36 @@ class AppendMessageRequest(BaseModel):
 async def create_session(
     request: Request,
     body: CreateSessionRequest,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> ChatSessionResponse:
     """Create a new chat session."""
-    factory = get_phase5_factory()
-    service = factory.create_chat_service(session)
-    chat_session = await service.create_session(
+    factory = get_review_factory()
+    service = factory.create_chat_service()
+    return await service.create_session(
         processing_run_id=body.processing_run_id,
         user_id=account.owner_user_id,
     )
-    await session.commit()
-    return chat_session
 
 
 @router.get("/sessions/{processing_run_id}", response_model=list[ChatSessionResponse])
 async def list_sessions(
     processing_run_id: UUID,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> list[ChatSessionResponse]:
     """List all chat sessions for a processing run."""
-    factory = get_phase5_factory()
-    service = factory.create_chat_service(session)
+    factory = get_review_factory()
+    service = factory.create_chat_service()
     return await service.list_sessions(processing_run_id=processing_run_id, owner_user_id=account.owner_user_id)
 
 
 @router.get("/session-details/{session_id}", response_model=ChatSessionResponse)
 async def get_session(
     session_id: UUID,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> ChatSessionResponse:
     """Fetch a single chat session by id."""
-    factory = get_phase5_factory()
-    service = factory.create_chat_service(session)
+    factory = get_review_factory()
+    service = factory.create_chat_service()
     return await service.get_session(session_id=session_id, owner_user_id=account.owner_user_id)
 
 
@@ -89,12 +84,11 @@ async def get_session(
 async def list_messages(
     session_id: UUID,
     limit: int = 100,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> list[ChatMessageResponse]:
     """List messages in a chat session."""
-    factory = get_phase5_factory()
-    service = factory.create_chat_service(session)
+    factory = get_review_factory()
+    service = factory.create_chat_service()
     return await service.list_messages(session_id=session_id, limit=limit, owner_user_id=account.owner_user_id)
 
 
@@ -104,12 +98,11 @@ async def append_message(
     request: Request,
     session_id: UUID,
     body: AppendMessageRequest,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> ChatMessageResponse:
     """Append a message to a chat session."""
-    factory = get_phase5_factory()
-    service = factory.create_chat_service(session)
+    factory = get_review_factory()
+    service = factory.create_chat_service()
     msg = await service.append_message(
         session_id=session_id,
         role=body.role,
@@ -120,7 +113,8 @@ async def append_message(
     )
 
     if body.role == "user" and body.auto_reply:
-        reply = await service.generate_reply(
+        supervisor = factory.create_supervisor()
+        reply = await supervisor.generate_reply(
             session_id=session_id,
             user_message=body.content,
             evidence_id=body.evidence_id,
@@ -137,7 +131,6 @@ async def append_message(
                 owner_user_id=account.owner_user_id,
             )
 
-    await session.commit()
     if body.role == "user":
         factory.schedule_session_title_generation(
             session_id=session_id,
@@ -153,7 +146,6 @@ async def stream_reply(
     session_id: UUID,
     user_message: str,
     evidence_id: UUID | None = None,
-    session: AsyncSession = Depends(get_db_session),
     account: AuthContext = Depends(get_current_account),
 ) -> StreamingResponse:
     """Stream AI reply as SSE events with 15-second keepalive heartbeat.
@@ -163,11 +155,11 @@ async def stream_reply(
     append_message) commits during dependency cleanup, but the assistant
     reply is lost. This is a known FastAPI StreamingResponse limitation.
     """
-    factory = get_phase5_factory()
-    service = factory.create_chat_service(session)
+    factory = get_review_factory()
+    supervisor = factory.create_supervisor()
 
     async def event_generator():
-        async for event in service.stream_reply(
+        async for event in supervisor.stream_reply(
             session_id=session_id,
             user_message=user_message,
             evidence_id=evidence_id,
@@ -205,9 +197,9 @@ async def parse_chat_file(
 ) -> ChatFileParseResponse:
     """Parse an uploaded PDF for chat context.
 
-    Accepts a PDF file, validates it, and parses it using the MinerU local
-    parser. Returns the parsed markdown content ready for insertion into a
-    chat message.
+    Accepts a PDF file, validates it, and parses it through the remote
+    MinerU batch API. Returns the parsed markdown content ready for insertion
+    into a chat message.
     """
     # ── Validate file type ──
     if not file.filename or not file.filename.lower().endswith(".pdf"):
@@ -224,29 +216,28 @@ async def parse_chat_file(
     if not content.startswith(_PDF_MAGIC):
         raise HTTPException(status_code=400, detail="File is not a valid PDF")
 
-    # ── Use wired parser singleton, fall back to fresh instance ──
-    parser = get_local_parser()
+    # ── Use the wired remote MinerU parser ──
+    parser = get_remote_parser()
     if parser is None:
-        from src.core.agents.parsing.local.parser import (
-            MinerULocalParser,
+        return ChatFileParseResponse(
+            ok=False,
+            filename=file.filename,
+            error="MinerU parser is not initialized",
         )
 
-        cfg = get_config()
-        parser = MinerULocalParser(
-            parse_url=cfg.parse_document.mineru_local_parse_url,
-            model_id=cfg.parse_document.mineru_local_model_id,
-            timeout=cfg.parse_document.mineru_local_timeout,
-            dpi=cfg.parse_document.mineru_local_dpi,
-            api_key=cfg.inference_api_key,
-        )
-
-    # ── Save to temp file for MinerU parsing ──
+    # ── Save to temp file for MinerU batch upload ──
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
         tmp.write(content)
         tmp_path = Path(tmp.name)
 
     try:
-        result = await parser.parse(str(tmp_path))
+        batch = await parser.parse_local_files(
+            [str(tmp_path)],
+            options=MinerULocalBatchOptions(),
+        )
+        result = next(iter(batch.results.values()), None)
+        if result is None:
+            raise MinerUAPIError("MinerU returned no parsed result")
 
         return ChatFileParseResponse(
             ok=True,

@@ -6,11 +6,12 @@ import type { EvidenceSearchQuery } from "../types/evidenceSearch";
 
 const DEFAULT_PAGE_SIZE = 50;
 
-export function useEvidenceSearch() {
-  const [filters, setFilters] = useState<EvidenceSearchQuery>({
+export function useEvidenceSearch(initialFilters?: Partial<EvidenceSearchQuery>) {
+  const [filters, setFilters] = useState<EvidenceSearchQuery>(() => ({
     page: 1,
     page_size: DEFAULT_PAGE_SIZE,
-  });
+    ...initialFilters,
+  }));
 
   const query = useQuery({
     queryKey: ["evidence", "search", filters],

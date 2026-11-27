@@ -28,7 +28,7 @@
 | Storage | Local filesystem | — | Current document/result storage |
 | Object Storage | MinIO | — | Placeholder; deferred production storage option |
 | PDF Parsing | MinerU API | v4 | PDF to Markdown/HTML + layout/bbox JSON |
-| DOCX Parsing | Python DOCX tooling + files-io boundary | — | DOCX text/table/image extraction |
+| DOCX Parsing | Python DOCX tooling + rust_io.files boundary | — | DOCX text/table/image extraction |
 | Native Extraction LLM | OpenAI-compatible custom API | — | Original-language evidence extraction |
 | Translation LLM | OpenAI-compatible MT model | — | English/Chinese translation for review and secondary extraction |
 | Secondary Extraction LLM | OpenAI-compatible custom API | — | Translated-text evidence extraction |
@@ -44,8 +44,7 @@
 | Container | Docker Compose | — | Local development orchestration |
 | Python Package Tool | uv | — | Python dependency management |
 | JS Package Tool | nvm + npm | — | Node dependency management |
-| Rust Package Tool | cargo | — | Rust dependency management |
-| PyO3 Build | maturin | 1.13+ | Native extension build |
+| Rust Extension | `rust-io` (PyPI wheel) | 0.3.x | `rust_io.net` + `rust_io.files`; prebuilt, not compiled in this repo |
 
 ## 2. Architectural Principles
 
@@ -116,7 +115,7 @@ backend/
 │   │   ├── ingest_and_digitize_data/                       #   Phase 1
 │   │   │   ├── document_acquisition/                       #     Literature acquisition
 │   │   │   │   ├── online_acquisition/                     #       Gateway, providers, search
-│   │   │   │   │   ├── gateway.py                          #         Provider gateway (calls net-io)
+│   │   │   │   │   ├── gateway.py                          #         Provider gateway (calls rust_io.net)
 │   │   │   │   │   ├── search_service.py                   #         Multi-provider search orchestration
 │   │   │   │   │   ├── pubmed_service.py                   #         PubMed-specific service
 │   │   │   │   │   ├── doi_fallback.py                     #         DOI resolution fallback
@@ -224,25 +223,23 @@ backend/
 │       ├── health.py                                       #   Health check
 │       ├── observability.py                                #   Telemetry/tracing
 │       ├── text.py                                         #   Text utilities
-│       ├── llm_adapter.py                                  #   LLM client adapter
-│       ├── llm_params.py                                   #   LLM parameter handling
 │       └── rust_io.py                                      #   Rust I/O Python bridge
 ├── libs/
-│   ├── rust-io/                                            # Canonical Python-facing Rust I/O facade
-│   ├── files-io/                                           # Unified local + S3 file I/O primitives
-│   └── net-io/                                             # HTTP/web I/O + MinerU API primitives
+│   └── config-loader/                                      # Layered YAML config loader (pure Python)
+│                                                           # rust_io ships as the `rust-io` wheel
 ├── alembic/
 ├── tests/
 └── .old_version/                                           # Previous implementation reference
 ```
 
-### 3.2 Rust Crates and Boundary
+### 3.2 Rust Extension Boundary
 
-| Crate | Python Module | Async | Role |
-|---|---|---|---|
-| `rust-io` | `rust_io` | tokio + pyo3-async | Canonical facade called by Python; wraps low-level file/network submodules. |
-| `files-io` | `files_io` | tokio + pyo3-async | Unified local/S3 file primitives: write, read, hash, archive, transfer. |
-| `net-io` | `rust_io.net` | tokio + pyo3-async | HTTP/web I/O for literature providers and MinerU API. |
+The extension is consumed as the published `rust-io` wheel; the crates are not vendored here.
+
+| Python Module | Async | Role |
+|---|---|---|
+| `rust_io.net` | tokio + pyo3-async | HTTP/web I/O for literature providers and MinerU API. |
+| `rust_io.files` | tokio + pyo3-async | Unified local/S3 file primitives: write, read, hash, archive, transfer. |
 
 Rust may handle:
 
@@ -262,7 +259,7 @@ Python must handle:
 
 ### 3.3 Literature Providers
 
-#### Rust net-io Providers (HTTP/search via Rust)
+#### Rust HTTP Providers (`rust_io.net`)
 
 | Provider | File | Language/Scope |
 |---|---|---|
@@ -477,7 +474,6 @@ EMBEDDING_*            # Embedding model (API key, base URL, model, dimension)
 RERANK_*               # Rerank model (API key, base URL, model)
 MINERU_*               # MinerU OCR/parsing API (base URL, API key, timeout)
 MINERU_REMOTE_*        # MinerU remote parsing specifics
-MINERU_LOCAL_*         # MinerU local parsing specifics
 POSTGRES_*             # PostgreSQL (host, port, db, user, password, pool size)
 REDIS_*                # Redis (host, port, db, password)
 WEB_SEARCH_*           # Web search API (API key, base URL, timeout, max results)
@@ -493,7 +489,7 @@ MINIO_*                # Future object storage
 
 ## 7. Development and Verification Commands
 
-Python operations must use `uv`; Node operations must use `nvm` + `npm`; Rust operations use `cargo`.
+Python operations must use `uv`; Node operations must use `nvm` + `npm`; the Rust extension comes prebuilt from PyPI, so no cargo step is needed.
 
 ```bash
 cd backend
@@ -505,8 +501,8 @@ nvm use
 npm run lint
 npm run type-check
 
-cd backend/libs/rust-io
-cargo test
+cd backend
+uv run python -c "import rust_io.net, rust_io.files"
 ```
 
 ## 8. Old Version Reuse Map

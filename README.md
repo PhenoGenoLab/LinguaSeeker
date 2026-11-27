@@ -14,8 +14,8 @@
 |------|------|
 | 前端 | Vite、React 18、TypeScript（strict）、Ant Design、Zustand、React Query、Axios、React Router |
 | 后端 | Python 3.12、FastAPI、SQLAlchemy 2.0（async）、Alembic、LangGraph |
-| 原生 I/O | Rust（PyO3/maturin 扩展：rust-io、files-io、net-io） |
-| 推理 | 外部 Docker 容器：Embedding(:8002)、Rerank(:8003)、Doc-Parse(:44321) |
+| 原生 I/O | Rust 扩展 `rust-io`（PyPI wheel，含 `rust_io.net` / `rust_io.files`） |
+| 推理 | 外部 Docker 容器：Embedding(:8002)、Rerank(:8003)；文档解析使用远程 MinerU API |
 | 数据库 | PostgreSQL 16（pgvector）、Redis 8.0 |
 | 基础设施 | Docker Compose、Ansible |
 
@@ -26,15 +26,13 @@
 ├── backend/                        # FastAPI 应用
 │   ├── app/                        # 入口点（main.py）
 │   ├── src/                        # 业务逻辑（编排垂直切片架构）
-│   │   ├── agents/                 # 管线编排器（LangGraph）
+│   │   ├── pipeline/               # 管线领域层
+│   │   │   ├── graph/              #   LangGraph 拓扑与阶段适配器
+│   │   │   └── skills/             #   AgentScope skills
+│   │   ├── core/                   # 配置 + 基础层（foundation/shared/tools/adapters）
+│   │   ├── runs/                   # 一次 run 的生命周期（runner、dispatcher、状态持久化）
 │   │   ├── api/                    # FastAPI 路由（v1/）
-│   │   ├── core/                   # 功能切片（Phase 1-4）
-│   │   │   ├── config.py                       # 配置
-│   │   │   ├── ingest_and_digitize_data/       # Phase 1
-│   │   │   ├── cross_lingual_process_and_extract_evidence/  # Phase 2
-│   │   │   ├── standardize_entities_and_align_knowledge/    # Phase 3
-│   │   │   └── visualize_evidence_with_expert_in_loop/      # Phase 4
-│   │   ├── dao/                    # 数据访问（PostgreSQL、Redis）
+│   │   ├── dao/                    # 数据访问（PostgreSQL、Redis、Neo4j）
 │   │   └── utils/                  # 共享工具
 │   ├── libs/                       # Rust 原生扩展
 │   ├── config/                     # 分层 YAML 配置
@@ -128,7 +126,7 @@ bun run dev
 | `cd frontend && bun run type-check` | TypeScript 类型检查 |
 | `cd frontend && bun run build` | 生产构建 |
 | `cd frontend && bun run test` | 前端测试 |
-| `cd backend/libs/rust-io && cargo test` | Rust 测试 |
+| `cd backend && uv run python -c "import rust_io.net, rust_io.files"` | 检查 Rust 扩展可用 |
 
 ## 部署
 
@@ -165,9 +163,9 @@ docker compose -f deploy/compose/backend-host/docker-compose.yml \
 
 详见 [AGENTS.md](./AGENTS.md)。关键要点：
 
-- 包管理器：`uv`（Python）、`bun`（Node.js）、`cargo`（Rust）
+- 包管理器：`uv`（Python）、`bun`（Node.js）；Rust 扩展以 PyPI wheel 形式引入，无需本地工具链
 - 日志：`loguru`，输出到 `logs/`
-- 测试：`pytest`（后端）、`vitest`（前端）、`cargo test`（Rust）
+- 测试：`pytest`（后端）、`vitest`（前端）
 - 代码风格：Google Style Guide，Ruff（Python）和 ESLint（TypeScript）
 - 提交信息：Conventional Commits（`feat:`、`fix:`、`docs:` 等）
 - API 版本：`/api/v1/` 前缀

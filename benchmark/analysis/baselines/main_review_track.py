@@ -14,7 +14,7 @@ from benchmark.analysis.baselines.llm_common import (
     quote_to_source_span,
 )
 from benchmark.analysis.baselines.runner import BaselineEntry, BaselineEvidenceItem, run_baseline_cli
-from src.utils.text import strip_json_fences
+from src.utils.text.content import strip_json_fences
 
 
 BASELINE_ID = "B8"

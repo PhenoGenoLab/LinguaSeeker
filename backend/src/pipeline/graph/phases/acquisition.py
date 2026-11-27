@@ -1,0 +1,147 @@
+"""Acquisition adapter: literature and document acquisition.
+
+Raises classified errors for orchestrator-level retry decisions.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import aiofiles
+from loguru import logger
+
+from src.runs.contracts import (
+    AcquisitionOutput,
+    PipelineGraphState,
+    PermanentPhaseError,
+    build_retryable_errors,
+    classify_phase_error,
+)
+from src.core.tools.acquisition import (
+    AcquisitionSource,
+    DocumentAcquisitionRequest,
+    DocumentDownloadEntry,
+)
+from src.pipeline.graph.phases.lifecycle import begin_phase, complete_phase, skip_phase
+
+if TYPE_CHECKING:
+    from src.pipeline.skills.acquisition.service import AcquisitionSkill
+
+_RETRYABLE_ERRORS = build_retryable_errors()
+
+
+class AcquisitionAdapter:
+    """Thin adapter wrapping DocumentAcquisitionService.
+
+    Raises RetryablePhaseError for transient failures (timeouts, rate limits).
+    Raises PermanentPhaseError for permanent failures (file not found, invalid input).
+
+    When ``state.pre_parsed_markdown`` is set, acquisition is unnecessary and
+    the phase is marked SKIPPED; Phase 2 consumes the markdown directly.
+    """
+
+    def __init__(
+        self,
+        acquisition_service: AcquisitionSkill,
+    ):
+        self._acquisition = acquisition_service
+
+    async def run(self, state: PipelineGraphState) -> PipelineGraphState:
+        """Execute Phase 1: acquire document.
+
+        Returns updated state with acquisition_output set on success.
+        Raises RetryablePhaseError or PermanentPhaseError on failure.
+        """
+        logger.info(
+            "Phase 1 started: run={}, source={}, pre_parsed={}",
+            state.processing_run_id,
+            state.source_type.value,
+            state.pre_parsed_markdown is not None,
+        )
+
+        begin_phase(state, 1)
+
+        try:
+            # Fast path: pre-parsed markdown needs no acquisition at all
+            if state.pre_parsed_markdown:
+                state.acquisition_output = AcquisitionOutput(pdf_path="")
+                skip_phase(state, 1, summary={"reason": "pre_parsed_markdown"})
+                logger.info("Phase 1 skipped (pre-parsed markdown): run={}", state.processing_run_id)
+                return state
+
+            # Read uploaded file bytes if available
+            content_bytes: bytes | None = None
+            upload_filename: str | None = None
+            if state.upload_file_path:
+                upload_filename = Path(state.upload_file_path).name
+                async with aiofiles.open(state.upload_file_path, "rb") as f:
+                    content_bytes = await f.read()
+
+            # Build acquisition request from state
+            request = DocumentAcquisitionRequest(
+                source=AcquisitionSource(state.source_type.value),
+                filename=upload_filename,
+                content=content_bytes,
+                upload_dir=None,
+                # Online acquisition fields
+                action=state.action,
+                query=state.query,
+                identifiers=state.identifiers,
+                relevance_gate=state.relevance_gate,
+                literature_types=list(state.literature_types) if state.literature_types else None,
+            )
+
+            # Acquire document
+            acquisition_result = await self._acquisition.acquire(request)
+
+            if not acquisition_result.success:
+                raise PermanentPhaseError(
+                    f"Acquisition failed: {acquisition_result.error}",
+                    phase=1,
+                )
+
+            # Extract file path
+            entry: DocumentDownloadEntry | None = None
+            if acquisition_result.stored_file:
+                pdf_path = acquisition_result.stored_file.file_path
+            elif acquisition_result.downloads:
+                entry = acquisition_result.downloads[0]
+                if not entry.file_path:
+                    raise PermanentPhaseError(
+                        "Acquisition returned a download entry without a file path",
+                        phase=1,
+                    )
+                pdf_path = entry.file_path
+            else:
+                # Acquisition returned metadata/items but no downloadable PDF.
+                # Most common cause: the article is paywalled or the provider
+                # has no OA copy. Not retryable — retrying would hit the same
+                # providers and get the same empty result.
+                reasons = list(acquisition_result.warnings or [])
+                detail = f" ({'; '.join(reasons[:3])})" if reasons else ""
+                raise PermanentPhaseError(
+                    f"Full-text PDF unavailable for the given identifier{detail}. "
+                    f"The article may be paywalled or no OA copy is indexed.",
+                    phase=1,
+                )
+
+            state.acquisition_output = AcquisitionOutput(pdf_path=pdf_path)
+
+            # If the acquisition pipeline already parsed the PDF (multilingual
+            # workflow's early MinerU batch), hand the markdown to Phase 2 so
+            # it writes the canonical layout without re-parsing.
+            pre_parsed = entry.pre_parsed_markdown if entry is not None else None
+            if pre_parsed:
+                state.pre_parsed_markdown = pre_parsed
+
+            summary: dict[str, object] = {"pdf_path": pdf_path}
+            if pre_parsed:
+                summary["pre_parsed_by_acquisition"] = True
+            complete_phase(state, 1, summary=summary)
+
+            logger.info("Phase 1 completed: run={}", state.processing_run_id)
+            return state
+
+        except Exception as e:
+            classify_phase_error(1, e, _RETRYABLE_ERRORS)

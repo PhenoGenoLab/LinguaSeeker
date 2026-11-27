@@ -10,7 +10,7 @@ from src.api.v1.graph_rag import (
     get_knowledge_graph,
     router,
 )
-from src.dao.neo4j.contracts import GraphEdge, GraphNode, SubgraphContext
+from src.core.tools.graph_retrieval.contracts import GraphEdge, GraphNode, SubgraphContext
 
 
 def test_query_route_is_registered() -> None:

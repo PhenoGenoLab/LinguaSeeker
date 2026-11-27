@@ -4,26 +4,22 @@
 
 ## Overview
 
-`src/` 是 Lingua Seeker 后端的核心代码包，按职责分为 6 个子包：配置管理（`core/`）、pipeline 领域层（`pipeline/`）、后台运行与调度（`agents/`）、HTTP API（`api/`）、数据访问（`dao/`）和通用工具（`utils/`）。
+`src/` 是 Lingua Seeker 后端的核心代码包，按职责分为 6 个子包：配置管理（`core/`）、pipeline 编排层（`pipeline/`）、运行生命周期（`runs/`）、HTTP API（`api/`）、数据访问（`dao/`）和通用工具（`utils/`）。
 
 ## Structure
 
 ```
 src/
-├── core/                # 核心业务逻辑和配置管理
+├── core/                # 配置与基础层
 │   ├── config.py                # Settings 单例（Pydantic Settings）
-│   ├── config_loader.py         # 分层 YAML 配置加载（兼容性 shim）
-│   ├── ingest_and_digitize_data/          # Phase 1: 文献采集和文档解析
-│   ├── cross_lingual_process_and_extract_evidence/  # Phase 2: 翻译和证据提取
-│   ├── standardize_entities_and_align_knowledge/    # Phase 3: 实体标准化
-│   └── visualize_evidence_with_expert_in_loop/      # Phase 4: 专家审核反馈
-├── pipeline/            # pipeline 领域层（阶段 1-2 目录迁移）
-│   ├── graph/                   # LangGraph 拓扑与 Phase 1-4 适配器
-│   ├── skills/                  # AgentScope 子智能体、prompt、模型运行时
-│   ├── tools/                   # 确定性能力（事实链校验、窗口、投影）
-│   ├── mcp/                     # 外部协议适配
-│   └── contracts/               # 跨层 DTO
-├── agents/              # 后台运行与任务调度（外层）
+│   ├── foundation/              # L1 跨切面基础（auth）
+│   ├── shared/                  # L2 共享能力与契约（fact_chain、skill_io）
+│   ├── tools/                   # 具体工具（acquisition/、parsing/、extraction/、standardization/ …）
+│   └── adapters/                # L3 外部协议适配（mcp）
+├── pipeline/            # pipeline 领域层
+│   ├── graph/                   # LangGraph 拓扑与阶段适配器（acquisition/parsing/fact_chain/standardization）
+│   └── skills/                  # 专业 agent 实现（prompt、模型调用、编排）+ runtime
+├── runs/                # 一次 run 的生命周期（runner、dispatcher、状态持久化）
 │   ├── runner.py                # 后台管线运行器
 │   ├── dispatcher.py            # 单任务作业调度器
 │   ├── contracts.py             # 状态模型、错误层次、状态转换守卫
@@ -31,7 +27,7 @@ src/
 │   ├── processing_cache.py      # 两级缓存（L1 Redis + L2 PostgreSQL）
 │   ├── content_hash.py          # 内容哈希去重
 │   ├── concurrency.py           # 信号量和重试执行器
-│   └── phase_5_factory.py       # Phase 5 服务工厂
+│   └── review_factory.py        # 审核（review）服务工厂
 ├── api/                 # HTTP API 层
 │   ├── wiring.py                # 依赖注入和服务组装
 │   ├── auth.py                  # API Key 和会话认证
@@ -43,10 +39,8 @@ src/
 │   ├── postgresql/              # SQLAlchemy ORM 和仓储
 │   ├── redis/                   # Redis 缓存操作
 │   ├── neo4j/                   # 图数据库（预留）
-│   └── minio/                   # 对象存储（预留）
 └── utils/               # 通用工具函数
     ├── logger.py                # 日志配置（loguru）
-    ├── llm_adapter.py           # LLM 客户端适配器（密钥池轮转）
     ├── exceptions.py            # 统一异常层次
     ├── health.py                # 启动健康检查
     ├── middleware.py             # 请求监控中间件
@@ -59,23 +53,25 @@ src/
 ### 依赖关系图
 
 ```
-app.main → src.api.wiring → src.agents.* → src.core.*
+app.main → src.api.wiring → src.runs.* → src.pipeline.* / src.core.*
                 ↓
            src.dao.* (PostgreSQL / Redis)
                 ↓
            src.utils.* (日志、LLM 适配器、异常)
 ```
 
-### 管线架构（Phase 1-4）
+### 管线架构
 
-| Phase | 模块 | 职责 |
-|-------|------|------|
-| Phase 1 | `core/ingest_and_digitize_data/` | 文献采集 + MinerU 文档解析 |
-| Phase 2 | `core/cross_lingual_process_and_extract_evidence/` | 跨语言翻译 + 双轨证据提取 |
-| Phase 3 | `core/standardize_entities_and_align_knowledge/` | 实体标准化 + 术语知识对齐 |
-| Phase 4 | `core/visualize_evidence_with_expert_in_loop/` | 专家审核、聊天、审计、溯源 |
+| 阶段 | 模块 | 职责 |
+|------|------|------|
+| acquisition | `pipeline/skills/acquisition/` + `core/tools/acquisition/` | 文献采集 |
+| parsing | `pipeline/skills/parsing/` + `core/tools/parsing/` | MinerU 文档解析 |
+| fact_chain | `pipeline/skills/extraction/`（+`translation/`） + `core/tools/extraction/` | 分窗 → 抽取 → 核验 → 事实英译 |
+| standardization | `pipeline/skills/standardization/` + `core/tools/standardization/` | 实体标准化 + 术语对齐 |
+| review | `pipeline/skills/review/` + `core/tools/review/` | 审核、聊天、审计、溯源（非图节点） |
 
-Phase 1-3 由 `agents/orchestrator.py`（LangGraph）编排为有向图，Phase 4 是独立的请求-响应式交互服务。
+前四个阶段由 `pipeline/graph/topology.py`（LangGraph）编排为有向图，对应 `graph/phases/{acquisition,parsing,fact_chain,standardization}.py`；
+review 是独立的请求-响应式服务，由 `runs/review_factory.py` 创建。
 
 ## Usage / Patterns
 
@@ -95,8 +91,10 @@ from src.utils.exceptions import NotFoundException, ValidationException
 ### 创建 LLM 客户端
 
 ```python
-from src.utils.llm_adapter import create_llm_client
-client = create_llm_client(model="gpt-5", api_keys=["sk-1", "sk-2"], base_url="...")
+from src.pipeline.skills.runtime.agentscope_llm import build_chat_model
+from src.core.config import get_config
+
+model = build_chat_model(get_config(), tier="fast")   # AgentScope chat model
 ```
 
 ## Dependencies

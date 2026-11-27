@@ -21,13 +21,7 @@
 #### 多阶段构建
 
 ```dockerfile
-# 阶段 1: Rust 编译
-FROM rust:1.82-slim AS rust-builder
-WORKDIR /build
-COPY libs/ ./libs/
-RUN cargo build --release -p rust-io
-
-# 阶段 2: Python 依赖
+# 阶段 1: Python 依赖(uv sync 会安装 PyPI 的 rust-io wheel)
 FROM python:3.12-slim AS python-builder
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
@@ -36,7 +30,6 @@ RUN pip install uv && uv sync --no-dev
 # 阶段 3: 运行时
 FROM python:3.12-slim
 WORKDIR /app
-COPY --from=rust-builder /build/target/release/librust_io.so ./rust_io.so
 COPY --from=python-builder /app/.venv ./.venv
 COPY app/ ./app/
 COPY config/ ./config/
@@ -48,7 +41,7 @@ CMD ["./.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000
 - **多阶段构建**：分离编译时和运行时依赖，减小镜像体积
 - **层缓存**：先复制依赖文件，再复制源代码，利用 Docker 层缓存
 - **精简基础镜像**：使用 `slim` 变体，仅安装必要系统依赖
-- **Rust 静态链接**：`librust_io.so` 静态链接所有 Rust 依赖
+- **Rust 扩展**：`rust-io` 以 manylinux wheel 安装,镜像内不需要 Rust 工具链
 
 ### Docker Compose 编排
 
@@ -118,7 +111,6 @@ jobs:
           - 5432:5432
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -126,16 +118,10 @@ jobs:
         run: pip install uv
       - name: Install dependencies
         run: uv sync
-      - name: Build Rust extensions
-        run: uv run maturin develop --release -m libs/rust-io/Cargo.toml
-      - name: Run Rust tests
-        run: |
-          cargo test -p net-io
-          cargo test -p files-io
+      - name: Check rust-io wheel
+        run: uv run python -c "import rust_io.net, rust_io.files"
       - name: Run Python tests
         run: uv run pytest --cov=app --cov-report=xml
-      - name: Lint Rust
-        run: cargo clippy --all-targets -- -D warnings
       - name: Lint Python
         run: uv run ruff check .
 

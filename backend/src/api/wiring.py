@@ -2,33 +2,70 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import asyncio
+from typing import TYPE_CHECKING, Any, cast
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from redis.asyncio import Redis as AsyncRedis
 
+from loguru import logger
+
 from src.core.config import Settings, get_config
 from src.dao.neo4j.connection import build_neo4j_driver
+from src.dao.neo4j.graph_provider import Neo4jGraphProvider
 from src.dao.neo4j.repository import Neo4jRepository
 from src.dao.postgresql.connection import async_session_factory, build_async_engine
 from src.dao.postgresql.job_queue import JobQueueRepository
+from src.dao.postgresql.review.annotation_store import PostgresAnnotationStore
+from src.dao.postgresql.review.audit_store import PostgresAuditStore
+from src.dao.postgresql.review.evidence_store import PostgresEvidenceStore
+from src.dao.postgresql.review.feedback_store import PostgresFeedbackStore
+from src.dao.postgresql.review.literature_store import PostgresLiteratureStore
+from src.dao.postgresql.run_state_store import PostgresRunStateStore
+from src.dao.postgresql.standardization.runner import PostgresStandardizationRunner
+from src.dao.postgresql.users import PostgresUserStore
 from src.dao.redis.connection import build_redis_client
 
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
-    from src.agents.dispatcher import SingleJobDispatcher
-    from src.core.agents.parsing.local.parser import (
-        MinerULocalParser,
-    )
+    from src.runs import AgentJobStore, RunJobQueue, SingleJobDispatcher
+    from src.core.tools.parsing.remote.parser import MinerURemoteParser
+
+
+class _UnavailableSessionFactory:
+    """Session factory for DB-less runs: any use returns a 503-mapped error."""
+
+    def __call__(self, *args: object, **kwargs: object) -> object:
+        del args, kwargs
+        from src.utils.exceptions import PersistenceUnavailableError
+
+        raise PersistenceUnavailableError("database-backed feature")
+
 
 _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 _redis_client: AsyncRedis | None = None
-_local_parser: MinerULocalParser | None = None
+_remote_parser: MinerURemoteParser | None = None
 _dispatcher: SingleJobDispatcher | None = None
 _neo4j_driver: AsyncDriver | None = None
 _neo4j_repository: Neo4jRepository | None = None
+_agent_job_store: "AgentJobStore | None" = None
+_startup_lock_raw_conn: Any = None
+_neo4j_init_task: asyncio.Task[None] | None = None
+
+
+def set_agent_job_store(store: "AgentJobStore") -> None:
+    """Register the process-wide agent job store."""
+    global _agent_job_store
+    _agent_job_store = store
+
+
+def get_agent_job_store() -> "AgentJobStore":
+    """Return the agent job store (raises if wiring has not run)."""
+    if _agent_job_store is None:
+        raise RuntimeError("Agent job store not initialized — call wire_dependencies() first")
+    return _agent_job_store
 
 
 def get_session_factory() -> async_sessionmaker[AsyncSession]:
@@ -89,9 +126,202 @@ async def dispose_neo4j() -> None:
         _neo4j_driver = None
 
 
-def get_local_parser() -> MinerULocalParser | None:
-    """Return the singleton MinerU local parser (or None if not yet initialized)."""
-    return _local_parser
+async def create_search_index_tables() -> None:
+    """Create standalone search-index tables that Alembic does not manage."""
+    from src.dao.postgresql.search_index_repo import search_index_metadata
+
+    engine = get_engine()
+    if engine is None:
+        return
+    async with engine.begin() as conn:
+        await conn.run_sync(search_index_metadata.create_all)
+
+
+def has_database() -> bool:
+    """Return True when a PostgreSQL engine is configured."""
+    return get_engine() is not None
+
+
+def make_user_store() -> PostgresUserStore:
+    """Build a user store bound to the configured session factory."""
+    return PostgresUserStore(get_session_factory())
+
+
+def make_evidence_store() -> PostgresEvidenceStore:
+    """Build a read-only evidence query store."""
+    return PostgresEvidenceStore(get_session_factory())
+
+
+def make_feedback_store() -> PostgresFeedbackStore:
+    """Build a feedback store that owns the patch transaction."""
+    return PostgresFeedbackStore(get_session_factory())
+
+
+def make_audit_store() -> PostgresAuditStore:
+    """Build a read-only audit store."""
+    return PostgresAuditStore(get_session_factory())
+
+
+def make_literature_store() -> PostgresLiteratureStore:
+    """Build a literature profile store."""
+    return PostgresLiteratureStore(get_session_factory())
+
+
+def make_annotation_store() -> PostgresAnnotationStore:
+    """Build an annotation store."""
+    return PostgresAnnotationStore(get_session_factory())
+
+
+def make_run_state_store() -> PostgresRunStateStore:
+    """Build a run state store."""
+    return PostgresRunStateStore(get_session_factory())
+
+
+def make_standardization_runner() -> PostgresStandardizationRunner:
+    """Build the PostgreSQL-backed standardization runner."""
+    return PostgresStandardizationRunner(
+        cfg=get_config(),
+        session_factory=get_session_factory(),
+    )
+
+
+def build_rate_limit_storage():
+    """Build the slowapi storage backend, falling back to memory.
+
+    Only transport failures degrade. A malformed URL or bad config must fail
+    startup instead of silently downgrading a security control.
+    """
+    import redis as redis_lib
+    from limits.storage import MemoryStorage, RedisStorage
+
+    cfg = get_config()
+    pwd = cfg.redis.password or None
+    auth = f":{pwd}@" if pwd else ""
+    redis_url = f"redis://{auth}{cfg.redis.host}:{cfg.redis.port}/{cfg.redis.db}"
+    try:
+        client = redis_lib.Redis(
+            host=cfg.redis.host,
+            port=cfg.redis.port,
+            db=cfg.redis.db,
+            password=pwd,
+            socket_connect_timeout=1,
+        )
+        client.ping()
+        client.close()
+        logger.info("Rate limiter using Redis storage")
+        return RedisStorage(redis_url)
+    except (redis_lib.RedisError, OSError) as exc:
+        logger.warning("Redis unavailable ({}), rate limiter using in-memory storage", exc)
+        return MemoryStorage()
+
+
+async def check_postgres() -> bool:
+    """Ping PostgreSQL using the singleton engine."""
+    try:
+        from src.dao.postgresql.health import ping_postgres
+
+        engine = get_engine()
+        if engine is None:
+            logger.warning("PostgreSQL health check skipped: engine not initialized")
+            return False
+        return await ping_postgres(engine)
+    except Exception as exc:
+        logger.warning("PostgreSQL health check failed: {}", exc)
+        return False
+
+
+async def check_redis() -> bool:
+    """Ping Redis using the singleton client."""
+    try:
+        client = get_redis_client()
+        if client is None:
+            logger.debug("Redis health check skipped: client not initialized")
+            return False
+        return bool(await client.ping())
+    except Exception as exc:
+        logger.debug("Redis health check failed: {}", exc)
+        return False
+
+
+def register_health_checks() -> None:
+    """Register connectivity probes used during startup."""
+    from src.utils.health import register_health_check
+
+    register_health_check("postgres", check_postgres)
+    register_health_check("redis", check_redis)
+
+
+async def initialize_neo4j() -> None:
+    """Ensure graph indexes and lowercase search fields exist."""
+    repository = _neo4j_repository
+    if repository is None:
+        return
+    try:
+        await repository.ensure_indexes()
+        logger.info("Neo4j indexes and lowercase fields ready")
+    except Exception as exc:
+        logger.warning("Neo4j index initialization failed: {}", exc)
+
+
+def start_neo4j_initialization() -> None:
+    """Run graph index/backfill work in the background without blocking startup."""
+    global _neo4j_init_task
+    if _neo4j_repository is None:
+        return
+    if _neo4j_init_task is not None and not _neo4j_init_task.done():
+        return
+    _neo4j_init_task = asyncio.create_task(initialize_neo4j())
+
+
+async def acquire_startup_lock() -> bool:
+    """Acquire a PostgreSQL advisory lock for startup initialization.
+
+    Uses a raw connection (not returned to pool) so the lock persists for the
+    duration of the startup phase. Advisory locks are session-scoped and are
+    released automatically when the connection closes.
+
+    Returns True when this worker should run recovery, False when another
+    worker holds the lock, and True for engines without advisory locks.
+    """
+    global _startup_lock_raw_conn
+    engine = get_engine()
+    if engine is None:
+        return False
+    try:
+        raw_conn = await engine.raw_connection()
+        try:
+            result = await raw_conn.exec_driver_sql(
+                "SELECT pg_try_advisory_lock(hashtext('lingua_seeker_backend_startup'))"
+            )
+            row = result.fetchone()
+            acquired = bool(row[0]) if row else False
+        except Exception:
+            await raw_conn.close()
+            return True
+
+        if acquired:
+            _startup_lock_raw_conn = raw_conn
+        else:
+            await raw_conn.close()
+        return acquired
+    except Exception:
+        return True
+
+
+async def release_startup_lock() -> None:
+    """Release the startup advisory lock by closing its raw connection."""
+    global _startup_lock_raw_conn
+    if _startup_lock_raw_conn is not None:
+        try:
+            await _startup_lock_raw_conn.close()
+        except Exception:
+            pass
+        _startup_lock_raw_conn = None
+
+
+def get_remote_parser() -> MinerURemoteParser | None:
+    """Return the singleton MinerU remote parser (or None if not initialized)."""
+    return _remote_parser
 
 
 def get_dispatcher() -> SingleJobDispatcher | None:
@@ -127,6 +357,13 @@ def _configure_lit_acquisition(cfg: Settings) -> None:
         no_proxy=cfg.network.no_proxy,
     )
 
+    # The SDK's Rust downloader returns on publisher 4xx responses without
+    # trying its httpx fallback. MDPI (and similar) serve PDFs only to the
+    # httpx client's browser-style headers, so force that path here.
+    from lit_acquisition.net import download as lit_download
+
+    lit_download.net_io = None
+
 
 def wire_dependencies() -> None:
     """Assemble and inject all application dependencies.
@@ -134,109 +371,134 @@ def wire_dependencies() -> None:
     Called once from lifespan startup.  Creates the full service graph:
     engine → session_factory → adapters → orchestrator → runner → factory.
     """
-    from src.agents.concurrency import PipelineSemaphore, RetryablePhaseExecutor
-    from src.agents.phase_5_factory import Phase5ServiceFactory
-    from src.agents.runner import PipelineRunner
-    from src.agents.state_persistence import SessionBoundStatePersistence
-    from src.api.deps import set_neo4j_repository, set_phase5_factory
+    from src.runs import (
+        PipelineRunner,
+        PipelineSemaphore,
+        RetryablePhaseExecutor,
+        SingleJobDispatcher,
+    )
+    from src.dao.postgresql.review.store_factory import PostgresReviewStoreFactory
+    from src.pipeline.skills.review.factory import ReviewServiceFactory
+    from src.dao.postgresql.run_state_store import PostgresRunStateStore
+    from src.api.deps import set_review_factory
     from src.api.v1.pipeline import set_pipeline_runner
-    from src.core.agents.graph_retrieval.api import GraphRagService
-    from src.core.agents.acquisition.service import (
-        DocumentAcquisitionService,
-    )
-    from src.core.agents.parsing.local.parser import (
-        MinerULocalParser,
-    )
-    from src.core.agents.parsing.orchestrator import (
+    from src.pipeline.skills.graph_retrieval.api import GraphRagService
+    from src.core.tools.parsing.orchestrator import (
         DocumentParseOrchestrator,
     )
-    from src.core.agents.parsing.remote.parser import (
+    from src.core.tools.parsing.remote.parser import (
         MinerURemoteParser,
     )
-    from src.core.agents.parsing.service import (
+    from src.core.tools.parsing.service import (
         ParseDocumentService,
     )
-    from src.core.agents.standardization.api import (
-        EntityStandardizationService,
-    )
-    from src.pipeline.graph.phases.phase_1 import Phase1Adapter
-    from src.pipeline.graph.phases.phase_2 import Phase2Adapter
-    from src.pipeline.graph.phases.phase_3 import Phase3Adapter
-    from src.pipeline.graph.phases.phase_4 import Phase4Adapter
+    from src.dao.postgresql.standardization.runner import PostgresStandardizationRunner
+    from src.pipeline.graph.phases.acquisition import AcquisitionAdapter
+    from src.pipeline.graph.phases.parsing import ParsingAdapter
+    from src.pipeline.graph.phases.fact_chain import FactChainAdapter
+    from src.pipeline.graph.phases.standardization import StandardizationAdapter
     from src.pipeline.graph.topology import PipelineOrchestrator
-    from src.pipeline.skills.fact_chain.service import SourceFactChainService
+    from src.pipeline.skills.acquisition.service import AcquisitionSkill
+    from src.pipeline.skills.extraction.service import SourceFactChainService
+    from src.pipeline.skills.parsing.service import ParsingSkill
+    from src.pipeline.skills.standardization.service import StandardizationSkill
 
-    global _engine, _session_factory, _redis_client, _local_parser, _dispatcher, _neo4j_driver, _neo4j_repository
+    global _engine, _session_factory, _redis_client, _remote_parser, _dispatcher, _neo4j_driver, _neo4j_repository
 
     cfg = get_config()
 
     # ── lit-acquisition SDK (online literature acquisition) ──────────
     _configure_lit_acquisition(cfg)
 
-    # ── PostgreSQL engine/session singleton ──────────────────────────
-    if _engine is None:
-        _engine = build_async_engine(cfg)
-    if _session_factory is None:
-        _session_factory = async_session_factory(_engine)
-
     # ── Redis client singleton ───────────────────────────────────────
     _redis_client = build_redis_client(cfg)
 
-    # ── Neo4j driver/repository singleton ────────────────────────────
-    if _neo4j_driver is None:
-        _neo4j_driver = build_neo4j_driver(cfg)
-        _neo4j_repository = Neo4jRepository(
-            _neo4j_driver,
-            database=cfg.neo4j.database,
+    # ── Persistence backend ──────────────────────────────────────────
+    backend = cfg.persistence_backend
+    if backend == "memory":
+        from src.dao.memory import InMemoryProcessingCache, InMemoryRunStateStore
+
+        _engine = None
+        _session_factory = cast("async_sessionmaker[AsyncSession]", _UnavailableSessionFactory())
+        persistence = InMemoryRunStateStore()
+        processing_cache = InMemoryProcessingCache()
+        logger.warning(
+            "Persistence backend=memory: run state/cache are process-local; "
+            "DB-backed features return 503"
+        )
+    else:
+        if _engine is None:
+            _engine = build_async_engine(cfg)
+        if _session_factory is None:
+            _session_factory = async_session_factory(_engine)
+        from src.dao.postgresql.processing_cache import PostgresProcessingCache
+
+        session_factory = get_session_factory()
+        persistence = PostgresRunStateStore(session_factory)
+        processing_cache = PostgresProcessingCache(
+            redis_client=_redis_client,
+            session_factory=session_factory,
         )
 
-    # ── Document processing cache (L1 Redis + L2 PostgreSQL) ──────────
-    from src.agents.processing_cache import DocumentProcessingCacheService
+    session_factory = get_session_factory()
 
-    processing_cache = DocumentProcessingCacheService(
-        redis_client=_redis_client,
-        session_factory=get_session_factory(),
-    )
+    # ── Neo4j driver/repository singleton (optional) ──────────────────
+    if _neo4j_driver is None:
+        try:
+            _neo4j_driver = build_neo4j_driver(cfg)
+            _neo4j_repository = Neo4jRepository(
+                _neo4j_driver,
+                database=cfg.neo4j.database,
+            )
+        except Exception as exc:
+            logger.warning("Neo4j unavailable ({}); graph features are disabled", exc)
+            _neo4j_driver = None
+            _neo4j_repository = None
+
+    # ── Document processing cache is built with the persistence backend above.
 
     session_factory = get_session_factory()
 
     # ── Phase 1-4 services (long-lived, no session in constructor) ──
 
-    acquisition_service = DocumentAcquisitionService()
+    acquisition_skill = AcquisitionSkill(cfg=cfg)
     pd_cfg = cfg.parse_document
-    remote_parser = MinerURemoteParser(
+    _remote_parser = MinerURemoteParser(
         api_token=cfg.mineru_api_token,
         poll_interval=pd_cfg.mineru_remote_poll_interval,
         max_poll_attempts=pd_cfg.mineru_remote_max_poll_attempts,
     )
-    _local_parser = MinerULocalParser(
-        parse_url=pd_cfg.mineru_local_parse_url,
-        model_id=pd_cfg.mineru_local_model_id,
-        timeout=pd_cfg.mineru_local_timeout,
-        dpi=pd_cfg.mineru_local_dpi,
-        api_key=cfg.inference_api_key,
-    )
-    parse_orchestrator = DocumentParseOrchestrator(remote=remote_parser, local=_local_parser)
+    parse_orchestrator = DocumentParseOrchestrator(remote=_remote_parser)
     parse_service = ParseDocumentService(parse_orchestrator)
-    graph_rag_service = GraphRagService(_neo4j_repository) if _neo4j_repository is not None else None
+    parsing_skill = ParsingSkill(cfg=cfg, service=parse_service)
+    graph_rag_service = (
+        GraphRagService(
+            _neo4j_repository,
+            writer=Neo4jGraphProvider(_neo4j_repository),
+        )
+        if _neo4j_repository is not None
+        else None
+    )
     source_fact_chain = SourceFactChainService(cfg=cfg)
-    standardization_service = EntityStandardizationService(
+    standardization_service = PostgresStandardizationRunner(
         cfg=cfg,
+        session_factory=session_factory,
         graph_rag_service=graph_rag_service,
     )
+
+    standardization_skill = StandardizationSkill(cfg=cfg, runner=standardization_service)
 
     # ── Phase adapters ──
 
     phase_adapters = {
-        "phase_1": Phase1Adapter(acquisition_service),
-        "phase_2": Phase2Adapter(parse_service),
-        "phase_3": Phase3Adapter(source_fact_chain),
-        "phase_4": Phase4Adapter(standardization_service, session_factory),
+        "acquisition": AcquisitionAdapter(acquisition_skill),
+        "parsing": ParsingAdapter(parsing_skill),
+        "fact_chain": FactChainAdapter(source_fact_chain),
+        "standardization": StandardizationAdapter(standardization_skill),
     }
 
     # ── Orchestrator + Runner ──
 
-    persistence = SessionBoundStatePersistence(session_factory)
     retry_executor = RetryablePhaseExecutor(max_retries=2, backoff_base=30.0)
 
     orchestrator = PipelineOrchestrator(
@@ -262,14 +524,23 @@ def wire_dependencies() -> None:
 
     # ── Phase 5 factory (interactive review layer) ──
 
-    phase5_factory = Phase5ServiceFactory(cfg=cfg, session_factory=session_factory)
+    review_factory = ReviewServiceFactory(stores=PostgresReviewStoreFactory(session_factory))
 
     # ── Job queue + dispatcher ──
 
-    from src.agents.dispatcher import SingleJobDispatcher
     from src.api.v1.pipeline import set_job_queue
 
-    job_queue = JobQueueRepository(session_factory)
+    job_queue: RunJobQueue
+    if backend == "memory":
+        from src.dao.memory import InMemoryAgentJobStore, InMemoryRunJobQueue
+
+        job_queue = InMemoryRunJobQueue()
+        set_agent_job_store(InMemoryAgentJobStore())
+    else:
+        from src.dao.postgresql.agent_jobs import AgentJobRepository
+
+        job_queue = JobQueueRepository(session_factory)
+        set_agent_job_store(AgentJobRepository(session_factory))
     _dispatcher = SingleJobDispatcher(
         runner=runner,
         job_queue=job_queue,
@@ -280,7 +551,5 @@ def wire_dependencies() -> None:
     # ── Inject into global registries (consumed by API routes) ──
 
     set_pipeline_runner(runner)
-    set_phase5_factory(phase5_factory)
+    set_review_factory(review_factory)
     set_job_queue(job_queue)
-    if _neo4j_repository is not None:
-        set_neo4j_repository(_neo4j_repository)

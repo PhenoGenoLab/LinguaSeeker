@@ -11,7 +11,7 @@ def test_short_technical_text_not_flagged_as_unchanged():
     translated. The source must be English (to pass the CJK check) and the
     translation must also be English (to pass the language detection check).
     """
-    from src.core.agents.translation.translate.validator.core import (
+    from src.core.tools.translation.translate.validator.core import (
         validate_translation_output,
     )
 
@@ -36,7 +36,7 @@ def test_long_unchanged_text_still_flagged():
     A non-CJK language is used because echoed CJK text is rejected earlier by
     the CJK-ratio check as ``non_english_output`` rather than ``unchanged``.
     """
-    from src.core.agents.translation.translate.validator.core import (
+    from src.core.tools.translation.translate.validator.core import (
         validate_translation_output,
     )
 

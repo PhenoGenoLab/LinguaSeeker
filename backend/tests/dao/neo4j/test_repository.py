@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.dao.neo4j.contracts import SubgraphContext
+from src.core.tools.graph_retrieval.contracts import SubgraphContext
 from src.dao.neo4j.repository import Neo4jRepository
 
 

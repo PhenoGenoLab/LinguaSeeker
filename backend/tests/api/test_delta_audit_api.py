@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -14,10 +13,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 @pytest.mark.asyncio
 async def test_list_audit_events(async_client: AsyncClient):
     """GET /api/v1/delta-audit/ returns audit events."""
-    with patch("src.api.v1.delta_audit.get_phase5_factory") as mock_factory:
-        mock_service = MagicMock()
-        mock_service.list_audit_events = AsyncMock(return_value=[])
-        mock_factory.return_value.delta_audit = mock_service
+    with patch("src.api.wiring.PostgresAuditStore") as mock_store_cls:
+        mock_store = MagicMock()
+        mock_store.list_events = AsyncMock(return_value=[])
+        mock_store_cls.return_value = mock_store
 
         response = await async_client.get("/api/v1/delta-audit/")
         assert response.status_code == 200
@@ -30,8 +29,6 @@ async def test_patch_evidence_event_is_queryable_by_source_document(
 ) -> None:
     """PATCH evidence through API records an audit event queryable by source document."""
     from app.main import create_app
-    from src.agents.phase_5_factory import Phase5ServiceFactory
-    from src.api.deps import get_db_session
     from src.core.config import Settings
     from src.dao.postgresql.models import CanonicalEvidenceItem, SourceDocument
 
@@ -56,29 +53,29 @@ async def test_patch_evidence_event_is_queryable_by_source_document(
     )
     await db_session.flush()
 
-    async def override_session() -> AsyncGenerator[AsyncSession, None]:
+    from contextlib import asynccontextmanager
+
+    @asynccontextmanager
+    async def fake_session_factory():
         yield db_session
 
     mock_settings = Settings(api_key="")
-    factory = Phase5ServiceFactory(cfg=MagicMock())
 
     with (
         patch("src.core.config.get_config", return_value=mock_settings),
         patch("src.api.auth.get_config", return_value=mock_settings),
-        patch("src.api.v1.evidence.get_phase5_factory", return_value=factory),
-        patch("src.api.v1.delta_audit.get_phase5_factory", return_value=factory),
+        patch("src.api.wiring.get_session_factory", return_value=fake_session_factory),
         patch(
-            "src.core.agents.review.feedback_service."
+            "src.dao.postgresql.review.feedback_store."
             "FeedbackService._refresh_literature_profile",
             new_callable=AsyncMock,
         ),
         patch(
-            "src.core.agents.review.feedback_service.FeedbackService._refresh_search_index",
+            "src.dao.postgresql.review.feedback_store.FeedbackService._refresh_search_index",
             new_callable=AsyncMock,
         ),
     ):
         app = create_app()
-        app.dependency_overrides[get_db_session] = override_session
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             patch_response = await client.patch(

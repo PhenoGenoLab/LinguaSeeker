@@ -4,7 +4,7 @@ type EnKeys = keyof EnDict;
 
 const zh: Record<EnKeys, string> = {
   // ── 导航 ──
-  "nav.chat": "AI 对话",
+  "nav.chat": "Supervisor",
   "nav.tasks": "任务",
   "nav.evidenceDb": "证据数据库",
   "nav.audit": "审计",
@@ -89,8 +89,8 @@ const zh: Record<EnKeys, string> = {
   "pipeline.history.noMatch": "无匹配的运行记录",
   "pipeline.history.noRuns": "暂无运行记录",
   "pipeline.history.filterEmpty": '无状态为"{status}"的运行记录',
-  "pipeline.history.chatLink": "AI 对话",
-  "pipeline.history.guidance": "从 AI 对话启动流水线或上传 PDF 开始处理文献。",
+  "pipeline.history.chatLink": "Supervisor",
+  "pipeline.history.guidance": "从 Supervisor 启动流水线或上传 PDF 开始处理文献。",
   "pipeline.history.loadError": "加载运行记录失败",
   "pipeline.history.loadErrorHint":
     "无法连接到流水线服务，请检查后端是否正在运行。",
@@ -132,6 +132,29 @@ const zh: Record<EnKeys, string> = {
   "pipeline.phase.preparing": "正在准备 {phase}…",
   "pipeline.phase.unknownError": "未知错误",
   "pipeline.phase.subnodes": "子节点",
+  "pipeline.standardization.detailTitle": "标准化实体明细",
+  "pipeline.standardization.detailDescription":
+    "本 run 证据绑定的 {total} 个去重实体",
+  "pipeline.standardization.loading": "正在加载标准化实体…",
+  "pipeline.standardization.loadError": "无法加载标准化实体",
+  "pipeline.standardization.empty": "本 run 没有绑定任何标准化实体。",
+  "pipeline.standardization.type": "类型",
+  "pipeline.standardization.rawText": "原始提及",
+  "pipeline.standardization.displayName": "标准化名称",
+  "pipeline.standardization.externalId": "外部 ID",
+  "pipeline.standardization.statusColumn": "状态",
+  "pipeline.standardization.occurrences": "提及次数",
+  "pipeline.standardization.filter.all": "全部",
+  "pipeline.standardization.filter.standardized": "已标准化",
+  "pipeline.standardization.filter.ambiguous": "歧义",
+  "pipeline.standardization.filter.unmapped": "未映射",
+  "pipeline.standardization.entityType.gene": "基因",
+  "pipeline.standardization.entityType.variant": "变异",
+  "pipeline.standardization.entityType.disease": "疾病",
+  "pipeline.standardization.entityType.phenotype": "表型",
+  "pipeline.standardization.status.standardized": "已标准化",
+  "pipeline.standardization.status.ambiguous": "歧义",
+  "pipeline.standardization.status.unmapped": "未映射",
 
   // ── 文献证据 ──
   "evidence.title": "文献证据",
@@ -539,12 +562,12 @@ const zh: Record<EnKeys, string> = {
   "audit.review.status.rejected": "已驳回",
 
   // ── 对话 ──
-  "chat.title": "对话",
+  "chat.title": "Supervisor",
   "chat.sessionLabel": "会话",
   "chat.inputPlaceholder": "输入消息…",
   "chat.send": "发送",
   "chat.newSession": "新建对话",
-  "chat.agentPlaceholder": "向 Lingua Seeker Agent 提问…",
+  "chat.agentPlaceholder": "向 Supervisor 提问…",
 
   // ── 对话 — WelcomeBlock ──
   "chat.welcome.heading": "在 Lingua Seeker 中启动可追溯的证据工作流",
@@ -658,9 +681,9 @@ const zh: Record<EnKeys, string> = {
   "guide.welcome": "欢迎使用 Lingua Seeker",
   "guide.welcomeDesc":
     "面向医学遗传学文献的多智能体自动化平台，支持结构化证据提取。",
-  "guide.chat": "AI 对话",
+  "guide.chat": "Supervisor",
   "guide.chatDesc":
-    "以自然语言与 AI 助手交互，检索文献、提取证据、解答遗传变异相关问题。",
+    "以自然语言与 Supervisor 交互，检索文献、提取证据、解答遗传变异相关问题。",
   "guide.tasks": "任务流水线",
   "guide.tasksDesc": "创建和管理文献处理任务——从文献采集到证据提取。",
   "guide.evidenceDb": "证据数据库",

@@ -11,7 +11,7 @@ from typing import Any
 
 from neo4j import AsyncDriver
 
-from src.dao.neo4j.contracts import GraphEdge, GraphNode, SubgraphContext
+from src.core.tools.graph_retrieval.contracts import GraphEdge, GraphNode, SubgraphContext
 
 
 _BIOMEDICAL_LABEL_FILTER = "+Gene|+Disease|+Variant|+Phenotype"
@@ -54,12 +54,28 @@ class Neo4jRepository:
             ):
                 result = await session.run(stmt)
                 await result.consume()
-            backfill = await session.run(
+            display_backfill = (
                 "MATCH (n) "
                 "WHERE n.display_name IS NOT NULL AND n.display_name_lower IS NULL "
-                "SET n.display_name_lower = toLower(n.display_name)"
+                "WITH n LIMIT 5000 "
+                "SET n.display_name_lower = toLower(n.display_name) "
+                "RETURN count(n) AS updated"
             )
-            await backfill.consume()
+            while True:
+                record = await (await session.run(display_backfill)).single()
+                if not record or not record["updated"]:
+                    break
+            alias_backfill = (
+                "MATCH (n) "
+                "WHERE n.aliases IS NOT NULL AND n.aliases_lower IS NULL "
+                "WITH n LIMIT 5000 "
+                "SET n.aliases_lower = [a IN n.aliases WHERE a IS NOT NULL | toLower(toString(a))] "
+                "RETURN count(n) AS updated"
+            )
+            while True:
+                record = await (await session.run(alias_backfill)).single()
+                if not record or not record["updated"]:
+                    break
 
     async def execute_write(self, query: str, **parameters: Any) -> list[dict[str, Any]]:
         """Run a write query and return serialized records."""

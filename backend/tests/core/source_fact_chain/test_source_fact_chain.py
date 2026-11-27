@@ -13,9 +13,9 @@ from src.core.shared.tools.fact_chain.contracts import (
     SourceHashMismatch,
     sha256_text,
 )
-from src.core.shared.tools.fact_chain.projection import project_dual_result
+from src.core.tools.extraction.projection import project_dual_result
 from src.core.shared.tools.fact_chain.windowing import chunk_document
-from src.pipeline.skills.fact_chain.runner import BudgetExhausted, ChainRunner
+from src.pipeline.skills.extraction.runner import BudgetExhausted, ChainRunner
 from src.pipeline.skills.runtime.llm import ProviderError
 
 
@@ -299,8 +299,8 @@ def test_projection_drops_unsupported_facts() -> None:
 
 
 def test_projection_feeds_phase_four_standardization_input() -> None:
-    from src.core.agents.standardization.adapters import DualResultAdapter
-    from src.core.agents.standardization.contracts import EntityType
+    from src.core.tools.standardization.adapters import DualResultAdapter
+    from src.core.tools.standardization.contracts import EntityType
 
     run = run_chain()
     result = project_dual_result(run, target_gene="BRCA1", target_disease="breast cancer")
@@ -382,8 +382,8 @@ def test_projection_keeps_each_gene_with_its_own_variant() -> None:
 
 
 def test_projection_target_guard_keeps_off_target_facts_out_of_phase_four() -> None:
-    from src.core.agents.standardization.adapters import DualResultAdapter
-    from src.core.agents.standardization.contracts import EntityType
+    from src.core.tools.standardization.adapters import DualResultAdapter
+    from src.core.tools.standardization.contracts import EntityType
 
     text, facts = multi_gene_facts()
     run = run_chain(text=text, provider=StubProvider(facts))
@@ -543,25 +543,29 @@ def test_budget_exhaustion_stops_before_the_next_provider_call() -> None:
     assert len(provider.calls) == 1
 
 
-def test_langchain_provider_routes_tiers_and_rejects_empty_replies(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_chat_provider_routes_tiers_and_rejects_empty_replies(monkeypatch: pytest.MonkeyPatch) -> None:
     from types import SimpleNamespace
 
+    from agentscope.message import TextBlock
+    from agentscope.model import ChatResponse
+
+    import src.pipeline.skills.runtime.agentscope_llm as llm_module
     from src.pipeline.skills.runtime import llm as provider_module
 
-    created: list[dict[str, object]] = []
+    built: list[str] = []
 
-    class FakeClient:
-        def __init__(self, content: object) -> None:
-            self.content = content
+    class FakeModel:
+        def __init__(self, text: str) -> None:
+            self._text = text
 
-        def invoke(self, messages: object) -> object:
-            return SimpleNamespace(content=self.content)
+        async def __call__(self, messages: object) -> ChatResponse:
+            return ChatResponse(content=[TextBlock(text=self._text)], is_last=True)
 
-    def fake_create(**kwargs: object) -> FakeClient:
-        created.append(kwargs)
-        return FakeClient("ok")
+    def fake_build(cfg: object, *, tier: str) -> FakeModel:
+        built.append(tier)
+        return FakeModel("ok" if tier == "fast" else "reasoned")
 
-    monkeypatch.setattr(provider_module, "create_llm_client", fake_create)
+    monkeypatch.setattr(llm_module, "build_chat_model", fake_build)
     cfg = SimpleNamespace(
         llm=SimpleNamespace(model="fast-model", base_url="http://fast", all_api_keys=["k1"], max_tokens=128, timeout=5),
         reasoning=SimpleNamespace(
@@ -573,24 +577,27 @@ def test_langchain_provider_routes_tiers_and_rejects_empty_replies(monkeypatch: 
             reasoning_effort="high",
         ),
     )
-    provider = provider_module.LangChainChainProvider(cfg)
+    provider = provider_module.ChatModelProvider(cfg)
 
     assert provider.invoke(stage="extract", model_id="fast-model", prompt="p", payload="{}") == "ok"
-    assert provider.invoke(stage="verify", model_id="reasoning-model", prompt="p", payload="{}") == "ok"
-    assert [entry["model"] for entry in created] == ["fast-model", "reasoning-model"]
-    assert created[1]["model_kwargs"] == {"reasoning_effort": "high"}
+    assert provider.invoke(stage="verify", model_id="reasoning-model", prompt="p", payload="{}") == "reasoned"
+    assert built == ["fast", "reasoning"]
 
-    provider._clients["fast"] = FakeClient("")
+    provider._models["fast"] = FakeModel("")
     with pytest.raises(ProviderError):
         provider.invoke(stage="extract", model_id="fast-model", prompt="p", payload="{}")
 
-    class BrokenClient:
-        def invoke(self, messages: object) -> object:
+    class BrokenModel:
+        async def __call__(self, messages: object) -> ChatResponse:
             raise RuntimeError("transport down")
 
-    provider._clients["fast"] = BrokenClient()
+    provider._models["fast"] = BrokenModel()
     with pytest.raises(ProviderError):
         provider.invoke(stage="extract", model_id="fast-model", prompt="p", payload="{}")
 
-    provider._clients["fast"] = FakeClient([{"text": "part1"}, "part2"])
+    class MultiBlockModel:
+        async def __call__(self, messages: object) -> ChatResponse:
+            return ChatResponse(content=[TextBlock(text="part1"), TextBlock(text="part2")], is_last=True)
+
+    provider._models["fast"] = MultiBlockModel()
     assert provider.invoke(stage="extract", model_id="fast-model", prompt="p", payload="{}") == "part1part2"

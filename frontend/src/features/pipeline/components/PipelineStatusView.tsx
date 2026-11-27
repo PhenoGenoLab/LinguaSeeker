@@ -224,6 +224,7 @@ export function PipelineStatusView({ runId }: PipelineStatusViewProps) {
               phaseId={step.phaseId}
               phase={phase}
               index={i}
+              runId={runId}
             />
           );
         })}

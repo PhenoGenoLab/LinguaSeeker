@@ -1,0 +1,78 @@
+"""Document parsing module — MinerU remote API only."""
+
+from .contracts import (
+    DedupResult,
+    DocumentMetadata,
+    FigurePosition,
+    MinerUBatchExtractProgress,
+    MinerUBatchFileResult,
+    MinerUBatchStatus,
+    MinerULocalBatchOptions,
+    MinerULocalBatchParseResult,
+    MinerULocalBatchSaveResult,
+    MinerULocalBatchUploadResult,
+    PageContent,
+    ParseAndSaveResult,
+    ParseResult,
+    SavedFiles,
+    TableStructure,
+)
+from .exceptions import (
+    MinerUAPIError,
+    MinerUTimeoutError,
+    ParseDocumentError,
+)
+from .remote.parser import MinerURemoteParser
+from .service import ParseDocumentService
+
+
+def create_parse_service(config=None) -> ParseDocumentService:
+    """Create a ParseDocumentService instance.
+
+    Args:
+        config: Optional ParseDocumentConfig. If None, loads from global config.
+
+    Returns:
+        Configured ParseDocumentService instance.
+    """
+    from src.core.config import get_config
+
+    from .orchestrator import DocumentParseOrchestrator
+
+    if config is None:
+        cfg = get_config()
+        config = cfg.parse_document
+
+    remote = MinerURemoteParser(
+        api_token=get_config().mineru_api_token,
+        poll_interval=config.mineru_remote_poll_interval,
+        max_poll_attempts=config.mineru_remote_max_poll_attempts,
+    )
+
+    orchestrator = DocumentParseOrchestrator(remote=remote)
+    return ParseDocumentService(orchestrator=orchestrator)
+
+
+__all__ = [
+    "DedupResult",
+    "DocumentMetadata",
+    "FigurePosition",
+    "MinerUAPIError",
+    "MinerUBatchExtractProgress",
+    "MinerUBatchFileResult",
+    "MinerUBatchStatus",
+    "MinerULocalBatchOptions",
+    "MinerULocalBatchParseResult",
+    "MinerULocalBatchSaveResult",
+    "MinerULocalBatchUploadResult",
+    "MinerURemoteParser",
+    "MinerUTimeoutError",
+    "PageContent",
+    "ParseAndSaveResult",
+    "ParseDocumentError",
+    "ParseDocumentService",
+    "ParseResult",
+    "SavedFiles",
+    "TableStructure",
+    "create_parse_service",
+]

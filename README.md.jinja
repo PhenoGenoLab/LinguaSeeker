@@ -83,13 +83,8 @@ npm install
 npm run dev
 ```
 
-**Rust native libraries:**
-
-```bash
-cd backend/libs/rust-io
-cargo test
-cargo bench
-```
+**Rust native library:** the `rust-io` wheel from PyPI (`rust_io.net` / `rust_io.files`);
+nothing is built locally.
 
 ## Development Commands
 
@@ -100,8 +95,6 @@ cargo bench
 | `cd backend && uv run pytest tests/path/to/test.py::test_name` | Run a single test |
 | `cd frontend && npm run lint` | Lint frontend code |
 | `cd frontend && npm run type-check` | TypeScript type check |
-| `cd backend/libs/rust-io && cargo test` | Run Rust tests |
-| `cd backend/libs/rust-io && cargo bench` | Run Rust benchmarks |
 | `docker compose up` | Start full stack |
 
 ## Branch Strategy
@@ -113,7 +106,7 @@ cargo bench
 
 See [AGENTS.md](./AGENTS.md) for full project rules. Key points:
 
-- Package managers: `uv` (Python), `nvm` + `npm` (Node.js), `cargo` (Rust) — never system-level
+- Package managers: `uv` (Python), `nvm` + `npm` (Node.js) — never system-level; the Rust extension is a PyPI wheel
 - Logging: `loguru`, output to `logs/` with timestamp naming
 - Testing: `pytest` (backend), standard test frameworks (frontend)
 - Code style: Google Style Guide enforced via Ruff (Python) and ESLint (TypeScript)

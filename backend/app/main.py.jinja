@@ -20,7 +20,7 @@ from src.utils.exceptions import ACMGException, error_code_from_exception, statu
 from src.utils.logger import get_logger, setup_logging
 
 from src.api.rate_limit import init_limiter
-from src.utils.middleware import add_request_monitoring
+from src.utils.http.monitoring import add_request_monitoring
 
 
 class ErrorDetail(TypedDict, total=False):
@@ -106,7 +106,7 @@ async def lifespan(app: FastAPI):
         phase5_factory = get_phase5_factory()
         await phase5_factory.close()
     except Exception:
-        logger.warning("Phase5ServiceFactory close failed during shutdown")
+        logger.warning("ReviewServiceFactory close failed during shutdown")
     finally:
         try:
             await _wiring.dispose_redis()

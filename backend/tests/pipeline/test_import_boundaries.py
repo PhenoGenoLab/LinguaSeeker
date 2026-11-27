@@ -14,16 +14,13 @@ BACKEND_ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = BACKEND_ROOT / "src"
 PIPELINE_ROOT = SRC_ROOT / "pipeline"
 CORE_ROOT = SRC_ROOT / "core"
+RUNS_ROOT = SRC_ROOT / "runs"
 
 # Modules replaced by the pipeline directory migration.  Their transitional
 # re-export shims were removed, so importing an old path is a hard failure; the
 # AST check also guards against re-introducing a legacy module.
 REMOVED_LEGACY_MODULES = (
     "src.agents.orchestrator",
-    "src.agents.phase_1_adapter",
-    "src.agents.phase_2_adapter",
-    "src.agents.phase_3_adapter",
-    "src.agents.phase_4_adapter",
     "src.core.source_fact_chain",
     # skills/tools/mcp/contracts were split: tools, mcp and contracts now live
     # in src/core, only the orchestration and the agents stay in src/pipeline.
@@ -31,9 +28,9 @@ REMOVED_LEGACY_MODULES = (
     "src.pipeline.mcp",
     "src.pipeline.contracts",
     # Second move: core was split into foundation/shared/adapters/phases, so the
-    # pre-layering core paths must stay dead.
+    # pre-layering core paths must stay dead.  ``src.core.tools`` is deliberately
+    # absent: core/tools now holds the AgentScope tool definitions.
     "src.core.auth",
-    "src.core.tools",
     "src.core.contracts",
     "src.core.mcp",
     "src.core.ingest_and_digitize_data",
@@ -45,6 +42,8 @@ REMOVED_LEGACY_MODULES = (
     # Third move: phase-numbered packaging replaced by agent packages.
     "src.core.phases",
     "src.core.agents.ingest_and_digitize_data",
+    # Fourth move: src/agents was renamed to src/runs (it never held agents).
+    "src.agents",
 )
 
 
@@ -138,27 +137,17 @@ def test_graph_does_not_import_agentscope() -> None:
     )
 
 
-def test_skills_do_not_import_database_clients() -> None:
+def test_skills_may_use_persistence_but_not_graph_execution() -> None:
+    """Skills are the implementation layer: they own database work.
+
+    They must not drive the graph - topology and phase adapters stay above them.
+    """
+def test_skills_do_not_import_graph_execution() -> None:
+    """Skills may use agent implementations, never the graph topology/adapters."""
     _assert_no_imports(
         PIPELINE_ROOT / "skills",
-        (
-            "sqlalchemy",
-            "neo4j",
-            "asyncpg",
-            "psycopg",
-            "psycopg2",
-            "sqlite3",
-            "src.dao",
-        ),
-        "skills/ must not import database clients or src.dao (use tools/)",
-    )
-
-
-def test_skills_do_not_import_graph() -> None:
-    _assert_no_imports(
-        PIPELINE_ROOT / "skills",
-        ("src.pipeline.graph",),
-        "skills/ must not import graph/ (graph depends on skills, not the reverse)",
+        ("src.pipeline.graph.topology", "src.pipeline.graph.phases"),
+        "skills/ must not import the graph execution layer",
     )
 
 
@@ -186,6 +175,24 @@ def test_mcp_does_not_import_pipeline_or_tools() -> None:
     )
 
 
+def test_runs_do_not_import_graph_execution() -> None:
+    """runs may reference agent contracts, but never the graph topology/adapters."""
+    _assert_no_imports(
+        RUNS_ROOT,
+        ("src.pipeline.graph.topology", "src.pipeline.graph.phases"),
+        "src/runs must not import the graph execution layer",
+    )
+
+
+def test_core_does_not_import_agentscope() -> None:
+    """AgentScope agents, toolkits and tool registration belong to skills/."""
+    _assert_no_imports(
+        CORE_ROOT,
+        ("agentscope",),
+        "src/core must not import agentscope (the framework lives in pipeline/skills)",
+    )
+
+
 def test_core_does_not_import_pipeline() -> None:
     _assert_no_imports(
         CORE_ROOT,
@@ -197,11 +204,11 @@ def test_core_does_not_import_pipeline() -> None:
 def test_phase_modules_resolve_default_output_root_to_app_root() -> None:
     """Phase modules must keep ``<app root>/data/pipeline`` as the default.
 
-    ``phase_2.py`` and ``phase_3.py`` derive the data directory from their own
+    ``parsing.py`` and ``fact_chain.py`` derive the data directory from their own
     location.  Moving them one level deeper must come with an explicit depth
     change, otherwise artifacts silently land in ``src/data``.
     """
-    for name in ("phase_2.py", "phase_3.py"):
+    for name in ("parsing.py", "fact_chain.py"):
         module_path = PIPELINE_ROOT / "graph" / "phases" / name
         assert module_path.resolve().parents[5] == BACKEND_ROOT.parent, (
             f"{name} no longer sits four levels below the app root; update its parents[] depth"

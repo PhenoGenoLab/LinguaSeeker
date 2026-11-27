@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import hmac
 
-from fastapi import APIRouter, HTTPException, Request, Response
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from src.api.auth import (
     SESSION_COOKIE,
@@ -15,11 +13,12 @@ from src.api.auth import (
     _get_signing_key,
     sign_session_token,
 )
+from src.api.deps import get_user_store
 from src.api.v1.contracts import AuthMeResponse, AuthResponse, LoginRequest, LogoutResponse
-from src.api.wiring import get_session_factory
 from src.core.foundation.auth.passwords import hash_password, verify_password
 from src.core.config import get_config
-from src.dao.postgresql.models import User
+from src.ports.users import UserAlreadyExistsError, UserRecord, UserStore
+from src.utils.exceptions import PersistenceUnavailableError
 
 router = APIRouter()
 
@@ -35,7 +34,7 @@ def _public_account_response(*, authenticated: bool = False, username: str | Non
     )
 
 
-def _user_account_response(user: User) -> AuthMeResponse:
+def _user_account_response(user: UserRecord) -> AuthMeResponse:
     """Return a user account API response."""
     return AuthMeResponse(
         authenticated=True,
@@ -61,7 +60,11 @@ def _set_session_cookie(response: Response, token: str) -> None:
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(body: LoginRequest, response: Response) -> AuthResponse:
+async def login(
+    body: LoginRequest,
+    response: Response,
+    user_store: UserStore = Depends(get_user_store),
+) -> AuthResponse:
     """Login with username/password, creating the user when missing.
 
     Username + password uses persisted ``users`` rows. If the username does
@@ -84,35 +87,27 @@ async def login(body: LoginRequest, response: Response) -> AuthResponse:
         _set_session_cookie(response, token)
         return AuthResponse(success=True, account=_public_account_response(authenticated=True))
 
-    session_factory = get_session_factory()
-    async with session_factory() as session:
-        result = await session.execute(select(User).where(User.username == body.username))
-        user = result.scalar_one_or_none()
-        if user is not None:
-            if user.status != "active" or not verify_password(body.password, user.password_hash):
-                raise HTTPException(status_code=401, detail="Invalid credentials")
+    user = await user_store.get_by_username(body.username)
+    if user is not None:
+        if user.status != "active" or not verify_password(body.password, user.password_hash):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
 
-            token = sign_session_token(signing_key, user_id=user.user_id, username=user.username)
-            _set_session_cookie(response, token)
-            return AuthResponse(success=True, account=_user_account_response(user))
+        token = sign_session_token(signing_key, user_id=user.user_id, username=user.username)
+        _set_session_cookie(response, token)
+        return AuthResponse(success=True, account=_user_account_response(user))
 
-        user = User(
+    try:
+        user = await user_store.create(
             username=body.username,
             password_hash=hash_password(body.password),
             display_name=body.username,
-            status="active",
         )
-        session.add(user)
-        try:
-            await session.flush()
-            token = sign_session_token(signing_key, user_id=user.user_id, username=user.username)
-            _set_session_cookie(response, token)
-            await session.commit()
-        except IntegrityError as exc:
-            await session.rollback()
-            raise HTTPException(status_code=401, detail="Invalid credentials") from exc
+    except UserAlreadyExistsError as exc:
+        raise HTTPException(status_code=401, detail="Invalid credentials") from exc
 
-        return AuthResponse(success=True, account=_user_account_response(user))
+    token = sign_session_token(signing_key, user_id=user.user_id, username=user.username)
+    _set_session_cookie(response, token)
+    return AuthResponse(success=True, account=_user_account_response(user))
 
 
 @router.post("/logout", response_model=LogoutResponse)
@@ -130,7 +125,10 @@ async def logout(response: Response) -> LogoutResponse:
 
 
 @router.get("/me", response_model=AuthMeResponse)
-async def me(request: Request) -> AuthMeResponse:
+async def me(
+    request: Request,
+    user_store: UserStore = Depends(get_user_store),
+) -> AuthMeResponse:
     """Return the current session account, defaulting to public."""
     signing_key = _get_signing_key()
     token = request.cookies.get(SESSION_COOKIE)
@@ -143,14 +141,11 @@ async def me(request: Request) -> AuthMeResponse:
         return _public_account_response(authenticated=True, username=claims.username)
 
     try:
-        session_factory = get_session_factory()
-    except RuntimeError:
+        user = await user_store.get_by_id(claims.user_id)
+    except (RuntimeError, PersistenceUnavailableError):
         return _public_account_response(authenticated=False)
 
-    async with session_factory() as session:
-        result = await session.execute(select(User).where(User.user_id == claims.user_id))
-        user = result.scalar_one_or_none()
-        if user is None or user.status != "active":
-            return _public_account_response(authenticated=False)
+    if user is None or user.status != "active":
+        return _public_account_response(authenticated=False)
 
-        return _user_account_response(user)
+    return _user_account_response(user)

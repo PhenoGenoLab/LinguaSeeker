@@ -9,22 +9,15 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.utils.health import HealthResult
 
 
 @pytest_asyncio.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
-    """Create an API client with chat route DB dependency overridden."""
+    """Create an API client for chat route tests."""
     from app.main import create_app
-    from src.api.deps import get_db_session
     from src.core.config import Settings
-
-    db_session = AsyncMock(spec=AsyncSession)
-
-    async def override_session() -> AsyncGenerator[AsyncSession, None]:
-        yield db_session
 
     mock_settings = Settings(api_key="")
     with (
@@ -38,22 +31,15 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
     ):
         mock_cfg.return_value = mock_settings
         app = create_app()
-        app.state.test_db_session = db_session
-        app.dependency_overrides[get_db_session] = override_session
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             yield client
 
 
-def _test_db_session(client: AsyncClient) -> AsyncMock:
-    """Return the mock DB session attached to this test app."""
-    return client._transport.app.state.test_db_session
-
-
 @pytest.mark.asyncio
 async def test_create_session(async_client: AsyncClient):
     """POST /api/v1/chat/sessions creates a session."""
-    from src.core.agents.review.contracts import ChatSessionResponse
+    from src.core.tools.review.contracts import ChatSessionResponse
 
     run_id = uuid4()
     session_id = uuid4()
@@ -65,7 +51,7 @@ async def test_create_session(async_client: AsyncClient):
         message_count=0,
     )
 
-    with patch("src.api.v1.chat.get_phase5_factory") as mock_factory:
+    with patch("src.api.v1.chat.get_review_factory") as mock_factory:
         mock_service = MagicMock()
         mock_service.create_session = AsyncMock(return_value=mock_response)
         mock_factory.return_value.create_chat_service.return_value = mock_service
@@ -76,13 +62,12 @@ async def test_create_session(async_client: AsyncClient):
         )
         assert response.status_code == 200
         assert response.json()["chat_session_id"] == str(session_id)
-        _test_db_session(async_client).commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_create_standalone_session_api(async_client: AsyncClient):
     """POST /api/v1/chat/sessions accepts an empty body for standalone chat."""
-    from src.core.agents.review.contracts import ChatSessionResponse
+    from src.core.tools.review.contracts import ChatSessionResponse
 
     session_id = uuid4()
     mock_response = ChatSessionResponse(
@@ -93,7 +78,7 @@ async def test_create_standalone_session_api(async_client: AsyncClient):
         message_count=0,
     )
 
-    with patch("src.api.v1.chat.get_phase5_factory") as mock_factory:
+    with patch("src.api.v1.chat.get_review_factory") as mock_factory:
         mock_service = MagicMock()
         mock_service.create_session = AsyncMock(return_value=mock_response)
         mock_factory.return_value.create_chat_service.return_value = mock_service
@@ -103,7 +88,6 @@ async def test_create_standalone_session_api(async_client: AsyncClient):
     assert response.status_code == 200
     assert response.json()["chat_session_id"] == str(session_id)
     assert response.json()["processing_run_id"] is None
-    _test_db_session(async_client).commit.assert_awaited_once()
     mock_service.create_session.assert_awaited_once_with(
         processing_run_id=None,
         user_id=None,
@@ -113,7 +97,7 @@ async def test_create_standalone_session_api(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_session_details(async_client: AsyncClient):
     """GET /api/v1/chat/session-details/{id} returns one session with title."""
-    from src.core.agents.review.contracts import ChatSessionResponse
+    from src.core.tools.review.contracts import ChatSessionResponse
 
     session_id = uuid4()
     mock_response = ChatSessionResponse(
@@ -125,7 +109,7 @@ async def test_get_session_details(async_client: AsyncClient):
         message_count=1,
     )
 
-    with patch("src.api.v1.chat.get_phase5_factory") as mock_factory:
+    with patch("src.api.v1.chat.get_review_factory") as mock_factory:
         mock_service = MagicMock()
         mock_service.get_session = AsyncMock(return_value=mock_response)
         mock_factory.return_value.create_chat_service.return_value = mock_service
@@ -143,7 +127,7 @@ async def test_get_session_details(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_append_message(async_client: AsyncClient):
     """POST /api/v1/chat/sessions/{id}/messages appends a message."""
-    from src.core.agents.review.contracts import ChatMessageResponse
+    from src.core.tools.review.contracts import ChatMessageResponse
 
     session_id = uuid4()
     msg_id = uuid4()
@@ -157,13 +141,9 @@ async def test_append_message(async_client: AsyncClient):
         created_at="2026-06-01T00:00:00Z",
     )
 
-    with patch("src.api.v1.chat.get_phase5_factory") as mock_factory:
+    with patch("src.api.v1.chat.get_review_factory") as mock_factory:
         events: list[str] = []
 
-        async def commit_side_effect() -> None:
-            events.append("commit")
-
-        _test_db_session(async_client).commit.side_effect = commit_side_effect
         mock_service = MagicMock()
         mock_service.append_message = AsyncMock(return_value=mock_response)
         mock_service.generate_reply = AsyncMock(return_value=None)
@@ -177,12 +157,11 @@ async def test_append_message(async_client: AsyncClient):
 
     assert response.status_code == 200
     assert response.json()["content"] == "What is the gene?"
-    _test_db_session(async_client).commit.assert_awaited_once()
     mock_factory.return_value.schedule_session_title_generation.assert_called_once_with(
         session_id=session_id,
         user_message="What is the gene?",
     )
-    assert events == ["commit", "schedule"]
+    assert events == ["schedule"]
 
 
 @pytest.mark.asyncio
@@ -190,7 +169,7 @@ async def test_append_message_does_not_generate_reply_by_default(
     async_client: AsyncClient,
 ):
     """Message append is persist-only unless auto_reply is explicitly requested."""
-    from src.core.agents.review.contracts import ChatMessageResponse
+    from src.core.tools.review.contracts import ChatMessageResponse
 
     session_id = uuid4()
     msg_id = uuid4()
@@ -204,7 +183,7 @@ async def test_append_message_does_not_generate_reply_by_default(
         created_at="2026-06-11T00:00:00Z",
     )
 
-    with patch("src.api.v1.chat.get_phase5_factory") as mock_factory:
+    with patch("src.api.v1.chat.get_review_factory") as mock_factory:
         mock_service = MagicMock()
         mock_service.append_message = AsyncMock(return_value=mock_response)
         mock_service.generate_reply = AsyncMock(return_value="BRCA1 answer")
@@ -224,7 +203,7 @@ async def test_append_message_can_generate_reply_when_requested(
     async_client: AsyncClient,
 ):
     """Legacy non-streaming callers can opt into generated assistant replies."""
-    from src.core.agents.review.contracts import ChatMessageResponse
+    from src.core.tools.review.contracts import ChatMessageResponse
 
     session_id = uuid4()
     user_msg_id = uuid4()
@@ -248,11 +227,12 @@ async def test_append_message_can_generate_reply_when_requested(
         created_at="2026-06-11T00:00:01Z",
     )
 
-    with patch("src.api.v1.chat.get_phase5_factory") as mock_factory:
+    with patch("src.api.v1.chat.get_review_factory") as mock_factory:
         mock_service = MagicMock()
         mock_service.append_message = AsyncMock(side_effect=[user_response, assistant_response])
         mock_service.generate_reply = AsyncMock(return_value="BRCA1 answer")
         mock_factory.return_value.create_chat_service.return_value = mock_service
+        mock_factory.return_value.create_supervisor.return_value = mock_service
 
         response = await async_client.post(
             f"/api/v1/chat/sessions/{session_id}/messages",

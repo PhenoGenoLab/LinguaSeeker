@@ -147,7 +147,7 @@ def test_traceable_f1_multiplies_extraction_f1_by_cvr() -> None:
 def test_cross_lingual_consistency_uses_original_translated_field_agreement(tmp_path: Path) -> None:
     ground_truth_root = tmp_path / "ground_truth"
     entry_dir = ground_truth_root / "clingen_000"
-    preprocessed_dir = entry_dir / "preprocessed" / "phase_2"
+    preprocessed_dir = entry_dir / "preprocessed" / "parsing"
     preprocessed_dir.mkdir(parents=True)
     (entry_dir / "source.md").write_text("GENE1 causes the target disease.", encoding="utf-8")
     (preprocessed_dir / "extraction_result.json").write_text(
@@ -184,7 +184,7 @@ def test_cross_lingual_consistency_uses_original_translated_field_agreement(tmp_
 def test_cross_lingual_consistency_handles_field_present_in_one_track_only(tmp_path: Path) -> None:
     ground_truth_root = tmp_path / "ground_truth"
     entry_dir = ground_truth_root / "clingen_000"
-    preprocessed_dir = entry_dir / "preprocessed" / "phase_2"
+    preprocessed_dir = entry_dir / "preprocessed" / "parsing"
     preprocessed_dir.mkdir(parents=True)
     (entry_dir / "source.md").write_text("GENE1 causes the target disease.", encoding="utf-8")
     (preprocessed_dir / "extraction_result.json").write_text(

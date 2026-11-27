@@ -253,7 +253,7 @@ class NonTerminalPipelineClient:
             {
                 "processing_run_id": "run-123",
                 "pipeline_status": "running",
-                "current_phase": "phase_2",
+                "current_phase": "parsing",
             },
         )
 
@@ -426,7 +426,7 @@ async def test_submit_and_poll_timeout_preserves_run_diagnostics(monkeypatch) ->
     assert result["processing_run_id"] == "run-123"
     assert result["status_url"] == "/api/v1/pipeline/runs/run-123/status"
     assert result["last_status"]["pipeline_status"] == "running"
-    assert result["last_status"]["current_phase"] == "phase_2"
+    assert result["last_status"]["current_phase"] == "parsing"
 
 
 @pytest.mark.asyncio
@@ -464,7 +464,7 @@ async def test_evaluate_one_timeout_keeps_run_diagnostics(monkeypatch, tmp_path)
     assert metrics.run_id == "run-123"
     assert metrics.status_url == "/api/v1/pipeline/runs/run-123/status"
     assert metrics.last_pipeline_status == "running"
-    assert metrics.last_current_phase == "phase_2"
+    assert metrics.last_current_phase == "parsing"
     assert metrics.error_message == "Poll timed out"
     assert [field.match_type for field in metrics.field_matches] == ["missing", "missing", "missing"]
 

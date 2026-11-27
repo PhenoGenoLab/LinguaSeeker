@@ -20,7 +20,6 @@ Freeze the current `dev` branch state, publish the first stable `v1.0.0` release
 - External inference services remain out of repository lifecycle:
   - Embedding: `BAAI/bge-m3`
   - Rerank: `BAAI/bge-reranker-v2-m3`
-  - Doc Parse: `opendatalab/MinerU2.5-Pro-2604-1.2B`
 
 ## Code Freeze Rules
 
@@ -40,9 +39,7 @@ git status --short --branch
 (cd frontend && bun run lint)
 (cd frontend && bun run type-check)
 (cd frontend && bun run build)
-(cd backend/libs/rust-io && cargo test)
-(cd backend/libs/files-io && cargo test)
-(cd backend/libs/net-io && cargo test)
+(cd backend && uv run python -c "import rust_io.net, rust_io.files")
 ```
 
 Expected result: all commands pass. If any command fails, fix the issue before creating the release tag.

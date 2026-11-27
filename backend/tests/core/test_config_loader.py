@@ -6,7 +6,7 @@ from pathlib import Path
 
 def test_loader_reads_layered_backend_config_and_ignores_legacy_file(tmp_path: Path, monkeypatch) -> None:
     """Layered backend/config YAML is the only file-based config source."""
-    from src.core.config_loader import load_backend_config_into_env
+    from acmg_config_loader import load_backend_config_into_env
 
     config_root = tmp_path / "config"
     (config_root / "defaults").mkdir(parents=True)
@@ -56,7 +56,7 @@ single_source:
 
 def test_loader_preserves_existing_environment_variables(tmp_path: Path, monkeypatch) -> None:
     """Environment variables keep precedence over backend/config YAML."""
-    from src.core.config_loader import load_backend_config_into_env
+    from acmg_config_loader import load_backend_config_into_env
 
     config_root = tmp_path / "config" / "defaults"
     config_root.mkdir(parents=True)

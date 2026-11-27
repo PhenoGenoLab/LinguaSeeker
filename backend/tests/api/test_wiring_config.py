@@ -8,30 +8,29 @@ from unittest.mock import MagicMock, patch
 from src.core.config import ParseDocumentConfig
 
 # Source module paths for classes imported inside wire_dependencies()
-_REMOTE_PARSER_MOD = "src.core.agents.parsing.remote.parser.MinerURemoteParser"
-_LOCAL_PARSER_MOD = "src.core.agents.parsing.local.parser.MinerULocalParser"
+_REMOTE_PARSER_MOD = "src.core.tools.parsing.remote.parser.MinerURemoteParser"
 
 
 def _patch_wire_deps(stack: ExitStack):
     """Patch all dependencies wired inside wire_dependencies()."""
     for mod_path in [
-        "src.core.agents.acquisition.service.DocumentAcquisitionService",
-        "src.core.agents.parsing.orchestrator.DocumentParseOrchestrator",
-        "src.core.agents.parsing.service.ParseDocumentService",
-        "src.pipeline.skills.fact_chain.service.SourceFactChainService",
-        "src.core.agents.standardization.api.EntityStandardizationService",
+        "src.core.tools.acquisition.service.DocumentAcquisitionService",
+        "src.core.tools.parsing.orchestrator.DocumentParseOrchestrator",
+        "src.core.tools.parsing.service.ParseDocumentService",
+        "src.pipeline.skills.extraction.service.SourceFactChainService",
+        "src.dao.postgresql.standardization.runner.PostgresStandardizationRunner",
         "src.pipeline.graph.topology.PipelineOrchestrator",
-        "src.agents.concurrency.PipelineSemaphore",
-        "src.agents.concurrency.RetryablePhaseExecutor",
-        "src.agents.runner.PipelineRunner",
-        "src.agents.state_persistence.SessionBoundStatePersistence",
-        "src.pipeline.graph.phases.phase_1.Phase1Adapter",
-        "src.pipeline.graph.phases.phase_2.Phase2Adapter",
-        "src.pipeline.graph.phases.phase_3.Phase3Adapter",
-        "src.pipeline.graph.phases.phase_4.Phase4Adapter",
-        "src.agents.phase_5_factory.Phase5ServiceFactory",
+        "src.runs.PipelineSemaphore",
+        "src.runs.RetryablePhaseExecutor",
+        "src.runs.PipelineRunner",
+        "src.dao.postgresql.run_state_store.PostgresRunStateStore",
+        "src.pipeline.graph.phases.acquisition.AcquisitionAdapter",
+        "src.pipeline.graph.phases.parsing.ParsingAdapter",
+        "src.pipeline.graph.phases.fact_chain.FactChainAdapter",
+        "src.pipeline.graph.phases.standardization.StandardizationAdapter",
+        "src.pipeline.skills.review.factory.ReviewServiceFactory",
         "src.api.v1.pipeline.set_pipeline_runner",
-        "src.api.deps.set_phase5_factory",
+        "src.api.deps.set_review_factory",
         "src.api.wiring.get_session_factory",
         "src.api.wiring.build_async_engine",
         "src.api.wiring.async_session_factory",
@@ -52,16 +51,11 @@ def test_remote_parser_receives_all_config():
     pd = ParseDocumentConfig(
         mineru_remote_poll_interval=3.0,
         mineru_remote_max_poll_attempts=200,
-        mineru_local_parse_url="http://localhost:8002",
-        mineru_local_model_id="test-model",
-        mineru_local_timeout=60.0,
-        mineru_local_dpi=300,
     )
 
     with ExitStack() as stack:
         _patch_wire_deps(stack)
         mock_remote = stack.enter_context(patch(_REMOTE_PARSER_MOD))
-        stack.enter_context(patch(_LOCAL_PARSER_MOD))
         mock_cfg = stack.enter_context(patch("src.api.wiring.get_config"))
 
         cfg = MagicMock()
@@ -79,43 +73,6 @@ def test_remote_parser_receives_all_config():
         assert kwargs.get("max_poll_attempts") == 200
 
 
-def test_local_parser_receives_all_config():
-    """MinerULocalParser should receive parse_url, model_id, timeout, dpi."""
-    from src.core.config import get_config
-
-    get_config.cache_clear()
-
-    pd = ParseDocumentConfig(
-        mineru_remote_poll_interval=2.0,
-        mineru_remote_max_poll_attempts=150,
-        mineru_local_parse_url="http://localhost:8002",
-        mineru_local_model_id="test-model-id",
-        mineru_local_timeout=60.0,
-        mineru_local_dpi=300,
-    )
-
-    with ExitStack() as stack:
-        _patch_wire_deps(stack)
-        stack.enter_context(patch(_REMOTE_PARSER_MOD))
-        mock_local = stack.enter_context(patch(_LOCAL_PARSER_MOD))
-        mock_cfg = stack.enter_context(patch("src.api.wiring.get_config"))
-
-        cfg = MagicMock()
-        cfg.parse_document = pd
-        cfg.mineru_api_token = ""
-        mock_cfg.return_value = cfg
-
-        from src.api.wiring import wire_dependencies
-
-        wire_dependencies()
-
-        _, kwargs = mock_local.call_args
-        assert kwargs.get("parse_url") == "http://localhost:8002"
-        assert kwargs.get("model_id") == "test-model-id"
-        assert kwargs.get("timeout") == 60.0
-        assert kwargs.get("dpi") == 300
-
-
 def test_wire_dependencies_initializes_session_factory_before_use():
     """wire_dependencies should create the DB session factory during startup."""
     from src.core.config import get_config
@@ -125,10 +82,6 @@ def test_wire_dependencies_initializes_session_factory_before_use():
     pd = ParseDocumentConfig(
         mineru_remote_poll_interval=2.0,
         mineru_remote_max_poll_attempts=150,
-        mineru_local_parse_url="http://localhost:8002",
-        mineru_local_model_id="test-model-id",
-        mineru_local_timeout=60.0,
-        mineru_local_dpi=300,
     )
 
     import src.api.wiring as wiring
@@ -140,28 +93,28 @@ def test_wire_dependencies_initializes_session_factory_before_use():
 
     with ExitStack() as stack:
         for mod_path in [
-            "src.core.agents.acquisition.service.DocumentAcquisitionService",
-            "src.core.agents.parsing.orchestrator.DocumentParseOrchestrator",
-            "src.core.agents.parsing.service.ParseDocumentService",
-            "src.core.agents.translation.api.TranslationService",
-            "src.core.agents.extraction.api.EvidenceExtractionService",
-            "src.core.agents.standardization.api.EntityStandardizationService",
+            "src.core.tools.acquisition.service.DocumentAcquisitionService",
+            "src.core.tools.parsing.orchestrator.DocumentParseOrchestrator",
+            "src.core.tools.parsing.service.ParseDocumentService",
+            "src.pipeline.skills.translation.api.TranslationService",
+            "src.pipeline.skills.extraction.api.EvidenceExtractionService",
+            "src.dao.postgresql.standardization.runner.PostgresStandardizationRunner",
             "src.pipeline.graph.topology.PipelineOrchestrator",
-            "src.agents.concurrency.PipelineSemaphore",
-            "src.agents.concurrency.RetryablePhaseExecutor",
-            "src.agents.runner.PipelineRunner",
-            "src.agents.state_persistence.SessionBoundStatePersistence",
-            "src.pipeline.graph.phases.phase_1.Phase1Adapter",
-            "src.pipeline.graph.phases.phase_2.Phase2Adapter",
-            "src.pipeline.graph.phases.phase_3.Phase3Adapter",
-            "src.pipeline.graph.phases.phase_4.Phase4Adapter",
-            "src.agents.phase_5_factory.Phase5ServiceFactory",
-            "src.agents.processing_cache.DocumentProcessingCacheService",
+            "src.runs.PipelineSemaphore",
+            "src.runs.RetryablePhaseExecutor",
+            "src.runs.PipelineRunner",
+            "src.dao.postgresql.run_state_store.PostgresRunStateStore",
+            "src.pipeline.graph.phases.acquisition.AcquisitionAdapter",
+            "src.pipeline.graph.phases.parsing.ParsingAdapter",
+            "src.pipeline.graph.phases.fact_chain.FactChainAdapter",
+            "src.pipeline.graph.phases.standardization.StandardizationAdapter",
+            "src.pipeline.skills.review.factory.ReviewServiceFactory",
+            "src.dao.postgresql.processing_cache.PostgresProcessingCache",
             "src.dao.postgresql.job_queue.JobQueueRepository",
-            "src.agents.dispatcher.SingleJobDispatcher",
+            "src.runs.SingleJobDispatcher",
             "src.api.v1.pipeline.set_pipeline_runner",
             "src.api.v1.pipeline.set_job_queue",
-            "src.api.deps.set_phase5_factory",
+            "src.api.deps.set_review_factory",
             "src.api.wiring._configure_lit_acquisition",
             "src.api.wiring.build_redis_client",
             "src.api.wiring.build_neo4j_driver",
@@ -169,7 +122,6 @@ def test_wire_dependencies_initializes_session_factory_before_use():
         ]:
             stack.enter_context(patch(mod_path))
         stack.enter_context(patch(_REMOTE_PARSER_MOD))
-        stack.enter_context(patch(_LOCAL_PARSER_MOD))
         mock_cfg = stack.enter_context(patch("src.api.wiring.get_config"))
         mock_engine = stack.enter_context(
             patch("src.api.wiring.build_async_engine", return_value=fake_engine, create=True)
@@ -188,4 +140,4 @@ def test_wire_dependencies_initializes_session_factory_before_use():
 
     mock_engine.assert_called_once_with(cfg)
     mock_session_factory.assert_called_once_with(fake_engine)
-    assert wiring.get_session_factory() is fake_session_factory
+    assert wiring._session_factory is fake_session_factory

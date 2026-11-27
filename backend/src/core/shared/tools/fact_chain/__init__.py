@@ -1,5 +1,5 @@
 """Deterministic source-fact-chain capabilities.
 
-Typed contracts, candidate validation, windowing and Phase 4 projection live
-here. Model calls and stage prompts stay in :mod:`src.pipeline.skills.fact_chain`.
+Typed contracts, candidate validation and windowing live here. Phase 4
+projection moved to ``src.core.tools.extraction``.
 """

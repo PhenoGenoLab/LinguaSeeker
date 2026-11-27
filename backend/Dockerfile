@@ -3,14 +3,14 @@ FROM python:3.12-slim-trixie
 # Backend image — single-stage, COPY pre-resolved venv from CI.
 #
 # Artifacts are built by the CI workflow before docker build runs:
-#   1. uv sync --no-dev --frozen  (builds Rust crates + installs deps)
+#   1. uv sync --no-dev --frozen  (installs deps incl. the rust-io wheel)
 #   2. tar czf docker-artifacts/site-packages.tar.gz ...
 #   3. tar czf docker-artifacts/venv-bin.tar.gz ...
 #
 # For local builds, run the same steps manually (see CI workflow).
 #
-# Trixie ships glibc 2.41, accepting any wheel built on the host
-# (Ubuntu 24.04 glibc 2.39) without manylinux acrobatics.
+# Trixie ships glibc 2.41; the rust-io wheel is manylinux_2_17, so it installs
+# on any modern glibc or musl base image (host is Ubuntu 24.04, glibc 2.39).
 # ────────────────────────────────────────────────────────────────────
 
 ENV PYTHONUNBUFFERED=1 \

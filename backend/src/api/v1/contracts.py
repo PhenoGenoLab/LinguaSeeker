@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from src.core.agents.extraction.contracts import (
+from src.core.tools.extraction.contracts import (
     ExtractionTarget,
 )
 
@@ -125,10 +125,29 @@ class PhaseStatusResponse(BaseModel):
 class PipelinePhasesResponse(BaseModel):
     """Pipeline phases keyed by stable phase id."""
 
-    phase_1: PhaseStatusResponse
-    phase_2: PhaseStatusResponse
-    phase_3: PhaseStatusResponse
-    phase_4: PhaseStatusResponse
+    acquisition: PhaseStatusResponse
+    parsing: PhaseStatusResponse
+    fact_chain: PhaseStatusResponse
+    standardization: PhaseStatusResponse
+
+
+class StandardizedEntityResponse(BaseModel):
+    """One distinct normalized entity bound to a run's evidence."""
+
+    entity_id: str
+    entity_type: str
+    external_id: str | None = None
+    display_name: str
+    standardization_status: str
+    raw_texts: list[str] = Field(default_factory=list)
+    occurrence_count: int
+
+
+class StandardizedEntityListResponse(BaseModel):
+    """Standardized entity detail list for one pipeline run."""
+
+    items: list[StandardizedEntityResponse] = Field(default_factory=list)
+    total: int = 0
 
 
 class PipelineRunResponse(BaseModel):
@@ -198,7 +217,7 @@ class PipelineStatusResponse(BaseModel):
     source_document_id: str
     pipeline_status: str
     current_phase: str | None = None
-    skip_phase_4_reason: str | None = None
+    skip_standardization_reason: str | None = None
     phases: PipelinePhasesResponse
     error_message: str | None = None
     error_phase: int | None = None

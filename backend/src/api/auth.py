@@ -11,13 +11,11 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, Security
 from fastapi.security import APIKeyHeader
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.deps import get_db_session
+from src.api.deps import get_user_store
 from src.core.config import get_config
 from src.core.foundation.auth.contracts import AuthContext, PUBLIC_AUTH_CONTEXT, SessionClaims
-from src.dao.postgresql.models import User
+from src.ports.users import UserStore
 
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
@@ -143,7 +141,7 @@ def sign_session_token(
 
 async def get_current_account(
     request: Request,
-    session: AsyncSession = Depends(get_db_session),
+    user_store: UserStore = Depends(get_user_store),
     api_key: str | None = Security(_api_key_header),
 ) -> AuthContext:
     """Return the current account context, defaulting to the public account."""
@@ -177,8 +175,7 @@ async def get_current_account(
             method="session",
         )
 
-    result = await session.execute(select(User).where(User.user_id == claims.user_id))
-    user = result.scalar_one_or_none()
+    user = await user_store.get_by_id(claims.user_id)
     if user is None or user.status != "active":
         return PUBLIC_AUTH_CONTEXT
 

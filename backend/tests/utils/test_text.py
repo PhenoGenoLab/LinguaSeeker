@@ -1,8 +1,8 @@
-"""Tests for utils/text.py."""
+"""Tests for utils/text/content.py."""
 
 from __future__ import annotations
 
-from src.utils.text import sanitize_filename, strip_json_fences
+from src.utils.text.content import sanitize_filename, strip_json_fences
 
 
 class TestSanitizeFilename:

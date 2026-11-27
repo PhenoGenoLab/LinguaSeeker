@@ -78,10 +78,6 @@ mineru:
   api_token: {{ mineru.api_token | default('') }}
   remote_poll_interval: {{ mineru.remote_poll_interval }}
   remote_max_poll_attempts: {{ mineru.remote_max_poll_attempts }}
-  local_parse_url: {{ mineru.local_parse_url }}
-  local_model_id: {{ mineru.local_model_id }}
-  local_timeout: {{ mineru.local_timeout }}
-  local_dpi: {{ mineru.local_dpi }}
 
 # ── Inference Service Auth ────────────────────────────────────────────
 inference_api_key: "{{ inference_api_key | default('') }}"
@@ -140,8 +136,6 @@ network:
   no_proxy: "{{ network.no_proxy | default('') }}"
 
 # ── Inference Service GPU settings ──────────────────────────────────────
-doc_parse_model_id: "{{ doc_parse_model_id | default('') }}"
 embedding_gpu_memory_utilization: {{ embedding_gpu_memory_utilization | default(0.35) }}
 embedding_max_model_len: {{ embedding_max_model_len | default(4096) }}
 rerank_gpu_memory_utilization: {{ rerank_gpu_memory_utilization | default(0.2) }}
-doc_parse_gpu_memory_utilization: {{ doc_parse_gpu_memory_utilization | default(0.5) }}

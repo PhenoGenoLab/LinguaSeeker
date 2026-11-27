@@ -14,10 +14,12 @@ cors_origins: "http://localhost:3000"
 fast_llm:
   base_url: "https://linxi.chat/v1"
   model: "gpt-5-mini"
+  model: "gpt-5.1"
 
 reasoning_llm:
   base_url: "https://linxi.chat/v1"
   model: "gpt-5"
+  model: "gpt-5.1"
 
 chat_llm:
   base_url: "https://api.siliconflow.cn"
@@ -76,5 +78,12 @@ network:
   proxy: "http://127.0.0.1:7890"
   no_proxy: "cn,ncbi.nlm.nih.gov,nlm.nih.gov,unpaywall.org,localhost,127.0.0.1"
 
+# ── FastHPOCR MCP (Development) ──────────────────────────────────────────
+mcp_hpocr:
+  enabled: true
+  transport: "streamable_http"
+  url: "http://127.0.0.1:36545/mcp"
+  tool: "annotate"
+  timeout: 60.0
+
 # ── Inference Service Settings ────────────────────────────────────────────
-doc_parse_model_id: "opendatalab/MinerU2.5-Pro-2604-1.2B"

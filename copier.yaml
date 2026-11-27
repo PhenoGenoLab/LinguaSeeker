@@ -106,14 +106,6 @@ _exclude:
   - ".pnp"
   - ".pnp.js"
 
-  # ── Rust artifacts ───────────────────────────────────────────────
-  - "backend/libs/rust-io/target"
-  - "backend/libs/rust-io/Cargo.lock"
-  - "backend/libs/files-io/target"
-  - "backend/libs/files-io/Cargo.lock"
-  - "backend/libs/net-io/target"
-  - "backend/libs/net-io/Cargo.lock"
-
   # ── Runtime directories ──────────────────────────────────────────
   - "logs"
   - "backend/downloads"
@@ -157,10 +149,6 @@ _exclude:
   - "services/model-server/main.py"
   - "backend/src/core/config.py"
   - "backend/src/utils/exceptions.py"
-  - "backend/libs/rust-io/Cargo.toml"
-  - "backend/libs/rust-io/pyproject.toml"
-  - "backend/libs/files-io/Cargo.toml"
-  - "backend/libs/net-io/Cargo.toml"
   - "database/alembic.ini"
   - "database/migrations/env.py"
   - "frontend/package.json"

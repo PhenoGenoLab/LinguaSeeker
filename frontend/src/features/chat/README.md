@@ -1,10 +1,10 @@
-# Chat 对话功能
+# Supervisor
 
-> 基于 SSE 流式传输的 AI 对话系统，支持 ACMG 证据上下文问答
+> 基于 SSE 流式传输的 Supervisor 智能体，支持 ACMG 证据上下文问答
 
 ## 概述
 
-Chat 模块实现了与 Lingua Seeker 后端 AI 代理的实时对话功能。支持独立对话和绑定到处理运行（processing run）的上下文对话。使用 Server-Sent Events（SSE）实现流式回复，支持 Markdown 渲染、意图识别、操作确认，以及在聊天内上传 PDF 并提交证据提取任务。
+Supervisor 模块实现了与 Lingua Seeker 后端的 Supervisor 智能体实时对话。支持独立对话和绑定到处理运行（processing run）的上下文对话。使用 Server-Sent Events（SSE）实现流式回复，支持 Markdown 渲染、意图识别、操作确认，以及在聊天内上传 PDF 并提交证据提取任务。
 
 ## 文件结构
 

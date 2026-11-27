@@ -16,7 +16,7 @@ from typing import Any
 from sqlalchemy import func, or_, select
 
 from src.dao.postgresql.contracts import LiteratureProfileRow, LiteratureProfileSearchItem
-from src.utils.parsing import parse_gene_from_group_id, parse_variant_from_group_id
+from src.utils.text.content import parse_gene_from_group_id, parse_variant_from_group_id
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from src.dao.postgresql.models import (

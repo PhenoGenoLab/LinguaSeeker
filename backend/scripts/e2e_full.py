@@ -51,16 +51,17 @@ from sqlalchemy import select
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.core.config import get_config
-from src.core.agents.translation.api import TranslationService
-from src.core.agents.parsing.remote.parser import MinerURemoteParser
-from src.core.agents.review.chat_service import ChatService
-from src.core.agents.review.contracts import (
+from src.pipeline.skills.translation.api import TranslationService
+from src.core.tools.parsing.contracts import MinerULocalBatchOptions
+from src.core.tools.parsing.remote.parser import MinerURemoteParser
+from src.pipeline.skills.review.chat_service import ChatService
+from src.core.tools.review.contracts import (
     EvidencePatchRequest,
     ReviewStatus,
 )
-from src.core.agents.review.delta_audit_service import DeltaAuditService
-from src.core.agents.review.feedback_service import FeedbackService
-from src.core.agents.review.source_linker import SourceLinker
+from src.core.tools.review.delta_audit_service import DeltaAuditService
+from src.core.tools.review.feedback_service import FeedbackService
+from src.core.tools.review.source_linker import SourceLinker
 from src.dao.postgresql.connection import async_session_factory, build_async_engine, get_async_session
 from src.dao.postgresql.models import CanonicalEvidenceItem, ProcessingRun
 
@@ -113,9 +114,11 @@ async def stage_parse(
     logger.info("[parse] {}", pdf_path.name)
     result = await parser.parse_local_files(
         file_paths=[str(pdf_path)],
-        model_version="vlm",
-        enable_formula=True,
-        enable_table=True,
+        options=MinerULocalBatchOptions(
+            model_version="vlm",
+            enable_formula=True,
+            enable_table=True,
+        ),
     )
 
     if result.failed_files:

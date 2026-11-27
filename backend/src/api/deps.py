@@ -2,60 +2,89 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
+from src.api.wiring import (
+    get_neo4j_repository as _get_wiring_neo4j_repository,
+    make_annotation_store,
+    make_audit_store,
+    make_evidence_store,
+    make_feedback_store,
+    make_literature_store,
+    make_run_state_store,
+    make_standardization_runner,
+    make_user_store,
+)
+from src.pipeline.skills.review.factory import ReviewServiceFactory
+from src.runs import RunStateStore
+from src.ports.graph import GraphRepository
+from src.ports.review import (
+    AnnotationStore,
+    AuditStore,
+    EvidenceQueryStore,
+    FeedbackStore,
+    LiteratureStore,
+)
+from src.ports.standardization import StandardizationRunner
+from src.ports.users import UserStore
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.agents.phase_5_factory import Phase5ServiceFactory
-from src.api.wiring import get_session_factory
-from src.dao.neo4j.repository import Neo4jRepository
-
-_phase5_factory: Phase5ServiceFactory | None = None
-_neo4j_repository: Neo4jRepository | None = None
+_review_factory: ReviewServiceFactory | None = None
 
 
-def set_neo4j_repository(repository: Neo4jRepository) -> None:
-    """Set the global Neo4j repository (called from lifespan startup)."""
-    global _neo4j_repository
-    _neo4j_repository = repository
-
-
-def get_neo4j_repository() -> Neo4jRepository:
-    """Return the global Neo4j repository (raises if not initialized)."""
-    if _neo4j_repository is None:
+def get_neo4j_repository() -> GraphRepository:
+    """Return the global graph repository (raises if not initialized)."""
+    repository = _get_wiring_neo4j_repository()
+    if repository is None:
         raise RuntimeError("Neo4j repository not initialized")
-    return _neo4j_repository
+    return repository
 
 
-def set_phase5_factory(factory: Phase5ServiceFactory) -> None:
-    """Set the global Phase5ServiceFactory (called from lifespan startup)."""
-    global _phase5_factory
-    _phase5_factory = factory
+def set_review_factory(factory: ReviewServiceFactory) -> None:
+    """Set the global ReviewServiceFactory (called from lifespan startup)."""
+    global _review_factory
+    _review_factory = factory
 
 
-def get_phase5_factory() -> Phase5ServiceFactory:
-    """Return the global Phase5ServiceFactory (raises if not initialized)."""
-    if _phase5_factory is None:
-        raise RuntimeError("Phase5ServiceFactory not initialized")
-    return _phase5_factory
+def get_review_factory() -> ReviewServiceFactory:
+    """Return the global ReviewServiceFactory (raises if not initialized)."""
+    if _review_factory is None:
+        raise RuntimeError("ReviewServiceFactory not initialized")
+    return _review_factory
 
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Dependency: yield an async database session.
+def get_user_store() -> UserStore:
+    """Return a user store bound to the configured session factory."""
+    return make_user_store()
 
-    Commits on successful handler exit; rolls back on exception.
 
-    Tradeoff: commit runs after the response is sent (FastAPI dependency
-    cleanup). If commit fails (e.g. deferred constraint violation), the
-    client already received 200 OK but data was rolled back. This is a
-    known FastAPI limitation — the alternative (commit inside the handler)
-    forces every route to manage transactions explicitly.
-    """
-    factory = get_session_factory()
-    async with factory() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
+def get_evidence_store() -> EvidenceQueryStore:
+    """Return a read-only evidence query store for the current session factory."""
+    return make_evidence_store()
+
+
+def get_feedback_store() -> FeedbackStore:
+    """Return a feedback store that owns the patch transaction."""
+    return make_feedback_store()
+
+
+def get_audit_store() -> AuditStore:
+    """Return a read-only audit store for the current session factory."""
+    return make_audit_store()
+
+
+def get_literature_store() -> LiteratureStore:
+    """Return a literature profile store for the current session factory."""
+    return make_literature_store()
+
+
+def get_annotation_store() -> AnnotationStore:
+    """Return an annotation store for the current session factory."""
+    return make_annotation_store()
+
+
+def get_run_state_store() -> RunStateStore:
+    """Return a run state store for the current session factory."""
+    return make_run_state_store()
+
+
+def get_standardization_runner() -> StandardizationRunner:
+    """Return the PostgreSQL-backed standardization runner."""
+    return make_standardization_runner()

@@ -16,13 +16,14 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.cors import CORSMiddleware
 
 from src.api.v1.router import router as v1_router
+from src.api.v2.router import router as v2_router
 from src.core.config import get_config
 from src.utils.exceptions import ACMGException, error_code_from_exception, status_code_from_error_code
 from src.utils.logger import get_logger, setup_logging
 
 from src.api.rate_limit import init_limiter
-from src.utils.middleware import add_request_monitoring
-from src.utils.security_headers import SecurityHeadersMiddleware, SecurityHeadersMiddlewareHSTS
+from src.utils.http.monitoring import add_request_monitoring
+from src.utils.http.security_headers import SecurityHeadersMiddleware, SecurityHeadersMiddlewareHSTS
 
 
 class ErrorDetail(TypedDict, total=False):
@@ -63,60 +64,6 @@ def _error_response(
     return JSONResponse(status_code=status, content=body, headers={"X-Request-ID": request_id})
 
 
-_startup_lock_raw_conn = None
-
-
-async def _try_startup_lock(engine) -> bool:
-    """Acquire a PostgreSQL advisory lock for startup initialization.
-
-    Uses a raw connection (not returned to pool) so the lock persists
-    for the duration of the startup phase.  PostgreSQL advisory locks
-    are session-scoped: they release automatically when the connection
-    closes.
-
-    Returns True if the lock was acquired (this worker should run recovery).
-    Returns False if another worker already holds the lock.
-    Returns True for non-PostgreSQL engines (SQLite in tests).
-    """
-    global _startup_lock_raw_conn
-
-    try:
-        raw_conn = await engine.raw_connection()
-        try:
-            result = await raw_conn.exec_driver_sql(
-                "SELECT pg_try_advisory_lock(hashtext('lingua_seeker_backend_startup'))"
-            )
-            row = result.fetchone()
-            acquired = bool(row[0]) if row else False
-        except Exception:
-            await raw_conn.close()
-            return True
-
-        if acquired:
-            _startup_lock_raw_conn = raw_conn
-        else:
-            await raw_conn.close()
-        return acquired
-    except Exception:
-        # Non-PostgreSQL engines (SQLite in tests) don't have advisory locks
-        return True
-
-
-async def _release_startup_lock() -> None:
-    """Release the PostgreSQL advisory lock by closing the raw connection.
-
-    PostgreSQL automatically releases all advisory locks when a connection
-    is closed, so explicit pg_advisory_unlock is not required.
-    """
-    global _startup_lock_raw_conn
-    if _startup_lock_raw_conn is not None:
-        try:
-            await _startup_lock_raw_conn.close()
-        except Exception:
-            pass
-        _startup_lock_raw_conn = None
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize and teardown application resources."""
@@ -146,9 +93,12 @@ async def lifespan(app: FastAPI):
     import src.api.wiring as _wiring
 
     wire_dependencies = _wiring.wire_dependencies
+    from src.api.wiring import register_health_checks
     from src.utils.health import check_all_connections
 
     wire_dependencies()
+    register_health_checks()
+    _wiring.start_neo4j_initialization()
     logger.info("Pipeline orchestrator initialized")
 
     # Start the job dispatcher (background polling for queued jobs)
@@ -157,19 +107,20 @@ async def lifespan(app: FastAPI):
         _dispatcher.start()
         logger.info("Job dispatcher started")
 
+    # Start the standalone agent job worker (v2 agent endpoints)
+    from src.api.v2.agent_runtime import get_agent_worker
+
+    try:
+        _agent_worker = get_agent_worker()
+        _agent_worker.start()
+    except Exception as exc:
+        logger.warning("Agent job worker not started: {}", exc)
+
     # Ensure standalone tables (independent MetaData, not managed by Alembic) exist
     # Use advisory lock to prevent multi-worker races on table creation and recovery
-    from src.dao.postgresql.search_index_repo import search_index_metadata
-
-    _wiring.get_session_factory()  # trigger lazy engine creation
-    engine = _wiring.get_engine()
-
-    startup_lock_acquired = False
-    if engine is not None:
-        startup_lock_acquired = await _try_startup_lock(engine)
-    if engine is not None and startup_lock_acquired:
-        async with engine.begin() as conn:
-            await conn.run_sync(search_index_metadata.create_all)
+    startup_lock_acquired = await _wiring.acquire_startup_lock()
+    if startup_lock_acquired:
+        await _wiring.create_search_index_tables()
 
     # Recover pipeline runs and jobs interrupted by server restart (only if we hold the lock)
     from src.api.v1.pipeline import get_job_queue, get_pipeline_runner
@@ -184,7 +135,9 @@ async def lifespan(app: FastAPI):
         except Exception as exc:
             logger.warning("Orphaned run recovery failed: {}", exc)
         finally:
-            await _release_startup_lock()
+            await _wiring.release_startup_lock()
+    elif not _wiring.has_database():
+        logger.info("No database configured — skipping startup lock and crash recovery")
     else:
         logger.info("Skipping startup recovery — another worker holds the advisory lock")
 
@@ -212,6 +165,15 @@ async def lifespan(app: FastAPI):
         except Exception as exc:
             logger.debug("Job dispatcher stop skipped: {}", exc)
 
+    from src.api.v2.agent_runtime import get_agent_worker, reset_agent_worker
+
+    try:
+        await get_agent_worker().stop(timeout=90.0)
+    except Exception as exc:
+        logger.debug("Agent job worker stop skipped: {}", exc)
+    finally:
+        reset_agent_worker()
+
     try:
         runner = get_pipeline_runner()
         # Timeout must exceed the LLM request timeout (default 60s) to avoid
@@ -220,14 +182,13 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.debug("Pipeline runner shutdown skipped: {}", exc)
 
-    from src.api.deps import get_phase5_factory
+    from src.api.deps import get_review_factory
 
     try:
-        phase5_factory = get_phase5_factory()
-        if phase5_factory is not None:
-            await phase5_factory.close()
+        review_factory = get_review_factory()
+        await review_factory.close()
     except Exception as exc:
-        logger.debug("Phase5ServiceFactory close failed during shutdown: {}", exc)
+        logger.debug("ReviewServiceFactory close failed during shutdown: {}", exc)
     finally:
         try:
             await _wiring.dispose_neo4j()
@@ -296,12 +257,15 @@ def create_app() -> FastAPI:
     from slowapi import _rate_limit_exceeded_handler
     from slowapi.errors import RateLimitExceeded
 
-    configured_limiter = init_limiter()
+    import src.api.wiring as _wiring
+
+    configured_limiter = init_limiter(_wiring.build_rate_limit_storage())
     _app.state.limiter = configured_limiter
     _app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     # ── Routes ───────────────────────────────────────────────────────────
     _app.include_router(v1_router)
+    _app.include_router(v2_router, prefix="/api/v2")
 
     # ── Health (outside v1 router for liveness probes) ──────────────────
     @_app.get("/health", response_model=HealthResponse)

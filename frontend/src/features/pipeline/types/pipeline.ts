@@ -74,8 +74,8 @@ export interface PipelineStatusResponse {
   source_document_id: string;
   pipeline_status: ProcessingStatus;
   current_phase?: string | null;
-  skip_phase_4_reason?: string | null;
-  /** Dict keyed by phase_id ("phase_1", "phase_2", "phase_3", "phase_4"). */
+  skip_standardization_reason?: string | null;
+  /** Dict keyed by phase_id ("acquisition", "parsing", "fact_chain", "standardization"). */
   phases: Record<string, PhaseStatus>;
   error_message?: string | null;
   error_phase?: number | null;
@@ -85,6 +85,23 @@ export interface PipelineStatusResponse {
   elapsed_seconds?: number | null;
   /** Optional human title — e.g. original query or filename. */
   title?: string | null;
+}
+
+/** One distinct normalized entity bound to a run's evidence. */
+export interface StandardizedEntity {
+  entity_id: string;
+  entity_type: "gene" | "variant" | "disease" | "phenotype" | string;
+  external_id?: string | null;
+  display_name: string;
+  standardization_status: "standardized" | "ambiguous" | "unmapped" | string;
+  raw_texts: string[];
+  occurrence_count: number;
+}
+
+/** GET /pipeline/runs/{id}/standardized-entities response body. */
+export interface StandardizedEntityListResponse {
+  items: StandardizedEntity[];
+  total: number;
 }
 
 /** Compact summary used in the run-history list. */

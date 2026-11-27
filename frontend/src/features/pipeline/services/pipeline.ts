@@ -5,6 +5,7 @@ import type {
   PipelineRunRequest,
   PipelineRunResponse,
   PipelineStatusResponse,
+  StandardizedEntityListResponse,
 } from "../types/pipeline";
 
 /** Start a new pipeline run (POST /pipeline/run). */
@@ -24,6 +25,16 @@ export async function getPipelineStatus(
 ): Promise<PipelineStatusResponse> {
   const { data } = await apiClient.get<PipelineStatusResponse>(
     `/pipeline/runs/${runId}/status`,
+  );
+  return data;
+}
+
+/** Get distinct standardized entities for one run (GET /pipeline/runs/{id}/standardized-entities). */
+export async function getStandardizedEntities(
+  runId: string,
+): Promise<StandardizedEntityListResponse> {
+  const { data } = await apiClient.get<StandardizedEntityListResponse>(
+    `/pipeline/runs/${runId}/standardized-entities`,
   );
   return data;
 }

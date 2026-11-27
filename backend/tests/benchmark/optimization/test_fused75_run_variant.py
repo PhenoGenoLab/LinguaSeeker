@@ -156,7 +156,7 @@ def test_run_variant_reads_nested_reconciled_phase2_artifact(tmp_path: Path) -> 
     _write_config(config_path)
     _write_adjudication(tmp_path / "adjudication" / "dev" / "fused_000.json")
     _write_json(
-        tmp_path / "ground_truth" / "fused_000" / "preprocessed" / "phase_2" / "extraction_result.json",
+        tmp_path / "ground_truth" / "fused_000" / "preprocessed" / "parsing" / "extraction_result.json",
         {
             "reconciled_result": {
                 "evidence_items": [

@@ -9,18 +9,20 @@ import { useI18n } from "@/lib/i18n";
 import { useElapsedSeconds } from "@/lib/hooks/useElapsedSeconds";
 import { formatDuration, formatTimestamp } from "@/lib/utils/format";
 import type { PhaseNode, PhaseStatus, ProcessingStatus } from "../types/pipeline";
+import { StandardizationEntityTable } from "./StandardizationEntityTable";
 
 interface PhaseDetailCardProps {
   phaseId: string;
   phase: PhaseStatus;
   index?: number;
+  runId?: string;
 }
 
 const PHASE_ICON_COLOR: Record<string, React.CSSProperties> = {
-  phase_1: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
-  phase_2: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
-  phase_3: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
-  phase_4: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
+  acquisition: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
+  parsing: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
+  fact_chain: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
+  standardization: { color: "var(--color-text-secondary)", borderBottom: "1px solid var(--color-border)" },
 };
 
 const DEFAULT_HEADER_STYLE: React.CSSProperties = { borderBottom: "1px solid var(--color-border)" };
@@ -49,20 +51,20 @@ const progressBarBg = (status: ProcessingStatus): string => {
 };
 
 const PHASE_TITLE_KEYS: Record<string, string> = {
-  phase_1: "pipeline.phase.acquisition",
-  phase_2: "pipeline.phase.parsing",
-  phase_3: "pipeline.phase.extraction",
-  phase_4: "pipeline.phase.standardization",
+  acquisition: "pipeline.phase.acquisition",
+  parsing: "pipeline.phase.parsing",
+  fact_chain: "pipeline.phase.extraction",
+  standardization: "pipeline.phase.standardization",
 };
 
 const PHASE_DESC_KEYS: Record<string, string> = {
-  phase_1: "pipeline.phase.acquisitionDesc",
-  phase_2: "pipeline.phase.parsingDesc",
-  phase_3: "pipeline.phase.extractionDesc",
-  phase_4: "pipeline.phase.standardizationDesc",
+  acquisition: "pipeline.phase.acquisitionDesc",
+  parsing: "pipeline.phase.parsingDesc",
+  fact_chain: "pipeline.phase.extractionDesc",
+  standardization: "pipeline.phase.standardizationDesc",
 };
 
-export function PhaseDetailCard({ phaseId, phase, index = 0 }: PhaseDetailCardProps) {
+export function PhaseDetailCard({ phaseId, phase, index = 0, runId }: PhaseDetailCardProps) {
   const { t } = useI18n();
   const titleKey = PHASE_TITLE_KEYS[phaseId];
   const descKey = PHASE_DESC_KEYS[phaseId];
@@ -75,12 +77,19 @@ export function PhaseDetailCard({ phaseId, phase, index = 0 }: PhaseDetailCardPr
   const totalNodes = nodes.length;
   const doneNodes = nodes.filter((n) => n.status === "completed").length;
   const totalCount = nodes.reduce((acc, n) => acc + (n.count ?? 0), 0) + (phase.count ?? 0);
+  const showStandardizationDetails = phaseId === "standardization" && phase.status === "completed" && Boolean(runId);
 
   return (
     <Card
       styles={{ body: { padding: 0 } }}
       className="stagger-in"
-      style={{ display: "flex", flexDirection: "column", overflow: "hidden", animationDelay: `${index * 70}ms` }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        animationDelay: `${index * 70}ms`,
+        gridColumn: showStandardizationDetails ? "1 / -1" : undefined,
+      }}
     >
       <header
         style={{
@@ -160,6 +169,11 @@ export function PhaseDetailCard({ phaseId, phase, index = 0 }: PhaseDetailCardPr
           <p style={{ fontSize: 11, fontStyle: "italic", color: "var(--color-text-muted)" }}>
             {t("pipeline.phase.noDetail")}
           </p>
+        )}
+        {showStandardizationDetails && runId && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--color-border)" }}>
+            <StandardizationEntityTable runId={runId} />
+          </div>
         )}
       </div>
 
@@ -345,27 +359,45 @@ function NodeStatusIcon({ status }: { status: ProcessingStatus }) {
 }
 
 function SummaryBlock({ summary }: { summary: Record<string, unknown> }) {
-  const entries = Object.entries(summary).slice(0, 4);
+  const entries = Object.entries(summary)
+    .filter(([, value]) => ["string", "number", "boolean"].includes(typeof value))
+    .slice(0, 6);
   if (entries.length === 0) return null;
   return (
     <dl
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+        gridTemplateColumns: "minmax(0, 1fr) auto",
         gap: "4px 12px",
         fontSize: 11,
       }}
     >
       {entries.map(([k, v]) => (
-        <div key={k} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, overflow: "hidden" }}>
-          <dt style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--color-text-secondary)" }}>
+        <div
+          key={k}
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 8,
+            minWidth: 0,
+          }}
+        >
+          <dt
+            style={{
+              minWidth: 0,
+              overflowWrap: "anywhere",
+              color: "var(--color-text-secondary)",
+            }}
+          >
             {k.replace(/_/g, " ")}
           </dt>
           <dd
             style={{
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              margin: 0,
+              maxWidth: "60%",
+              overflowWrap: "anywhere",
+              textAlign: "right",
               fontFamily: "var(--font-mono, monospace)",
               fontVariantNumeric: "tabular-nums",
               color: "var(--color-code-text)",

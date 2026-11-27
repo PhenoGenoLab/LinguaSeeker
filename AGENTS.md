@@ -11,10 +11,10 @@
 - 项目必须且只能使用现代化管理工具启动与管理依赖：
   - **Python**: `uv`（禁止使用系统 `pip`）
   - **Node.js**: `bun`（禁止使用系统全局 Node 或 npm/nvm）
-  - **Rust**: `cargo`
   - **C/C++**: `cmake`
 - 禁止直接使用系统环境安装或管理任何项目依赖。
-- 所有依赖版本必须在对应配置文件中明确声明（`pyproject.toml` / `package.json` / `Cargo.toml`），锁文件为 `uv.lock` / `bun.lock` / `Cargo.lock`。
+- 所有依赖版本必须在对应配置文件中明确声明（`pyproject.toml` / `package.json`），锁文件为 `uv.lock` / `bun.lock`。
+- **Rust 原生扩展已独立成独立项目**:本仓库不 vendor、不构建、不测试 Rust crate,只通过 PyPI 的 `rust-io` wheel 消费(`rust_io.net` / `rust_io.files`)。`backend/libs/` 下只保留纯 Python 的 `config-loader`;禁止把 crate 重新加回本仓库。
 
 ### 2. 业务代码目录
 
@@ -28,7 +28,7 @@
 - 编排层只负责流程拓扑、全局状态、路由决策与节点可观测性；不得包含具体业务规则。
 - 垂直特性包负责完整业务闭环：对编排器暴露 `api.py`/Node 接口，内部使用 `core.py` 放纯业务逻辑，`providers.py` 封装 LLM/DB/Rust I/O/外部服务，`contracts.py` 或 `schema.py` 放强类型契约。
 - 全局状态使用 Pydantic 模型作为单一真相源；节点之间通过类型化状态增量通信，禁止裸 `dict` 作为稳定跨模块契约。
-- 本仓库 Backend 映射：`backend/src/pipeline/`（graph/skills/tools/mcp）是 pipeline 领域层，`backend/src/agents/` 是外层运行时（runner、dispatcher、状态持久化），`backend/src/core/<feature>/` 是 Features，`backend/src/utils/`、`backend/src/dao/`、Rust crates 是 Shared infrastructure，`backend/src/core/config.py` 是 Config。
+- 本仓库 Backend 映射（单向依赖）：`backend/src/pipeline/graph/` 负责编排（topology、phases、routing）；`backend/src/pipeline/skills/` 实现各专业 agent（prompt、模型调用、控制流）；`backend/src/core/tools/` 放 skills 交给 agent 的具体工具。`backend/src/runs/` 是一次 run 的运行时（runner、dispatcher、状态持久化），`backend/src/core/` 只放配置、`foundation/`、`shared/`、`tools/`、`adapters/`，不含 agent 实现；`backend/src/utils/`、`backend/src/dao/`、Rust crates 是 Shared infrastructure。
 - Frontend 映射：`frontend/src/pages/` 负责页面级编排，`frontend/src/components/<feature>/` 与 `frontend/src/hooks/` 承载垂直 UI 特性，`frontend/src/components/`（antd 衍生组件）、`frontend/src/api/`、`frontend/src/types/`、`frontend/src/stores/` 为共享基础设施。
 
 ### 3. 文档管理
@@ -42,7 +42,7 @@
 - 所有测试文件统一放入 **`tests/`**。
 - Backend 测试：`backend/tests/`
 - Frontend 测试：`frontend/tests/`
-- Rust 测试：`backend/libs/rust-io/tests/`
+- Rust 扩展：不在本仓库构建，依赖 PyPI 的 `rust-io`；`backend/libs/config-loader/` 的测试在 `backend/libs/config-loader/tests/`
 
 ### 5. 进度记录
 
@@ -129,7 +129,7 @@
 
 ### 19. 依赖锁定与审计
 
-- 生产依赖必须锁定到具体版本（Python `uv.lock` / Node `bun.lock` / Rust `Cargo.lock`）。
+- 生产依赖必须锁定到具体版本（Python `uv.lock` / Node `bun.lock`）。
 - 定期审计依赖安全性，发现漏洞及时升级。
 
 ---
@@ -317,7 +317,6 @@
 - 所有环境中的模型名称必须保持一致：
   - Embedding：`Qwen/Qwen3-Embedding-0.6B`
   - Rerank：`BAAI/bge-reranker-v2-m3`
-  - Doc Parse：`opendatalab/MinerU2.5-Pro-2604-1.2B`
 - 添加或更改模型时，必须同时更新 `backend/config/defaults/main.yaml` 和 `deploy/ansible/inventories/*/group_vars/all.yml`。模型容器本身由独立项目管理。
 
 #### 28.4 环境配置文件完整性
@@ -342,8 +341,7 @@
 #### 29.2 SSRF 防护
 
 - 所有发起外部 HTTP 请求的代码**必须**在请求前和重定向后校验目标 URL，拒绝私有/保留 IP 地址。
-- 使用 `_validate_url_safe()` 函数（DNS 解析 + 私有 IP 检查），已实现于：
-  - `backend/src/core/ingest_and_digitize_data/parse_document/orchestrator.py`
+- 使用 `validate_url_safe()` 函数（DNS 解析 + 私有 IP 检查），已实现于 `backend/src/utils/security/ssrf.py`，调用点在 `backend/src/core/tools/parsing/orchestrator.py`（请求前 + 重定向后各一次）。
   - 在线文献获取已委托给 `lit-acquisition` SDK（本地路径依赖 `../05_lit-acquisition`，editable），其 `net` 层内置同等的 SSRF 校验
 - 新增外部 HTTP 请求代码时，**必须**复用上述函数或等效的 SSRF 校验逻辑。
 
@@ -375,20 +373,19 @@ Lingua Seeker is a Multi-Agent infrastructure platform for medical genetics lite
 
 #### Backend (`backend/`)
 
-FastAPI async application. Business logic lives in `backend/src/` (not `app/`) and should prefer **Orchestrated Vertical Slice Architecture** for new modules: `src/pipeline/` owns the pipeline domain (LangGraph topology, AgentScope skills, deterministic tools); `src/agents/` owns the outer runtime (global Pydantic state, runner, dispatcher, node telemetry); `src/core/<feature>/` owns vertical feature slices; `src/dao/`, `src/utils/`, Rust crates, and shared clients provide infrastructure.
+FastAPI async application. Business logic lives in `backend/src/` (not `app/`) and should prefer **Orchestrated Vertical Slice Architecture** for new modules: `src/pipeline/graph/` owns the LangGraph topology and phase adapters, `src/pipeline/skills/<agent>/` implements the agents (prompts, model calls, control flow), and `src/core/tools/<agent>/` holds the deterministic tools they call; `src/runs/` owns the outer runtime (run lifecycle: Pydantic graph state, runner, dispatcher, persistence, node telemetry); `src/core/` holds only foundation (`config`, `auth`), shared deterministic tools/DTOs and external protocol adapters; `src/dao/`, `src/utils/`, Rust crates, and shared clients provide infrastructure.
 
 ```
 src/
-├── pipeline/      # Pipeline domain: graph topology, skills, deterministic tools
-├── agents/        # Outer runtime: GraphState, runner, dispatcher, state persistence
+├── pipeline/      # Pipeline layer
+│   ├── graph/     #   LangGraph topology + phase adapters + agents/<agent>/ implementations
+│   └── skills/    #   AgentScope skill definitions (acquisition, parsing, extraction, translation, standardization)
+├── runs/          # Run lifecycle: GraphState, runner, dispatcher, state persistence
 ├── core/
 │   ├── config.py                          # pydantic-settings singleton, all env vars
-│   ├── ingest_and_digitize_data/          # Phase 1 feature slices: acquisition + upload + parsing
-│   │   ├── document_acquisition/          #   facade; online acquisition delegates to lit-acquisition SDK
-│   │   └── parse_document/                #   MinerU parsing (remote-first, local fallback)
-│   ├── cross_lingual_process_and_extract_evidence/  # Phase 2 features: extraction, translation, fusion
-│   ├── standardize_entities_and_align_knowledge/    # Phase 3 features: standardization, alignment
-│   └── visualize_evidence_with_expert_in_loop/      # Phase 4 features: review, feedback, export
+│   ├── foundation/auth/                   # auth contracts and password hashing
+│   ├── shared/                            # deterministic tools + cross-layer DTOs
+│   └── adapters/mcp/                      # external protocol adapters
 ├── api/           # FastAPI routes
 ├── dao/           # Shared persistence boundary
 └── utils/         # Shared telemetry/logging/hash utilities
@@ -398,26 +395,25 @@ Feature slices should expose orchestrator-facing node adapters (`api.py` when us
 
 Configuration: `src/core/config.py` loads layered YAML from `backend/config/defaults`, `backend/config/environments`, and `backend/config/vault`, then lets environment variables override those values. Nested domain models (`cfg.llm`, `cfg.postgresql`, etc.) are built from flat fields by a `model_validator`. Access via `from src.core.config import get_config`.
 
-#### Rust Native Extensions (`backend/libs/`)
+#### Rust Native Extensions
 
-Three PyO3 crates, all using `cdylib` + `rlib` crate types, async via `pyo3-async-runtimes` + tokio:
+`rust-io` is consumed as a published wheel (`rust-io>=0.3.0,<1.0.0`, resolved from PyPI), not built here:
 
-| Crate | Python module | Purpose |
-|-------|--------------|---------|
-| `rust-io` | `rust_io` | Literature search/download via providers (Crossref, OpenAlex, EuropePMC, PMC, DOAJ, JStage, Unpaywall). Also has `files` submodule for SHA256, file write, PDF validation. |
-| `files-io` | `files_io` | Unified local + S3 file I/O. Dedup, parallel ops, archive (zip/tar/gzip). |
-| `net-io` | `rust_io.net` | Literature search/download via providers + MinerU document parsing API. Same provider set as rust-io, newer architecture. |
+| Python module | Purpose |
+|---------------|---------|
+| `rust_io.net` | Literature search/download via 15 providers + MinerU document parsing API |
+| `rust_io.files` | Local + S3 file I/O, dedup, parallel ops, archive (zip/tar/gzip), SHA-256 |
 
-All three expose async Python functions via `pyo3_async_runtimes::tokio::future_into_py`. Online literature acquisition is delegated to the external `lit-acquisition` SDK (local path dependency `../05_lit-acquisition`, editable; wired in `src/api/wiring.py`); its gateway calls `net_io.fetch_one()` for HTTP I/O when the Rust extension is importable and falls back to pure-Python `httpx` otherwise.
+`src/utils/rust_io.py` imports both submodules lazily and degrades to pure-Python
+fallbacks when the wheel is missing. Online literature acquisition is delegated to the external `lit-acquisition` SDK (local path dependency `../05_lit-acquisition`, editable; wired in `src/api/wiring.py`); its gateway calls `net_io.fetch_one()` for HTTP I/O when the Rust extension is importable and falls back to pure-Python `httpx` otherwise.
 
 #### External Inference Services (not in this repo)
 
-Three independent Docker containers provide model inference, built and published by a separate project:
+Two independent Docker containers provide model inference, built and published by a separate project:
 - **Embedding** (:8002): Sentence-Transformers + FastAPI, `/v1/embeddings` (OpenAI-compatible)
 - **Rerank** (:8003): Sentence-Transformers/CrossEncoder + FastAPI, `/v1/rerank`
-- **Doc Parse** (:44321): MinerU + FastAPI, `/file_parse`
 
-The backend consumes these via HTTP clients (`EmbeddingHttpProvider`, `RerankHttpProvider`, `MinerULocalParser`). URL and auth configured via `backend/config/` (`inference_api_key`, `embedding.base_url`, `rerank.base_url`, `mineru.local_parse_url`).
+PDF parsing uses the remote MinerU cloud API; there is no local VLM parser. URLs and auth are configured via `backend/config/` (`inference_api_key`, `embedding.base_url`, `rerank.base_url`).
 
 #### Frontend (`frontend/`)
 
@@ -489,21 +485,19 @@ bun run test         # Vitest
 
 #### Rust Libraries
 
-```bash
-cd backend/libs/rust-io     # or files-io, net-io
-cargo test
-cargo bench                 # rust-io only
-```
-
-To rebuild the PyO3 extension after Rust changes: `maturin develop --release` (from the crate directory).
+The native extension is consumed as the published wheel: `rust-io>=0.3.0,<1.0.0`
+(PyPI), which provides `rust_io`, `rust_io.net` and `rust_io.files`. The repo no
+longer vendors the crates, so there is nothing to `cargo test` or `maturin
+develop` here; upgrade the pin in `backend/pyproject.toml` to pick up a release.
 
 #### External Inference Services
 
 Model inference is provided by external Docker containers (not built by this repo). See the separate inference-services project for building and running:
 
 ```bash
-# Configure URLs in backend/config/ (embedding.base_url, rerank.base_url, mineru.local_parse_url)
-# Default ports: embedding :8002, rerank :8003, doc-parse :44321
+# Configure URLs in backend/config/ (embedding.base_url, rerank.base_url)
+# Default ports: embedding :8002, rerank :8003
+# MinerU parsing uses the remote cloud API (mineru_api_token).
 ```
 
 #### Full Stack
@@ -526,4 +520,4 @@ All config data lives in `backend/config/` or explicit environment variables. Ke
 
 - Backend: `pytest` with `pytest-asyncio` for async tests. Tests mirror source structure under `backend/tests/`.
 - Frontend: tests under `frontend/tests/`.
-- Rust: `cargo test` per crate.
+- Rust: `rust-io` comes from PyPI; verify with `python -c "import rust_io.net, rust_io.files"`.

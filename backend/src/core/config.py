@@ -26,7 +26,7 @@ from urllib.parse import quote, urlparse
 
 from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from src.core.config_loader import load_backend_config_into_env
+from acmg_config_loader import load_backend_config_into_env
 
 
 # ── Constants ───────────────────────────────────────────────────────────
@@ -193,14 +193,10 @@ class MinerUConfig(BaseModel):
 
 
 class ParseDocumentConfig(BaseModel):
-    """Parse document module configuration."""
+    """Parse document module configuration (remote MinerU only)."""
 
     mineru_remote_poll_interval: float = 2.0
     mineru_remote_max_poll_attempts: int = 150
-    mineru_local_parse_url: str = "http://localhost:44321"
-    mineru_local_model_id: str = "opendatalab/MinerU2.5-Pro-2604-1.2B"
-    mineru_local_timeout: float = 120.0
-    mineru_local_dpi: int = 200
 
 
 class RedisConfig(BaseModel):
@@ -213,12 +209,26 @@ class RedisConfig(BaseModel):
     max_connections: int = 20
 
 
+class PipelineMemoryConfig(BaseModel):
+    """ReMe external knowledge service (optional, disabled by default).
+
+    ReMe runs as a separate process/container; the backend only calls its HTTP
+    contract.  An empty URL or ``enabled=False`` yields an inert client.
+    """
+
+    enabled: bool = False
+    url: str = ""
+    api_key: str = ""
+    timeout: float = 0.8
+    top_k: int = 5
+
+
 class PipelineConfig(BaseModel):
     """Pipeline runtime behavior switches."""
 
     cache_enabled: bool = False
     dedup_enabled: bool = False
-    agent_runtime: Literal["legacy", "shadow", "agentscope"] = "legacy"
+    memory: PipelineMemoryConfig = Field(default_factory=PipelineMemoryConfig)
 
 
 class PostgreSQLConfig(BaseModel):
@@ -244,6 +254,7 @@ class Neo4jConfig(BaseModel):
     # (`neo4j`). Cross-service isolation is instance-level via NEO4J_URI,
     # not a separate database name (multi-DB is enterprise-only).
     database: str = "neo4j"
+    max_connection_pool_size: int = 10
 
 
 class WebSearchConfig(BaseModel):
@@ -312,6 +323,30 @@ class GraphRagConfig(BaseModel):
     mode: str = "full"  # "terminology_only" or "full"
 
 
+class McpServerConfig(BaseModel):
+    """One external MCP server used instead of a direct service client.
+
+    ``transport`` selects the connection: ``streamable_http``/``sse`` use
+    ``url``; ``stdio`` launches ``command`` (shell-like string, parsed with
+    ``shlex``) and inherits the backend environment.
+    """
+
+    enabled: bool = False
+    transport: str = "streamable_http"
+    url: str = ""
+    command: str = ""
+    tool: str = ""
+    timeout: float = 300.0
+
+
+class McpConfig(BaseModel):
+    """External MCP servers (literature acquisition, MinerU parsing, HPO)."""
+
+    literature: McpServerConfig = Field(default_factory=McpServerConfig)
+    mineru: McpServerConfig = Field(default_factory=McpServerConfig)
+    hpocr: McpServerConfig = Field(default_factory=McpServerConfig)
+
+
 # ── Root settings ────────────────────────────────────────────────────────
 
 
@@ -333,6 +368,9 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     environment: str = "development"
     debug: bool = False
+    # "postgres" uses the configured database; "memory" runs the lifecycle in
+    # process so the API and pipeline work without a database service.
+    persistence_backend: Literal["postgres", "memory"] = "postgres"
     api_key: str = ""  # X-API-Key for route auth; empty = disabled (insecure)
     session_signing_key: str = ""  # HMAC secret for ce_session cookies; falls back to api_key if empty
 
@@ -417,14 +455,10 @@ class Settings(BaseSettings):
     mineru_api_token: str = ""
     mineru_max_file_size_mb: int = 100
 
-    # ── Parse Document flat fields (MINERU_REMOTE_* / MINERU_LOCAL_*) ───
+    # ── Parse Document flat fields (MINERU_REMOTE_*) ──────────────────
 
     mineru_remote_poll_interval: float = 2.0
     mineru_remote_max_poll_attempts: int = 150
-    mineru_local_parse_url: str = "http://localhost:44321"
-    mineru_local_model_id: str = "opendatalab/MinerU2.5-Pro-2604-1.2B"
-    mineru_local_timeout: float = 120.0
-    mineru_local_dpi: int = 200
 
     # ── Inference Service flat fields (INFERENCE_*) ──────────────────
 
@@ -442,7 +476,11 @@ class Settings(BaseSettings):
 
     pipeline_cache_enabled: bool | None = None
     pipeline_dedup_enabled: bool | None = None
-    pipeline_agent_runtime: Literal["legacy", "shadow", "agentscope"] = "legacy"
+    pipeline_memory_enabled: bool = False
+    pipeline_memory_url: str = ""
+    pipeline_memory_api_key: str = ""
+    pipeline_memory_timeout: float = 0.8
+    pipeline_memory_top_k: int = 5
 
     # ── Dispatcher / heartbeat I/O tuning (DISPATCHER_*, PIPELINE_HEARTBEAT_*) ──
 
@@ -500,6 +538,29 @@ class Settings(BaseSettings):
     network_proxy: str = ""
     network_no_proxy: str = _DEFAULT_NO_PROXY
 
+    # ── External MCP servers flat fields (MCP_<SERVER>_*) ───────────────
+
+    mcp_literature_enabled: bool = False
+    mcp_literature_transport: str = "streamable_http"
+    mcp_literature_url: str = ""
+    mcp_literature_command: str = ""
+    mcp_literature_tool: str = "search_literature"
+    mcp_literature_timeout: float = 300.0
+
+    mcp_mineru_enabled: bool = False
+    mcp_mineru_transport: str = "streamable_http"
+    mcp_mineru_url: str = ""
+    mcp_mineru_command: str = ""
+    mcp_mineru_tool: str = "parse_documents"
+    mcp_mineru_timeout: float = 600.0
+
+    mcp_hpocr_enabled: bool = False
+    mcp_hpocr_transport: str = "streamable_http"
+    mcp_hpocr_url: str = ""
+    mcp_hpocr_command: str = ""
+    mcp_hpocr_tool: str = "annotate"
+    mcp_hpocr_timeout: float = 60.0
+
     # ── Nested domain models (populated by validator) ────────────────────
 
     llm: LLMConfig = Field(default_factory=LLMConfig, exclude=True)
@@ -517,6 +578,7 @@ class Settings(BaseSettings):
     graph_rag: GraphRagConfig = Field(default_factory=GraphRagConfig, exclude=True)
     web_search: WebSearchConfig = Field(default_factory=WebSearchConfig, exclude=True)
     network: NetworkConfig = Field(default_factory=NetworkConfig, exclude=True)
+    mcp: McpConfig = Field(default_factory=McpConfig, exclude=True)
     logging: LoggingConfig = Field(default_factory=LoggingConfig, exclude=True)
 
     # ── Build nested models from flat fields ─────────────────────────────
@@ -611,10 +673,6 @@ class Settings(BaseSettings):
         self.parse_document = ParseDocumentConfig(
             mineru_remote_poll_interval=self.mineru_remote_poll_interval,
             mineru_remote_max_poll_attempts=self.mineru_remote_max_poll_attempts,
-            mineru_local_parse_url=self.mineru_local_parse_url,
-            mineru_local_model_id=self.mineru_local_model_id,
-            mineru_local_timeout=self.mineru_local_timeout,
-            mineru_local_dpi=self.mineru_local_dpi,
         )
         self.redis = RedisConfig(
             host=self.redis_host,
@@ -630,7 +688,13 @@ class Settings(BaseSettings):
         self.pipeline = PipelineConfig(
             cache_enabled=production_like if self.pipeline_cache_enabled is None else self.pipeline_cache_enabled,
             dedup_enabled=production_like if self.pipeline_dedup_enabled is None else self.pipeline_dedup_enabled,
-            agent_runtime=self.pipeline_agent_runtime,
+            memory=PipelineMemoryConfig(
+                enabled=self.pipeline_memory_enabled,
+                url=self.pipeline_memory_url,
+                api_key=self.pipeline_memory_api_key,
+                timeout=self.pipeline_memory_timeout,
+                top_k=self.pipeline_memory_top_k,
+            ),
         )
         self.postgresql = PostgreSQLConfig(
             host=self.postgres_host,
@@ -667,6 +731,32 @@ class Settings(BaseSettings):
         self.network = NetworkConfig(
             proxy=self.network_proxy,
             no_proxy=self.network_no_proxy,
+        )
+        self.mcp = McpConfig(
+            literature=McpServerConfig(
+                enabled=self.mcp_literature_enabled,
+                transport=self.mcp_literature_transport,
+                url=self.mcp_literature_url,
+                command=self.mcp_literature_command,
+                tool=self.mcp_literature_tool,
+                timeout=self.mcp_literature_timeout,
+            ),
+            mineru=McpServerConfig(
+                enabled=self.mcp_mineru_enabled,
+                transport=self.mcp_mineru_transport,
+                url=self.mcp_mineru_url,
+                command=self.mcp_mineru_command,
+                tool=self.mcp_mineru_tool,
+                timeout=self.mcp_mineru_timeout,
+            ),
+            hpocr=McpServerConfig(
+                enabled=self.mcp_hpocr_enabled,
+                transport=self.mcp_hpocr_transport,
+                url=self.mcp_hpocr_url,
+                command=self.mcp_hpocr_command,
+                tool=self.mcp_hpocr_tool,
+                timeout=self.mcp_hpocr_timeout,
+            ),
         )
 
         if self.is_production and not self.api_key.strip():

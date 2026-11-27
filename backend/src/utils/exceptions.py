@@ -41,6 +41,38 @@ class DatabaseException(ACMGException):
         super().__init__(message, code="DATABASE_ERROR")
 
 
+class PersistenceUnavailableError(ACMGException):
+    """No persistence backend is configured for this capability.
+
+    Raised by adapters that replace a database-backed store when the process
+    runs without one, so callers see an explicit 503 instead of a driver error.
+    """
+
+    def __init__(self, capability: str = "persistence") -> None:
+        super().__init__(
+            f"Persistence is not configured for {capability}",
+            code="PERSISTENCE_UNAVAILABLE",
+        )
+
+
+class RecordNotFoundError(ACMGException):
+    """A persistence operation found no row for the requested identity.
+
+    Adapters translate driver-specific "no row" errors into this type so the
+    API layer does not depend on a database library.
+    """
+
+    def __init__(self, message: str = "Record not found") -> None:
+        super().__init__(message, code="NOT_FOUND")
+
+
+class DuplicateRunError(ACMGException):
+    """A run already exists for the same source (unique constraint)."""
+
+    def __init__(self, message: str = "A run already exists for this source") -> None:
+        super().__init__(message, code="CONFLICT")
+
+
 class LLMException(ACMGException):
     """LLM service call failed."""
 
@@ -94,6 +126,7 @@ _CODE_TO_STATUS: dict[str, int] = {v: k for k, v in _STATUS_TO_CODE.items()}
 _CODE_TO_STATUS.update(
     {
         "DATABASE_ERROR": 500,
+        "PERSISTENCE_UNAVAILABLE": 503,
         "LLM_ERROR": 502,
         "SERVICE_ERROR": 503,
         "TRANSLATION_ERROR": 502,

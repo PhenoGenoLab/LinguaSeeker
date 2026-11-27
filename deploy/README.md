@@ -22,7 +22,6 @@ deploy/
 │   ├── backend-host/           # 跨主机：backend + Postgres + Redis（后端服务器）
 │   └── frontend-host/          # 跨主机：nginx + SPA（前端服务器）
 ├── archive/                    # 已归档变体：single-server、debug-prod
-├── mineru-api/                 # MinerU 文档解析部署说明
 ├── nginx/                      # Nginx 配置
 │   └── linguaseeker.conf       # 站点配置
 └── README.md
@@ -58,7 +57,6 @@ Internet
               +---> External Inference Services（独立项目）
                      +-- Embedding (:8002)
                      +-- Rerank (:8003)
-                     +-- Doc Parse (:44321)
 ```
 
 ## 系统要求

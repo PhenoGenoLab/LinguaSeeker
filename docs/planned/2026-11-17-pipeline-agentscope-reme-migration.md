@@ -3,13 +3,21 @@
 > LangGraph 状态图 + AgentScope 子智能体 + ReMe 知识/记忆层，仅改领域层，外层服务不动
 >
 > 状态：调研与方案（**未改业务代码**）
-> **Status:** planned
+> **Status:** superseded（2026-11-19 架构修订）
 > **Created:** 2026-11-17
 > **Revised:** 2026-11-17（r2：补充 `skills/` / `mcp/` / `tools/` 领域层目录划分；初版见 PR #28）
 > **PR:** #30（r2 修订；初版 #28 已合并）
 > 目标仓库：`/data/yangzs/Projects/01_Platform/01_ACMG_Lingua`
-> 适用对象：pipeline 服务（`backend/src/agents/` + 其调用的 `backend/src/core/*` 领域切片 + `backend/src/api/v1/pipeline.py`；迁移后领域层为 `backend/src/pipeline/{graph,skills,tools,mcp}`）
+> 适用对象：pipeline 服务（`backend/src/agents/` + 其调用的 `backend/src/core/*` 领域切片 + `backend/src/api/v1/pipeline.py`；迁移后领域层为 `backend/src/pipeline/{graph,skills} + backend/src/core/{foundation,shared,adapters,agents}`）
 > 结论摘要：**总体可行，但需调整 3 处定位**；需求方已确认 **ReMe 按外部知识库服务处理**；工作量 **中大型（约 10.5–12.5 人周，不含可选的 KB 整体切换；含 KB 切换 13.5–17.5 人周；含 20% 缓冲分别为 12.5–15 / 16–21 人周）**；共 9 个架构决策点，其中 D4 已确认，其余 8 项待拍板（见 §8）。
+
+> **架构修订（2026-11-19）** — 本文的目录划分已被两次实现调整取代，路径表格仅作历史记录：
+> 1. `tools/` 不在 `src/pipeline/`：确定性能力位于 `src/core/shared/tools/`；
+> 2. `mcp/` 不在 `src/pipeline/`：外部协议适配位于 `src/core/adapters/mcp/`；
+> 3. `contracts/` 不在 `src/pipeline/`：跨层 DTO 位于 `src/core/shared/contracts/`；
+> 4. `core` 不再按阶段命名：原 `core/phases/<domain>` 已改为 `core/agents/{acquisition,parsing,translation,extraction,standardization,review,graph_retrieval}`，
+>    `src/pipeline/` 只保留 `graph/`（LangGraph 编排）与 `skills/`（AgentScope 智能体）。
+> 现行布局与依赖规则见 `src/core/README.md` 与 `tests/core/test_layer_boundaries.py`。
 
 ---
 
@@ -53,7 +61,7 @@ pipeline 领域层目录调整           →      按职责拆到 src/pipeline/{
 | 范围 | 估算 |
 |---|---|
 | 核心替换（阶段 0–4：拓扑、AgentScope 运行时、四阶段 agent 化、ReMe 记忆接入） | **10.5–12.5 人周**（1–2 名熟悉该仓库的工程师；含 20% 缓冲为 12.5–15 人周） |
-| 目录迁移与 import 改写（r2 新增：`src/pipeline/{graph,skills,tools,mcp}`） | 约 **1.5 人周**（56 个文件 `git mv`、56 个测试文件/153 行 import 改写、约 15 个 shim） |
+| 目录迁移与 import 改写（r2 新增：`src/pipeline/{graph,skills,tools,mcp}`（原计划）） | 约 **1.5 人周**（56 个文件 `git mv`、56 个测试文件/153 行 import 改写、约 15 个 shim） |
 | 可选的知识库整体切换（Neo4j GraphRAG → ReMe，含数据迁移与 Phase 5 QA 改造） | 额外 **3–5 人周**，且不建议在本轮做 |
 | 风险缓冲 | 上述基础上 +20%（影子运行、对照评测、回滚演练） |
 
@@ -345,6 +353,8 @@ flowchart TD
 
 ### 3.2 目标目录结构：graph / skills / tools / mcp
 
+> ⚠ 本节路径已被 2026-11-19 架构修订取代，现行布局见 src/core/README.md。
+
 > 本节为 2026-11-17 r2 新增：需求方要求 pipeline 领域层按 `skills/`、`mcp/`、`tools/` 这类职责划分来组织，与“LangGraph 状态图 + 每节点 AgentScope 子智能体 + ReMe 外部知识库”的组合一一对应。**本节只描述目标包布局与迁移方式，不实现代码。**
 
 #### 3.2.1 分层职责边界
@@ -448,6 +458,8 @@ backend/src/core/
 | `src/agents/{runner,dispatcher,state_persistence,processing_cache,concurrency,content_hash,phase_5_factory}.py` | **不迁** | 外层语义（队列/租约/重试/缓存/Phase 5） | 不需要 |
 | `src/api/**`、`src/app/**`、`src/dao/**`、`src/utils/**` | **不迁** | 外层 HTTP、DI、持久化、共享工具 | 不需要 |
 | `backend/scripts/{e2e_standardize_entities,build_terminology_embeddings,e2e_full}.py` | 路径不动，只改 import | 运维/评测脚本 | 不需要 |
+
+> ⚠ 本节路径已被 2026-11-19 架构修订取代，现行布局见 src/core/README.md。
 
 **新增而非迁移的模块**：`graph/nodes.py`、`graph/progress.py`、`skills/runtime/*`、四个 `skills/*/skill.py`、`mcp/reme/*`、`mcp/registry.py`、`contracts/*`。其中 `graph/nodes.py` 就是 §3.4.1 的“统一节点适配器”。
 
@@ -899,6 +911,8 @@ mcp==2.3.0            ➕ 新增
 > 该阶段是“低风险高价值”：即使后续不做 AgentScope，图显式化本身也能带来节点级可观测与并行窗口收益。
 
 ### 阶段 2 — AgentScope 运行时 + Phase 3 抽取试点（2–3 人周）
+
+> ⚠ 本节路径已被 2026-11-19 架构修订取代，现行布局见 src/core/README.md。
 
 | 项 | 内容 |
 |---|---|

@@ -9,7 +9,7 @@ from scripts.e2e_standardize_entities import (
     DEFAULT_EXTRACT_EVIDENCE_DIR,
     run_standardize_entities,
 )
-from src.core.agents.standardization.contracts import (
+from src.core.tools.standardization.contracts import (
     BindingRole,
     EntityMatch,
     EntityType,
@@ -134,7 +134,7 @@ async def test_run_standardize_entities_writes_outputs_without_refresh(
 
     assert saved_dir == output_dir / "法布雷病1例" / "test-run"
     assert service.calls == [("法布雷病1例", "source-doc-1", "processing-run-1")]
-    assert session.commit_called is True
+    assert (saved_dir / "result.json").exists()
     assert import_calls == []
     assert refresh_calls == []
 

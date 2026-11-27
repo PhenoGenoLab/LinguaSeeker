@@ -14,11 +14,12 @@ Modern tools only. System-level installs are prohibited.
 |---|---|---|
 | Python | `uv` | `pip` / `pip3` / system Python |
 | Node.js | `nvm` + `npm` | system global Node |
-| Rust | `cargo` | — |
+| Rust | — (extension ships as the `rust-io` wheel) | — |
 | C/C++ | `cmake` | — |
 
-- All dependencies must be declared in config files (`pyproject.toml` / `package.json` / `Cargo.toml`).
-- Production dependencies must be locked (`uv.lock` / `package-lock.json` / `Cargo.lock`).
+- All dependencies must be declared in config files (`pyproject.toml` / `package.json`).
+- Production dependencies must be locked (`uv.lock` / `package-lock.json`).
+- Rust crates are maintained in a separate project: consume them as the PyPI `rust-io` wheel, never vendor or build them here (`libs/` holds only the pure-Python `config-loader`).
 
 ### 1.2 Directory Structure
 
@@ -27,7 +28,7 @@ Modern tools only. System-level installs are prohibited.
 | Backend entry | `app/main.py`, business logic in `src/` and subdirectories |
 | Frontend entry | Next.js App Router in `frontend/app/`, components in `frontend/components/` |
 | Documentation | `docs/` (archive: `docs/archive/`) |
-| Tests | `tests/` (Rust: `libs/rust-io/tests/`) |
+| Tests | `tests/` (`libs/config-loader/tests/` for the shared YAML loader) |
 | Scripts | `scripts/` |
 | Database | `database/` (migrations: `migrations/`, seeds: `seeds/`) |
 | Deployment | repository root `deploy/`; Ansible orchestration under `deploy/ansible/` |
@@ -38,8 +39,8 @@ Modern tools only. System-level installs are prohibited.
 
 New modules should prefer **Orchestrated Vertical Slice Architecture**:
 
-- `src/agents/` is the orchestrator: LangGraph topology, global Pydantic state, router decisions, node telemetry.
-- `src/core/<feature>/` contains vertical feature slices. A non-trivial slice should expose an `api.py` node adapter, keep pure domain behavior in `core.py`, wrap LLM/DB/Rust/external dependencies in `providers.py`, and define feature-local contracts in `contracts.py` or `schema.py`.
+- Layering is one-directional: `src/pipeline/graph/` orchestrates the run (topology + phase adapters); `src/pipeline/skills/` implement the agents (prompts, model calls, control flow); `src/core/tools/` holds the concrete AgentScope tools those skills expose. `src/runs/` owns the run lifecycle (global Pydantic state, runner, dispatcher, persistence, node telemetry).
+- `src/core/` holds configuration and shared layers (`config.py`, `foundation/`, `shared/`, `tools/`, `adapters/`); it never holds agent implementations. A non-trivial feature slice still exposes an `api.py` node adapter, keeps pure domain behavior in `core.py`, wraps LLM/DB/Rust/external dependencies in `providers.py`, and defines contracts in `contracts.py` or `schema.py`.
 - `src/utils/`, `src/dao/`, Rust crates, and shared clients are infrastructure. Business core code must not depend directly on SDK clients when a provider boundary is practical.
 - Workflow code wires nodes and edges only; feature packages own the biomedical, translation, standardization, feedback, and report-generation decisions.
 - Cross-node state uses typed Pydantic/dataclass/TypedDict contracts. Do not introduce stable bare-dict return contracts.
@@ -68,7 +69,7 @@ New modules should prefer **Orchestrated Vertical Slice Architecture**:
 - **Auth routes**: `src/api/v1/auth.py` — `/login`, `/logout`, `/me` endpoints.
 - **Session format**: `<base64url_payload>.<base64url_hmac_signature>`, payload is `{"exp": <unix_ts>}`, 8-hour duration.
 - **All route handlers** must include `_api_key: str | None = Depends(require_api_key)`.
-- **SSRF guard**: All external HTTP requests must call `_validate_url_safe()` before and after redirects (DNS-based private IP check).
+- **SSRF guard**: All external HTTP requests must call `validate_url_safe()` (`src/utils/security/ssrf.py`) before and after redirects (DNS-based private IP check).
 
 ### 1.6 Logging & Testing
 

@@ -5,30 +5,24 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
-from sqlalchemy.exc import NoResultFound
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from src.api.auth import get_current_account
-from src.api.deps import get_db_session, get_phase5_factory
+from src.api.deps import get_evidence_store, get_feedback_store, get_literature_store
 from src.api.rate_limit import limiter
 from src.core.foundation.auth.contracts import AuthContext
-from src.core.agents.review.contracts import (
+from src.ports.review import EvidenceQueryStore, FeedbackStore, LiteratureStore
+from src.utils.exceptions import RecordNotFoundError
+from src.core.tools.review.contracts import (
     EvidenceGroupDetailResponse,
-    EvidenceGroupSummary,
     EvidencePatchRequest,
     EvidenceSearchResponse,
     LiteratureProfileDetailResponse,
     LiteratureRefreshResponse,
-    LiteratureProfileSummary,
     LiteratureSearchResponse,
     PatchResultResponse,
     VariantSearchResponse,
 )
-from src.core.agents.review.search_service import SearchService
-from src.dao.postgresql.literature_profile_repo import LiteratureProfileRepository
-from src.dao.postgresql.models import CanonicalEvidenceItem
 
 router = APIRouter()
 
@@ -37,7 +31,7 @@ router = APIRouter()
 async def get_evidence_group_detail(
     group_id: str | None = Query(None, description="Evidence group identifier"),
     source_document_id: UUID | None = Query(None, description="Source document UUID to scope results"),
-    session: AsyncSession = Depends(get_db_session),
+    store: EvidenceQueryStore = Depends(get_evidence_store),
     account: AuthContext = Depends(get_current_account),
 ) -> EvidenceGroupDetailResponse:
     """Return grouped evidence detail with distribution and traceability.
@@ -51,14 +45,13 @@ async def get_evidence_group_detail(
             status_code=400,
             detail="Provide at least one of group_id or source_document_id",
         )
-    service = SearchService(session)
     try:
-        return await service.get_group_detail(
+        return await store.group_detail(
             group_id=group_id,
             source_document_id=str(source_document_id) if source_document_id else None,
             owner_user_id=account.owner_user_id,
         )
-    except NoResultFound:
+    except RecordNotFoundError:
         raise HTTPException(status_code=404, detail="Evidence group not found")
 
 
@@ -68,14 +61,12 @@ async def patch_evidence(
     request: Request,
     canonical_evidence_id: UUID,
     body: EvidencePatchRequest,
-    session: AsyncSession = Depends(get_db_session),
+    feedback: FeedbackStore = Depends(get_feedback_store),
     account: AuthContext = Depends(get_current_account),
 ) -> PatchResultResponse:
     """Apply a patch to an evidence card and record audit event."""
-    factory = get_phase5_factory()
-    service = factory.create_feedback_service(session)
     try:
-        result = await service.patch_evidence(
+        result = await feedback.patch_evidence(
             canonical_evidence_id=canonical_evidence_id,
             patch=body,
             reviewer_id=account.owner_user_id,
@@ -88,13 +79,13 @@ async def patch_evidence(
             deltas=result.deltas,
             field_deltas=result.field_deltas,
         )
-    except NoResultFound:
+    except RecordNotFoundError:
         raise HTTPException(status_code=404, detail="Evidence not found")
 
 
 @router.get("/search", response_model=EvidenceSearchResponse)
 async def search_evidence(
-    session: AsyncSession = Depends(get_db_session),
+    store: EvidenceQueryStore = Depends(get_evidence_store),
     account: AuthContext = Depends(get_current_account),
     gene: str | None = Query(None, description="Filter by gene (partial match on A.gene_symbol)"),
     variant: str | None = Query(None, description="Filter by variant (partial match on HGVS fields)"),
@@ -109,8 +100,7 @@ async def search_evidence(
     Groups field-level extractions by group_id and pivots them into summary
     rows with gene/variant/disease/classification columns.
     """
-    service = SearchService(session)
-    return await service.search_evidence(
+    return await store.search_evidence(
         gene=gene,
         variant=variant,
         disease=disease,
@@ -124,7 +114,7 @@ async def search_evidence(
 
 @router.get("/variants", response_model=VariantSearchResponse)
 async def search_variants(
-    session: AsyncSession = Depends(get_db_session),
+    store: EvidenceQueryStore = Depends(get_evidence_store),
     account: AuthContext = Depends(get_current_account),
     gene: str | None = Query(None, description="Filter variants by gene (partial, case-insensitive)"),
     variant: str | None = Query(None, description="Filter variants by variant site (partial, case-insensitive)"),
@@ -156,8 +146,7 @@ async def search_variants(
     stats and autocomplete candidates. Replaces the previous client-side flow
     that downloaded the full evidence-group corpus.
     """
-    service = SearchService(session)
-    return await service.search_variants(
+    return await store.search_variants(
         gene=gene,
         variant=variant,
         disease=disease,
@@ -174,7 +163,7 @@ async def search_variants(
 
 @router.get("/literature/search", response_model=LiteratureSearchResponse)
 async def search_literature(
-    session: AsyncSession = Depends(get_db_session),
+    literature: LiteratureStore = Depends(get_literature_store),
     account: AuthContext = Depends(get_current_account),
     gene: str | None = Query(None, description="Filter by gene name"),
     variant: str | None = Query(None, description="Filter by variant"),
@@ -185,8 +174,7 @@ async def search_literature(
     page_size: int = Query(50, ge=1, le=200),
 ) -> LiteratureSearchResponse:
     """Search literature profiles with per-article aggregation."""
-    repo = LiteratureProfileRepository(session)
-    items, total = await repo.search(
+    return await literature.search(
         gene=gene,
         variant=variant,
         disease=disease,
@@ -196,12 +184,6 @@ async def search_literature(
         page_size=page_size,
         owner_user_id=account.owner_user_id,
     )
-    return LiteratureSearchResponse(
-        items=[LiteratureProfileSummary(**vars(item)) for item in items],
-        total=total,
-        page=page,
-        page_size=page_size,
-    )
 
 
 @router.get(
@@ -210,55 +192,25 @@ async def search_literature(
 )
 async def get_literature_detail(
     source_document_id: UUID,
-    session: AsyncSession = Depends(get_db_session),
+    literature: LiteratureStore = Depends(get_literature_store),
     account: AuthContext = Depends(get_current_account),
 ) -> LiteratureProfileDetailResponse:
     """Return full literature profile with all evidence groups."""
-    repo = LiteratureProfileRepository(session)
-    profile = await repo.get_by_document(source_document_id, owner_user_id=account.owner_user_id)
+    profile = await literature.detail(
+        source_document_id,
+        owner_user_id=account.owner_user_id,
+    )
     if profile is None:
         raise HTTPException(status_code=404, detail="Literature profile not found")
-
-    return LiteratureProfileDetailResponse(
-        literature_profile_id=UUID(profile.literature_profile_id),
-        source_document_id=UUID(profile.source_document_id),
-        pmid=profile.pmid,
-        doi=profile.doi,
-        title=profile.title,
-        authors=profile.authors,
-        journal=profile.journal,
-        publication_year=profile.publication_year,
-        evidence_groups=[EvidenceGroupSummary(**eg) for eg in profile.evidence_groups],
-        review_status=profile.review_status,
-        review_notes=profile.review_notes,
-        overall_confidence=profile.overall_confidence,
-        total_evidence_fields=profile.total_evidence_fields,
-        found_count=profile.found_count,
-        not_found_count=profile.not_found_count,
-    )
+    return profile
 
 
 @router.post("/literature/refresh", response_model=LiteratureRefreshResponse)
 @limiter.limit("5/minute")
 async def refresh_literature_profiles(
     request: Request,
-    session: AsyncSession = Depends(get_db_session),
+    literature: LiteratureStore = Depends(get_literature_store),
     account: AuthContext = Depends(get_current_account),
 ) -> LiteratureRefreshResponse:
     """Refresh all literature profiles from canonical evidence. Admin endpoint."""
-    owner_filter = (
-        CanonicalEvidenceItem.owner_user_id.is_(None)
-        if account.owner_user_id is None
-        else CanonicalEvidenceItem.owner_user_id == account.owner_user_id
-    )
-    stmt = select(CanonicalEvidenceItem.source_document_id).where(owner_filter).distinct()
-    result = await session.execute(stmt)
-    doc_ids = [row[0] for row in result.all()]
-
-    repo = LiteratureProfileRepository(session)
-    refreshed = 0
-    for doc_id in doc_ids:
-        await repo.refresh_for_document(doc_id, owner_user_id=account.owner_user_id)
-        refreshed += 1
-
-    return LiteratureRefreshResponse(refreshed=refreshed, total_documents=len(doc_ids))
+    return await literature.refresh_all(owner_user_id=account.owner_user_id)

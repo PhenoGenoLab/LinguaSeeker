@@ -128,7 +128,7 @@ docs/
 每个 `backend/` 模块都有自己的 `README.md` 开发者指南。关键模块：
 
 - **[backend/app/](../backend/app/README.md)** — FastAPI 应用入口
-- **[backend/src/agents/](../backend/src/agents/README.md)** — 管线编排器（LangGraph）
+- **[backend/src/runs/](../backend/src/runs/README.md)** — 一次 run 的运行时外壳（runner、dispatcher、状态持久化）
 - **[backend/src/api/](../backend/src/api/README.md)** — HTTP 边界、依赖注入
 - **[backend/src/core/](../backend/src/core/README.md)** — 垂直功能切片
 - **[backend/src/dao/](../backend/src/dao/README.md)** — 持久化层

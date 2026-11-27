@@ -14,16 +14,13 @@ from agentscope.formatter import OpenAIChatFormatter
 from agentscope.message import Msg, TextBlock, ToolCallBlock
 from agentscope.model import ChatModelBase, ChatResponse
 
-from src.core.config import PipelineConfig
 from src.core.shared.contracts.skill_io import SkillError, SkillRequest
-from src.pipeline.skills.fact_chain.extract import (
+from src.pipeline.skills.extraction.extract import (
+    ExtractAgentProvider,
     ExtractSkill,
-    StageRouterProvider,
-    compare_extract_replies,
     window_tools,
 )
-from src.pipeline.skills.fact_chain.prompts import EXTRACT_PROMPT
-from src.pipeline.skills.runtime.llm import ProviderError
+from src.pipeline.skills.extraction.prompts import EXTRACT_PROMPT
 from src.core.shared.tools.fact_chain.contracts import canonical_json
 
 FACT = {
@@ -79,18 +76,6 @@ class FakeAgent:
         )
 
 
-class StubProvider:
-    def __init__(self, reply: str | Exception) -> None:
-        self.reply = reply
-        self.calls: list[dict[str, str]] = []
-
-    def invoke(self, *, stage: str, model_id: str, prompt: str, payload: str) -> str:
-        self.calls.append({"stage": stage, "model_id": model_id})
-        if isinstance(self.reply, Exception):
-            raise self.reply
-        return self.reply
-
-
 class StubSkill:
     def __init__(self, reply: str | Exception) -> None:
         self.reply = reply
@@ -107,10 +92,6 @@ def _request(payload: str = PAYLOAD) -> SkillRequest:
     return SkillRequest(
         stage="extract", model_id="fast-model", window_id="0:60", prompt=EXTRACT_PROMPT, payload=payload
     )
-
-
-def test_pipeline_agent_runtime_defaults_to_legacy() -> None:
-    assert PipelineConfig().agent_runtime == "legacy"
 
 
 def test_extract_skill_runs_agent_and_returns_validated_reply() -> None:
@@ -154,55 +135,19 @@ def test_extract_skill_rejects_non_json_payload() -> None:
         skill.call(_request(payload="not-json"))
 
 
-def test_compare_extract_replies_ignores_order() -> None:
-    first = canonical_json({"facts": [FACT]})
-    second = canonical_json({"facts": [dict(FACT, raw_value="seizures", quote="No seizures were reported.")]})
-
-    assert compare_extract_replies(first, first) == []
-    assert compare_extract_replies(first, second) != []
-
-
-def test_shadow_router_returns_legacy_reply_and_counts_mismatch() -> None:
-    legacy = StubProvider(canonical_json({"facts": [FACT]}))
-    agent_reply = canonical_json({"facts": []})
-    router = StageRouterProvider(legacy=legacy, extract=StubSkill(agent_reply), mode="shadow")
-
-    result = router.invoke(stage="extract", model_id="fast-model", prompt=EXTRACT_PROMPT, payload=PAYLOAD)
-
-    assert result == canonical_json({"facts": [FACT]})
-    assert router.stats.calls == 1
-    assert router.stats.mismatches == 1
-    assert router.stats.agent_failures == 0
-
-
-def test_shadow_router_keeps_legacy_when_agent_fails() -> None:
-    legacy = StubProvider(canonical_json({"facts": [FACT]}))
-    router = StageRouterProvider(
-        legacy=legacy,
-        extract=StubSkill(ProviderError("boom")),
-        mode="shadow",
-    )
-
-    result = router.invoke(stage="extract", model_id="fast-model", prompt=EXTRACT_PROMPT, payload=PAYLOAD)
-
-    assert result == canonical_json({"facts": [FACT]})
-    assert router.stats.agent_failures == 1
-    assert router.stats.mismatches == 0
-
-
-def test_agentscope_router_only_replaces_extract() -> None:
-    legacy = StubProvider("legacy-reply")
+def test_extract_agent_provider_routes_only_extract_to_the_skill() -> None:
+    chat = StubSkill("chat-reply")
     skill = StubSkill(canonical_json({"facts": [FACT]}))
-    router = StageRouterProvider(legacy=legacy, extract=skill, mode="agentscope")
+    provider = ExtractAgentProvider(chat=chat, extract=skill)
 
-    extract = router.invoke(stage="extract", model_id="fast-model", prompt=EXTRACT_PROMPT, payload=PAYLOAD)
-    verify = router.invoke(stage="verify", model_id="reasoning-model", prompt="p", payload="{}")
-    translate = router.invoke(stage="translate", model_id="fast-model", prompt="p", payload="{}")
+    extract = provider.invoke(stage="extract", model_id="fast-model", prompt=EXTRACT_PROMPT, payload=PAYLOAD)
+    verify = provider.invoke(stage="verify", model_id="reasoning-model", prompt="p", payload="{}")
+    translate = provider.invoke(stage="translate", model_id="fast-model", prompt="p", payload="{}")
 
     assert extract == canonical_json({"facts": [FACT]})
-    assert verify == "legacy-reply"
-    assert translate == "legacy-reply"
-    assert [call["stage"] for call in legacy.calls] == ["verify", "translate"]
+    assert verify == "chat-reply"
+    assert translate == "chat-reply"
+    assert [call["stage"] for call in chat.calls] == ["verify", "translate"]
     assert [call["stage"] for call in skill.calls] == ["extract"]
 
 

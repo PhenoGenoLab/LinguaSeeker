@@ -101,7 +101,6 @@ load_backend_config_into_env(_BACKEND_ROOT)  # 加载 backend/config/ 到 os.env
 |---|---|---|---|
 | Embedding | `BAAI/bge-m3` | 1024 | 8192 |
 | Rerank | `BAAI/bge-reranker-v2-m3` | — | 8192 |
-| Doc Parse (VLM) | `opendatalab/MinerU2.5-Pro-2604-1.2B` | — | — |
 
 ### 5.1 GPU 内存分配
 
@@ -110,10 +109,10 @@ load_backend_config_into_env(_BACKEND_ROOT)  # 加载 backend/config/ 到 os.env
 
 ### 5.2 模型服务端口
 
-| 模式 | Embedding | Rerank | VLM | Doc Parse |
-|---|---|---|---|---|
-| Monolith（dev） | `:8001` | `:8001` | `:8001` | `:8001` |
-| Multi-container（staging/prod） | `:8002` | `:8003` | `:44321` | `:8005` |
+| 模式 | Embedding | Rerank |
+|---|---|---|
+| Monolith（dev） | `:8001` | `:8001` |
+| Multi-container（staging/prod） | `:8002` | `:8003` |
 
 后端配置通过 `embedding.base_url` 和 `rerank.base_url` 指向正确端口。
 

@@ -28,17 +28,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.e2e_extract_evidence import run_extract_evidence
 from src.core.config import Settings, get_config
-from src.core.agents.extraction.contracts import (
+from src.core.tools.extraction.contracts import (
     DualEvidenceExtractionResult,
 )
-from src.core.agents.standardization.api import (
-    EntityStandardizationService,
+from src.pipeline.skills.standardization.api import (
     build_summary_metadata,
-    import_terminology,
     serialize_matches,
 )
-from src.core.agents.standardization.contracts import StandardizationResult
-from src.dao.postgresql.connection import async_session_factory, build_async_engine, get_async_session
+from src.dao.postgresql.standardization.importer import import_terminology
+from src.dao.postgresql.standardization.runner import PostgresStandardizationRunner
+from src.core.tools.standardization.contracts import StandardizationResult
+from src.dao.postgresql.connection import async_session_factory, build_async_engine
 
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -175,7 +175,7 @@ async def run_standardize_entities(
     *,
     extract_evidence_dir: Path,
     output_dir: Path,
-    service: EntityStandardizationService | Any | None = None,
+    service: PostgresStandardizationRunner | Any | None = None,
     source_document_id: str | None = None,
     processing_run_id: str | None = None,
     run_id: str | None = None,
@@ -230,14 +230,12 @@ async def run_standardize_entities(
     else:
         engine, session_factory = None, session_resources
     try:
-        async with get_async_session(session_factory) as session:
-            effective_service = service or EntityStandardizationService(cfg=cfg, session=session)
-            result = await effective_service.run_dual_result(
-                dual_result,
-                source_document_id=source_document_id,
-                processing_run_id=processing_run_id,
-            )
-            await session.commit()
+        effective_service = service or PostgresStandardizationRunner(cfg=cfg, session_factory=session_factory)
+        result = await effective_service.run_dual_result(
+            dual_result,
+            source_document_id=source_document_id,
+            processing_run_id=processing_run_id,
+        )
     finally:
         if engine is not None:
             await engine.dispose()

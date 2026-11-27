@@ -12,7 +12,7 @@
 api/
 ├── wiring.py              # 依赖注入和服务组装（应用启动时调用一次）
 ├── auth.py                # API Key + HMAC 会话认证
-├── deps.py                # FastAPI 依赖项（数据库会话、Phase5ServiceFactory）
+├── deps.py                # FastAPI 依赖项（数据库会话、ReviewServiceFactory）
 ├── body_size_limit.py     # 请求体大小限制 ASGI 中间件
 ├── rate_limit.py          # Redis/内存限流器
 ├── v1/                    # V1 API 路由
@@ -38,17 +38,17 @@ api/
 cfg → engine → session_factory
   → Redis client → DocumentProcessingCacheService
   → DocumentAcquisitionService + ParseDocumentService
-  → SourceFactChainService（Phase 3：分窗→抽取→核验→事实英译→双语行）
-  → EntityStandardizationService
-  → Phase1Adapter + Phase2Adapter + Phase3Adapter
+  → SourceFactChainService（fact_chain：分窗→抽取→核验→事实英译→双语行）
+  → PostgresStandardizationRunner
+  → AcquisitionAdapter + ParsingAdapter + FactChainAdapter
   → SessionBoundStatePersistence
   → PipelineOrchestrator → PipelineRunner
   → SingleJobDispatcher
-  → Phase5ServiceFactory
+  → ReviewServiceFactory（注入 PostgresReviewStoreFactory）
   → JobQueueRepository
 ```
 
-提供单例访问器：`get_engine()`、`get_session_factory()`、`get_redis_client()`、`get_local_parser()`、`get_dispatcher()`。
+提供单例访问器：`get_engine()`、`get_session_factory()`、`get_redis_client()`、`get_remote_parser()`、`get_dispatcher()`。
 
 ### `auth.py` — 认证
 
@@ -69,8 +69,9 @@ async def handler(_api_key: str | None = Depends(require_api_key)):
 
 | 依赖 | 说明 |
 |------|------|
-| `get_db_session()` | 提供异步数据库会话（自动 commit/rollback） |
-| `get_phase5_factory()` | 返回全局 Phase5ServiceFactory 实例 |
+| `get_evidence_store()` / `get_feedback_store()` / `get_audit_store()` | 返回请求作用域存储适配器 |
+| `get_standardization_runner()` | 返回 PostgreSQL 后端的标准化执行器 |
+| `get_review_factory()` | 返回全局 ReviewServiceFactory 实例 |
 
 ### `body_size_limit.py` — 请求体限制
 
@@ -110,16 +111,15 @@ check_all_connections()       # 健康检查
 ### 路由中访问数据库
 
 ```python
-async def handler(session: AsyncSession = Depends(get_db_session)):
-    result = await session.execute(select(Model))
+async def handler(store: EvidenceQueryStore = Depends(get_evidence_store)):
+    result = await store.search_evidence(gene="BRCA1")
 ```
 
-### 路由中访问 Phase 4 服务
+### 路由中访问 standardization 服务
 
 ```python
-async def handler(session: AsyncSession = Depends(get_db_session)):
-    factory = get_phase5_factory()
-    service = factory.create_feedback_service(session)
+async def handler(runner: StandardizationRunner = Depends(get_standardization_runner)):
+    output = await runner.run_dual_result(dual_result, source_document_id=..., processing_run_id=...)
 ```
 
 ## Dependencies
@@ -130,6 +130,6 @@ async def handler(session: AsyncSession = Depends(get_db_session)):
 | slowapi | 限流 |
 | Starlette | ASGI 中间件 |
 | SQLAlchemy | 数据库会话 |
-| `src.agents.*` | 管线运行器、调度器、服务工厂 |
+| `src.runs.*` | 管线运行器、调度器、服务工厂 |
 | `src.dao.*` | 数据访问 |
 | `src.core.config` | 配置 |

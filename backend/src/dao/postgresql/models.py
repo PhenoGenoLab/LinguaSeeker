@@ -669,6 +669,7 @@ class PipelineRunState(Base):
     __table_args__ = (
         Index("ix_pipeline_run_states_source_document_id", "source_document_id"),
         Index("ix_pipeline_run_states_pipeline_status", "pipeline_status"),
+        Index("ix_pipeline_run_states_batch_id", "batch_id"),
         Index("ix_pipeline_run_states_owner_created", "owner_user_id", text("created_at DESC")),
         Index("ix_pipeline_run_states_owner_heartbeat", "owner_worker_id", "heartbeat_at"),
         Index(
@@ -702,7 +703,7 @@ class PipelineRunState(Base):
     )
     last_completed_stage: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # Reserved: not yet populated by state_persistence.py.
-    # Intended for crash-recovery triage (e.g., "phase_2_standardization").
+    # Intended for crash-recovery triage (e.g., "standardization").
     # Derivable from state_json phase statuses when needed.
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -719,6 +720,47 @@ class PipelineRunState(Base):
     source_key: Mapped[str | None] = mapped_column(Text, nullable=True)
     owner_worker_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Directory-run grouping (API v2): one batch id spans one run per document.
+    batch_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    source_directory: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    relative_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+
+
+class AgentJob(Base):
+    """Standalone agent invocation queue (API v2).
+
+    Unlike ``pipeline_jobs``, an agent job does not reference a pipeline run or
+    source document: it executes one skill/agent against its own request payload.
+    """
+
+    __tablename__ = "agent_jobs"
+    __table_args__ = (
+        Index("ix_agent_jobs_status_created", "status", "created_at"),
+        Index("ix_agent_jobs_agent_status", "agent", "status"),
+        Index("ix_agent_jobs_owner_status", "owner_user_id", "status", "created_at"),
+        CheckConstraint(
+            "status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')",
+            name="ck_agent_jobs_status",
+        ),
+    )
+
+    job_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent: Mapped[str] = mapped_column(String(32), nullable=False)
+    action: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    owner_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.user_id"),
+        nullable=True,
+    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="queued", server_default=text("'queued'"))
+    request_data: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False, default=dict)
+    result: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    worker_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
 
 class PipelineJob(Base):
