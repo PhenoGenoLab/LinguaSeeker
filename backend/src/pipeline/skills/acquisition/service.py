@@ -1,9 +1,10 @@
 """Phase 1 skill: document acquisition.
 
-The agent is the only path: it must call the `acquire_document` tool, whose
-result is the real ``DocumentAcquisitionResult`` (no JSON round-trip, so dataclass
-fields, enums and nested entries survive intact). An agent that never calls the
-tool, or a tool that raises, fails the phase.
+The agent is the preferred path: it should call the `acquire_document` tool,
+whose result is the real ``DocumentAcquisitionResult`` (no JSON round-trip, so
+dataclass fields, enums and nested entries survive intact). If the agent does
+not call the tool after retries, the bound tool is invoked directly; a tool
+that raises still fails the phase.
 """
 
 from __future__ import annotations

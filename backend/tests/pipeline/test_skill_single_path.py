@@ -1,9 +1,8 @@
-"""Single-path skills: the agent is the only path, failures propagate.
+"""Single-path skills: the agent is preferred, with deterministic fallback.
 
-There is no legacy fallback any more. The agent must call the skill's tool; the
-tool's real result object is what the skill returns (no JSON round-trip, so
-dataclass fields and enums survive). An agent that raises, or one that never
-calls the tool, fails the phase.
+The agent should call the skill's tool; when it does not, the skill invokes the
+already-bound tool directly so the phase can still complete. A tool that raises
+still propagates the error.
 """
 
 from __future__ import annotations
@@ -63,9 +62,13 @@ def test_agent_failure_propagates() -> None:
         asyncio.run(skill.acquire(object()))
 
 
-def test_agent_that_never_calls_the_tool_fails_the_phase() -> None:
+def test_agent_that_never_calls_the_tool_uses_deterministic_fallback() -> None:
     skill = AcquisitionSkill(cfg=None, service=_Service())
-    skill._agent = _Agent(skill=skill, call_tool=False)
+    agent = _Agent(skill=skill, call_tool=False)
+    skill._agent = agent
 
-    with pytest.raises(RuntimeError, match="did not call acquire_document"):
-        asyncio.run(skill.acquire(object()))
+    result = asyncio.run(skill.acquire(object()))
+
+    assert result == {"acquired": True}
+    assert agent.calls >= 2
+    assert len(skill.service.requests) == 1
