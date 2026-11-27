@@ -144,3 +144,45 @@ def test_parsing_service_routes_to_mcp(monkeypatch, tmp_path):
     assert list(batch.saved_files) == ["a.pdf"]
     assert batch.saved_files["a.pdf"].md_path == tmp_path / "a.md"
     parse.assert_awaited_once_with(files=["/in/a.pdf"], output_dir=str(tmp_path))
+
+
+def test_hpocr_settings_build_nested_mcp_config():
+    settings = _settings(
+        mcp_hpocr_enabled=True,
+        mcp_hpocr_url="http://127.0.0.1:36545/mcp",
+        mcp_hpocr_tool="annotate",
+    )
+
+    assert settings.mcp.hpocr.enabled is True
+    assert settings.mcp.hpocr.url == "http://127.0.0.1:36545/mcp"
+    assert settings.mcp.hpocr.tool == "annotate"
+
+
+def test_hpocr_decode_requires_result_list():
+    from src.core.adapters.mcp.hpocr import _decode
+
+    with pytest.raises(McpToolError, match="missing 'result'"):
+        _decode({})
+    with pytest.raises(McpToolError, match="must be a list"):
+        _decode({"result": {}})
+
+
+def test_hpocr_decode_returns_annotations():
+    from src.core.adapters.mcp.hpocr import _decode
+
+    annotations = _decode(
+        {
+            "result": [
+                {
+                    "hpo_uri": "HP:0001250",
+                    "hpo_label": "Seizures",
+                    "start": 0,
+                    "end": 8,
+                    "text_span": "seizures",
+                }
+            ]
+        }
+    )
+
+    assert annotations[0].hpo_uri == "HP:0001250"
+    assert annotations[0].text_span == "seizures"

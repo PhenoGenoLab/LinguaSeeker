@@ -3,19 +3,19 @@
 from __future__ import annotations
 
 from src.core.tools.standardization.contracts import (
+    EntityMatcher,
     MatchStatus,
     StandardizationInput,
     StandardizationResult,
 )
 from src.core.tools.standardization.acmg_projection import AcmgReadyProjector
-from src.core.tools.standardization.matchers import TerminologyMatcher
 from src.ports.standardization import TerminologyRepository
 
 
 class StandardizationService:
     """Match candidates and orchestrate persistence side effects."""
 
-    def __init__(self, matcher: TerminologyMatcher, repository: TerminologyRepository):
+    def __init__(self, matcher: EntityMatcher, repository: TerminologyRepository):
         self._matcher = matcher
         self._repository = repository
         self._acmg_projector = AcmgReadyProjector()

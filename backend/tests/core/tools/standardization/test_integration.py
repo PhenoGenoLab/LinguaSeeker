@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from src.core.tools.extraction.contracts import (
@@ -13,6 +15,7 @@ from src.core.tools.extraction.contracts import (
     EvidenceStatus,
     Track,
 )
+from src.core.adapters.mcp.hpocr import HpoAnnotation
 from src.dao.postgresql.standardization import runner as runner_module
 from src.core.tools.standardization.contracts import (
     EntityMatch,
@@ -153,13 +156,18 @@ class FakeRerankConfig:
 class FakeConfig:
     """Minimal config for integration tests."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, hpocr_enabled: bool = False) -> None:
         self.embedding = FakeEmbeddingConfig()
         self.rerank = FakeRerankConfig()
+        self.mcp = SimpleNamespace(hpocr=SimpleNamespace(enabled=hpocr_enabled))
         self.api_key = ""
 
 
-def build_service_with_fake_repository(monkeypatch: pytest.MonkeyPatch) -> tuple[object, dict]:
+def build_service_with_fake_repository(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    hpocr_enabled: bool = False,
+) -> tuple[object, dict]:
     """Create the runner with an in-memory repository implementation."""
     lookup = {
         (EntityType.GENE, "BRCA1"): (
@@ -227,7 +235,7 @@ def build_service_with_fake_repository(monkeypatch: pytest.MonkeyPatch) -> tuple
         yield session
 
     return runner_module.PostgresStandardizationRunner(
-        cfg=FakeConfig(),
+        cfg=FakeConfig(hpocr_enabled=hpocr_enabled),
         session_factory=session_factory,
     ), lookup
 
@@ -354,3 +362,44 @@ async def test_dual_result_standardization_pipeline_reports_unmapped_and_ambiguo
     assert repo.run_items
     assert repo.bindings
     assert repo.canonical
+
+
+@pytest.mark.asyncio
+async def test_hpocr_mcp_maps_phenotype_when_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Enabling mcp_hpocr routes phenotype candidates through the MCP matcher."""
+    result = build_minimal_dual_result(
+        gene="BRCA1",
+        disease="Breast cancer",
+        variant="rs80359550",
+        phenotype="Breast carcinoma",
+    )
+    service, _lookup = build_service_with_fake_repository(monkeypatch, hpocr_enabled=True)
+
+    class FakeHpocrClient:
+        async def annotate(self, text, *, longest_match=True):
+            return (
+                HpoAnnotation(
+                    hpo_uri="HP:0100013",
+                    hpo_label="Breast carcinoma",
+                    start=0,
+                    end=len(text),
+                    text_span=text,
+                ),
+            )
+
+    monkeypatch.setattr(
+        "src.core.adapters.mcp.hpocr.McpHpocrClient",
+        lambda _cfg: FakeHpocrClient(),
+    )
+
+    output = await service.run_dual_result(
+        result,
+        source_document_id="source-mcp",
+        processing_run_id="run-mcp",
+    )
+
+    phenotype = next(
+        match for match in output.matches if match.candidate.entity_type == EntityType.PHENOTYPE
+    )
+    assert phenotype.external_id == "HP:0100013"
+    assert phenotype.match_method.value == "mcp"

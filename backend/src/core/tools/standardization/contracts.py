@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Protocol
 
 from src.core.tools.extraction.contracts import (
     ExtractionTarget,
@@ -42,6 +42,7 @@ class MatchMethod(str, Enum):
 
     PRECISE = "precise"
     SIMILARITY = "similarity"
+    MCP = "mcp"
 
 
 class CanonicalStatusRank(str, Enum):
@@ -106,6 +107,12 @@ class EntityMatch:
     match_method: MatchMethod = MatchMethod.PRECISE
     similarity_score: float | None = None
     raw_payload: dict[str, Any] = field(default_factory=dict)
+
+
+class EntityMatcher(Protocol):
+    """One-candidate matcher used by the standardization service."""
+
+    async def match(self, candidate: StandardizationCandidate) -> EntityMatch: ...
 
 
 @dataclass(frozen=True)

@@ -14,6 +14,7 @@ from src.core.tools.standardization.adapters import DualResultAdapter
 from src.core.tools.standardization.contracts import StandardizationResult
 from src.core.tools.standardization.core import StandardizationService
 from src.core.tools.standardization.matchers import HybridTerminologyMatcher
+from src.core.tools.standardization.mcp_match.core import HpoMcpTerminologyMatcher
 from src.core.tools.standardization.precise_match.core import PreciseTerminologyMatcher
 from src.core.tools.standardization.similarity_match.core import (
     SimilarityMatchConfig,
@@ -125,6 +126,10 @@ class PostgresStandardizationRunner:
             similarity_matcher,
             cross_lingual_disease_resolver=CrossLingualDiseaseResolver(session),
         )
+        if self._cfg.mcp.hpocr.enabled:
+            from src.core.adapters.mcp.hpocr import McpHpocrClient
+
+            matcher = HpoMcpTerminologyMatcher(McpHpocrClient(self._cfg), matcher)
         input_data = DualResultAdapter().to_standardization_input(
             result,
             source_document_id=source_document_id,

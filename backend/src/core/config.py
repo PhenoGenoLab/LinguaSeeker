@@ -344,10 +344,11 @@ class McpServerConfig(BaseModel):
 
 
 class McpConfig(BaseModel):
-    """External MCP servers (literature acquisition, MinerU parsing)."""
+    """External MCP servers (literature acquisition, MinerU parsing, HPO)."""
 
     literature: McpServerConfig = Field(default_factory=McpServerConfig)
     mineru: McpServerConfig = Field(default_factory=McpServerConfig)
+    hpocr: McpServerConfig = Field(default_factory=McpServerConfig)
 
 
 # ── Root settings ────────────────────────────────────────────────────────
@@ -561,6 +562,13 @@ class Settings(BaseSettings):
     mcp_mineru_tool: str = "parse_documents"
     mcp_mineru_timeout: float = 600.0
 
+    mcp_hpocr_enabled: bool = False
+    mcp_hpocr_transport: str = "streamable_http"
+    mcp_hpocr_url: str = ""
+    mcp_hpocr_command: str = ""
+    mcp_hpocr_tool: str = "annotate"
+    mcp_hpocr_timeout: float = 60.0
+
     # ── Nested domain models (populated by validator) ────────────────────
 
     llm: LLMConfig = Field(default_factory=LLMConfig, exclude=True)
@@ -752,6 +760,14 @@ class Settings(BaseSettings):
                 command=self.mcp_mineru_command,
                 tool=self.mcp_mineru_tool,
                 timeout=self.mcp_mineru_timeout,
+            ),
+            hpocr=McpServerConfig(
+                enabled=self.mcp_hpocr_enabled,
+                transport=self.mcp_hpocr_transport,
+                url=self.mcp_hpocr_url,
+                command=self.mcp_hpocr_command,
+                tool=self.mcp_hpocr_tool,
+                timeout=self.mcp_hpocr_timeout,
             ),
         )
 

@@ -162,8 +162,8 @@ network:
   no_proxy: "cn,ncbi.nlm.nih.gov,nlm.nih.gov,unpaywall.org,localhost,127.0.0.1"
 
 # ── External MCP servers ─────────────────────────────────────────────────
-# When enabled, literature acquisition and MinerU parsing call the configured
-# MCP tool instead of the direct HTTP/SDK clients.
+# When enabled, literature acquisition, MinerU parsing, and HPO phenotype
+# standardization call the configured MCP tools instead of direct clients.
 # transport: streamable_http | sse (url required) | stdio (command required;
 # parsed like a shell line, inherits the backend environment).
 mcp_literature:
@@ -181,6 +181,14 @@ mcp_mineru:
   command: ""
   tool: "parse_documents"
   timeout: 600.0
+
+mcp_hpocr:
+  enabled: false
+  transport: "streamable_http"
+  url: ""
+  command: ""
+  tool: "annotate"
+  timeout: 60.0
 
 # ── Inference Service Auth ─────────────────────────────────────────────
 # inference_api_key: shared secret for authenticating with inference service containers.

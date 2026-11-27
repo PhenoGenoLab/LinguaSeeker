@@ -63,3 +63,12 @@ network:
 
 # -- Inference Service GPU Settings (Production — multi-container) -----------
 doc_parse_model_id: "opendatalab/MinerU2.5-Pro-2604-1.2B"
+
+# -- FastHPOCR MCP ------------------------------------------------------------
+# Enable after deploying the FastHPOCR MCP service and pointing at its /mcp URL.
+mcp_hpocr:
+  enabled: false
+  transport: "streamable_http"
+  url: "http://127.0.0.1:36545/mcp"
+  tool: "annotate"
+  timeout: 60.0

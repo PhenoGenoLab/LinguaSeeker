@@ -9,6 +9,7 @@ Phase 3 是 Lingua Seeker 管道的核心标准化阶段。它接收 Phase 2 输
 ### 关键特性
 
 - **混合匹配**：先执行精确匹配（别名优先级排序），未命中时回退到语义相似度匹配
+- **HPO MCP 映射**：启用 `mcp_hpocr` 时，表型候选改用 FastHPOCR MCP 的 `annotate` 工具识别 HPO 概念
 - **跨语言疾病解析**：支持中文疾病名称通过 token-ILIKE 匹配回退到英文术语
 - **HGVS 规范化**：支持三字母→单字母蛋白质变异转换、ClinVar 别名扩展
 - **确定性内部变异 ID**：未匹配变异通过 `sha256` 摘要生成稳定标识符
@@ -32,6 +33,7 @@ standardization/
 ├── db_ready_gate/           # DB-ready 候选证据准入门控（纯函数 + 审计原因）
 ├── precise_match/           # 精确术语匹配子模块
 ├── similarity_match/        # 语义相似度匹配子模块
+├── mcp_match/               # FastHPOCR MCP 表型匹配子模块
 └── context_pack/            # 目标安全上下文包子模块
 ```
 
@@ -67,6 +69,11 @@ session 与事务，并提供：
 - 未映射时尝试 `CrossLingualDiseaseResolver`（仅疾病类型）
 - 最终回退 `SimilarityTerminologyMatcher`（pgvector 嵌入检索 + rerank）
 
+启用 `mcp_hpocr` 后，`HpoMcpTerminologyMatcher`（`mcp_match/core.py`）接管
+`phenotype` 候选：调用 FastHPOCR MCP 的 `annotate` 工具，单 HPO 结果直接
+标准化，多 HPO 结果仅在存在唯一精确 span 时采用，否则标记 `ambiguous`。
+基因、变异、疾病仍走上述本地混合匹配。
+
 ### DualResultAdapter（`adapters.py`）
 将 Phase 2 的 `DualEvidenceExtractionResult` 转换为 `StandardizationInput`，处理：
 - 原始/翻译/审计轨的证据字段映射
@@ -98,6 +105,8 @@ Phase 2 DualEvidenceExtractionResult
         ▼
    HybridTerminologyMatcher
         │
+        ├─→ HpoMcpTerminologyMatcher (phenotype, mcp_hpocr enabled)
+        │       └─→ FastHPOCR MCP `annotate`
         ├─→ PreciseTerminologyMatcher (精确匹配)
         │       └─→ HGNC/ClinVar/OMIM/HPO/ClinGen 别名查找
         ├─→ CrossLingualDiseaseResolver (跨语言疾病)
